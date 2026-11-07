@@ -1,14 +1,24 @@
 # Cartera
 
-App Android nativa con Jetpack Compose, generada desde Cartera.
+App Android nativa con Jetpack Compose, generada desde ScaffoldingAndroidCompose. Billetera digital de demo y banco de pruebas para las skills de agent-skills y las pruebas E2E con testigo: importa el comportamiento, no el diseño visual.
 
 ## Stack
 
+Lo que el proyecto tiene hoy, literal y con versiones. Los agentes trabajan con este stack; ver `## Modernización`.
+
 - Perfil: hb-stack-mobile-kotlin
 - Variante: android
-- Package base: `com.hacybeyker.cartera`
+- Package base y applicationId: `com.hacybeyker.cartera`
 - Versiones: **siempre** en `gradle/libs.versions.toml`; no las asumas.
-- Calidad: ktlint, detekt y Android Lint; gate de cobertura con Kover (90 %); goldens de UI con Roborazzi; SonarCloud en CI.
+- UI: Compose (BOM 2026.09.00) con Material 3 y `material-icons-core`; `activity-compose` 1.13.0, edge-to-edge.
+- Presentación: MVVM con UDF según el perfil (`lifecycle-viewmodel-compose` 2.11.0, `lifecycle-runtime-compose`). Todavía no hay ViewModels: la única feature, `home`, es un `HomeScreen` sin estado.
+- Asincronía: corrutinas y Flow (llegan con AndroidX lifecycle; no hay `kotlinx-coroutines-core` declarado).
+- DI: Hilt 2.60.1 con KSP 2.3.13; `hilt-navigation-compose` 1.4.0.
+- Navegación: Navigation 3 1.2.0 (`navigation3-runtime`, `navigation3-ui`) y `lifecycle-viewmodel-navigation3`; NavKey serializables con `kotlinx-serialization-core` 1.12.0.
+- Red, persistencia, imágenes: ninguna.
+- Tests (solo JVM): JUnit 4.13.2, Robolectric 4.17 (emula la API 37), Compose UI Test (`ui-test-junit4`), Roborazzi 1.77.0, `kotlinx-coroutines-test` 1.11.0, Turbine 1.2.1, `androidx.test.ext:junit` 1.3.0, `espresso-core` 3.7.0 (ver Arquitectura).
+- Calidad: ktlint (plugin 14.2.0), detekt 2.0.0-alpha.6, Android Lint (`abortOnError`); gate de cobertura con Kover 0.9.11 (90 %); goldens de UI con Roborazzi; SonarCloud (plugin 7.5.0.8588) en CI, opcional según `SONAR_TOKEN`.
+- Build: AGP 9.5.0, Kotlin 2.4.21, Gradle 9.8.2, KSP; compileSdk y targetSdk 37, minSdk 26, Java 11; buildTypes `debug` y `release` (R8); JDK 21 en CI.
 
 ## Comandos
 
@@ -17,6 +27,7 @@ App Android nativa con Jetpack Compose, generada desde Cartera.
 | Compilar | `./gradlew assembleDebug` |
 | Tests unitarios y de screenshots (JVM) | `./gradlew test` |
 | Formatear y analizar | `./gradlew formatAndAnalyze` |
+| Solo analizar, sin formatear (lo que corre el CI) | `./gradlew codeQuality` |
 | Regrabar goldens tras un cambio visual intencional | `./gradlew recordRoborazziDebug` |
 | Reportes HTML de Lint, detekt, ktlint y Kover | `./gradlew qualityReports --continue` |
 | Hook de calidad (una vez, tras clonar) | `./scripts/setup-quality-hook.sh` |
@@ -41,6 +52,11 @@ Sigue el perfil (Clean Architecture + MVVM con UDF, por features). Particularida
 - **Sin tests instrumentados:** no existe `androidTest`. El código que depende de hardware (cámara, GPS, biometría, sensores) se verifica a mano en un dispositivo y se excluye del gate de cobertura.
 - `espresso-core` en `testImplementation` no contradice lo anterior: aquí no se escriben tests de Espresso. Lo usa `compose-ui-test` por dentro con Robolectric, y se declara explícito porque la versión que llega transitiva (3.5.1) falla en la API 37, que es la que emulan los tests (`app/src/test/resources/robolectric.properties`). Se puede quitar cuando `compose-ui-test` traiga la 3.7.0 o una superior por su cuenta.
 - Los goldens de Roborazzi se versionan en `app/src/test/screenshots/`.
+
+## Modernización
+
+- Ninguna decidida.
+- Los agentes no migran ni proponen migrar fuera de lo decidido aquí. Cuando una tarea toque una oportunidad clara, una línea al final del entregable, sin plan.
 
 ## Reglas del proyecto
 
