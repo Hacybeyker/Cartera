@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.navigation
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -21,6 +22,7 @@ import com.hacybeyker.cartera.feature.splash.ui.SplashNavKey
 @Composable
 fun CarteraApp(
     extraEntries: Set<NavEntryInstaller>,
+    hiddenScreens: Set<HiddenScreen>,
     visibleContentMarker: VisibleContentMarker,
     modifier: Modifier = Modifier,
     viewModel: AppShellViewModel = hiltViewModel()
@@ -32,8 +34,12 @@ fun CarteraApp(
         Scaffold(modifier = modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) { innerPadding ->
             AppNavDisplay(
                 backStack = backStack,
-                modifier = Modifier.padding(paddingValues = innerPadding),
-                extraEntries = extraEntries
+                // Las barras de cada pantalla (la inferior de Home, las superiores) no vuelven a sumar estos insets.
+                modifier = Modifier
+                    .padding(paddingValues = innerPadding)
+                    .consumeWindowInsets(innerPadding),
+                extraEntries = extraEntries,
+                hiddenScreens = hiddenScreens
             )
         }
         if (uiState.isSessionExpired) {

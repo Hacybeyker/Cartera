@@ -22,6 +22,10 @@ object CommonTestTags {
     fun error(screen: String) = "${screen}_error"
 
     fun retry(screen: String) = "${screen}_reintentar"
+
+    fun empty(screen: String) = "${screen}_vacio"
+
+    fun comingSoon(screen: String) = "${screen}_proximamente"
 }
 
 // Un diálogo se dibuja en otra ventana y no hereda testTagsAsResourceId de la raíz: sin esto, Maestro y

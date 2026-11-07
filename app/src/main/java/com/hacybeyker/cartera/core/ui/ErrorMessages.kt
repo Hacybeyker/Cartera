@@ -13,3 +13,6 @@ fun AppError.messageRes(): Int = when (this) {
     AppError.NotFound -> R.string.error_not_found
     is AppError.Validation -> R.string.error_validation
 }
+
+/** Reintentar no arregla un id inexistente: esos errores se muestran sin botón. */
+val AppError.isRetryable: Boolean get() = this != AppError.NotFound

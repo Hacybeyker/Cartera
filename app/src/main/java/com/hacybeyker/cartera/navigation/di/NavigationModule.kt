@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.navigation.di
 
+import com.hacybeyker.cartera.navigation.HiddenScreen
 import com.hacybeyker.cartera.navigation.NavEntryInstaller
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -12,4 +13,7 @@ abstract class NavigationModule {
 
     @Multibinds
     abstract fun navEntryInstallers(): Set<NavEntryInstaller>
+
+    @Multibinds
+    abstract fun hiddenScreens(): Set<HiddenScreen>
 }

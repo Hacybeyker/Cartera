@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import com.hacybeyker.cartera.core.designsystem.CarteraTheme
 import com.hacybeyker.cartera.core.ui.marks.VisibleContentMarker
 import com.hacybeyker.cartera.navigation.CarteraApp
+import com.hacybeyker.cartera.navigation.HiddenScreen
 import com.hacybeyker.cartera.navigation.NavEntryInstaller
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -17,6 +18,9 @@ class MainActivity : ComponentActivity() {
     lateinit var navEntryInstallers: Set<@JvmSuppressWildcards NavEntryInstaller>
 
     @Inject
+    lateinit var hiddenScreens: Set<@JvmSuppressWildcards HiddenScreen>
+
+    @Inject
     lateinit var visibleContentMarkers: Set<@JvmSuppressWildcards VisibleContentMarker>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +29,11 @@ class MainActivity : ComponentActivity() {
         val marker = VisibleContentMarker { mark -> visibleContentMarkers.forEach { it.onContentVisible(mark) } }
         setContent {
             CarteraTheme {
-                CarteraApp(extraEntries = navEntryInstallers, visibleContentMarker = marker)
+                CarteraApp(
+                    extraEntries = navEntryInstallers,
+                    hiddenScreens = hiddenScreens,
+                    visibleContentMarker = marker
+                )
             }
         }
     }

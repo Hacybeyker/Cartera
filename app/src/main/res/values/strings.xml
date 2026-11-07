@@ -5,6 +5,8 @@
     <string name="common_retry">Reintentar</string>
     <string name="common_cancel">Cancelar</string>
     <string name="common_back">Volver</string>
+    <string name="common_coming_soon">Próximamente</string>
+    <string name="common_coming_soon_body">Estamos preparando esta sección.</string>
 
     <string name="error_network">No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.</string>
     <string name="error_server">El servicio no está disponible en este momento. Inténtalo de nuevo.</string>
@@ -43,4 +45,61 @@
     <string name="onboarding_next">Siguiente</string>
     <string name="onboarding_skip">Omitir</string>
     <string name="onboarding_start">Empezar</string>
+
+    <string name="home_tab_start">Inicio</string>
+    <string name="home_tab_market">Mercado</string>
+    <string name="home_tab_exchange">Cambio</string>
+    <string name="home_tab_more">Más</string>
+
+    <string name="overview_greeting">Hola, %1$s</string>
+    <string name="overview_tab_accounts">Cuentas</string>
+    <string name="overview_tab_movements">Movimientos</string>
+    <string name="overview_accounts_empty">Todavía no tienes cuentas.</string>
+    <string name="overview_available_balance">Saldo disponible</string>
+    <string name="overview_transfer">Transferir</string>
+
+    <string name="movements_empty">Todavía no hay movimientos.</string>
+    <string name="movements_load_more_retry">Reintentar</string>
+
+    <string name="account_title">Cuenta</string>
+    <string name="account_header_number">Cuenta %1$s</string>
+
+    <string name="movement_detail_title">Detalle del movimiento</string>
+    <string name="movement_date">Fecha</string>
+    <string name="movement_category">Categoría</string>
+    <string name="movement_operation_number">N.º de operación</string>
+    <string name="movement_channel">Canal</string>
+    <string name="movement_status">Estado</string>
+    <string name="movement_counterparty">Contraparte</string>
+    <string name="movement_reference">Referencia</string>
+    <string name="movement_view_breakdown">Ver desglose</string>
+
+    <string name="breakdown_title">Desglose</string>
+    <string name="breakdown_merchant">%1$s · %2$s</string>
+    <string name="breakdown_fees">Comisiones</string>
+    <string name="breakdown_taxes">Impuestos</string>
+    <string name="breakdown_exchange_rate">Tipo de cambio</string>
+
+    <string name="category_groceries">Supermercado</string>
+    <string name="category_shopping">Compras</string>
+    <string name="category_restaurants">Restaurantes</string>
+    <string name="category_transport">Transporte</string>
+    <string name="category_health">Salud</string>
+    <string name="category_entertainment">Entretenimiento</string>
+    <string name="category_services">Servicios</string>
+    <string name="category_salary">Sueldo</string>
+    <string name="category_transfer">Transferencia</string>
+    <string name="category_other">Otros</string>
+
+    <string name="channel_pos">Tarjeta (POS)</string>
+    <string name="channel_online">Compra en línea</string>
+    <string name="channel_app">App</string>
+    <string name="channel_branch">Agencia</string>
+    <string name="status_completed">Completado</string>
+
+    <string name="more_legacy">Servicios clásicos</string>
+    <string name="more_log_out">Cerrar sesión</string>
+    <string name="more_log_out_title">¿Cerrar sesión?</string>
+    <string name="more_log_out_message">Tendrás que volver a ingresar con tu usuario y contraseña.</string>
+    <string name="more_version">Versión</string>
 </resources>

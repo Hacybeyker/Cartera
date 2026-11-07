@@ -42,11 +42,18 @@ class AppErrorsTest {
     }
 
     @Test
-    fun `only session expired and unauthorized count as session expiry`() {
+    fun `session expired, unauthorized and a bare 401 count as session expiry`() {
         assertTrue(problem(ProblemCode.SESSION_EXPIRED).isSessionExpiry)
         assertTrue(problem(ProblemCode.UNAUTHORIZED).isSessionExpiry)
+        assertTrue(ApiError.Http(401).isSessionExpiry)
+    }
+
+    @Test
+    fun `invalid credentials and other errors do not count as session expiry`() {
         assertFalse(problem(ProblemCode.INVALID_CREDENTIALS).isSessionExpiry)
-        assertFalse(ApiError.Http(401).isSessionExpiry)
+        assertFalse(ApiError.Http(403).isSessionExpiry)
+        assertFalse(ApiError.Http(500).isSessionExpiry)
+        assertFalse(ApiError.Network.isSessionExpiry)
     }
 
     @Test

@@ -40,9 +40,12 @@ fun LoadingState(screen: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** Error a pantalla completa con Reintentar (`<pantalla>_error`, `<pantalla>_reintentar`). */
+/**
+ * Error a pantalla completa (`<pantalla>_error`) con Reintentar (`<pantalla>_reintentar`). Sin [onRetry] no hay
+ * botón: es un error que reintentar no arregla, como un id que no existe.
+ */
 @Composable
-fun ErrorState(screen: String, message: String, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+fun ErrorState(screen: String, message: String, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -53,9 +56,45 @@ fun ErrorState(screen: String, message: String, onRetry: () -> Unit, modifier: M
     ) {
         Icon(imageVector = Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
         Text(text = message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-        Button(onClick = onRetry, modifier = Modifier.testTag(CommonTestTags.retry(screen))) {
-            Text(text = stringResource(R.string.common_retry))
+        if (onRetry != null) {
+            Button(onClick = onRetry, modifier = Modifier.testTag(CommonTestTags.retry(screen))) {
+                Text(text = stringResource(R.string.common_retry))
+            }
         }
+    }
+}
+
+/** Carga correcta sin nada que mostrar (`<pantalla>_vacio`). */
+@Composable
+fun EmptyState(screen: String, message: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(MaterialTheme.spacing.screen)
+            .testTag(CommonTestTags.empty(screen)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+    }
+}
+
+/** Pantalla reservada (`<pantalla>_proximamente`). */
+@Composable
+fun ComingSoonState(screen: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(MaterialTheme.spacing.screen)
+            .testTag(CommonTestTags.comingSoon(screen)),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = stringResource(R.string.common_coming_soon), style = MaterialTheme.typography.headlineSmall)
+        Text(
+            text = stringResource(R.string.common_coming_soon_body),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -64,6 +103,14 @@ fun ErrorState(screen: String, message: String, onRetry: () -> Unit, modifier: M
 private fun LoadingStatePreview() {
     CarteraTheme {
         LoadingState(screen = "preview")
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ComingSoonStatePreview() {
+    CarteraTheme {
+        ComingSoonState(screen = "preview")
     }
 }
 

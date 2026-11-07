@@ -10,7 +10,12 @@ import androidx.compose.ui.unit.dp
 
 /** Tamaños de elementos que no son espaciado (logos, ilustraciones, indicadores). */
 @Immutable
-data class Sizes(val logo: Dp = 96.dp, val illustration: Dp = 120.dp, val pageIndicator: Dp = 8.dp)
+data class Sizes(
+    val logo: Dp = 96.dp,
+    val illustration: Dp = 120.dp,
+    val pageIndicator: Dp = 8.dp,
+    val listIcon: Dp = 40.dp
+)
 
 val LocalSizes = staticCompositionLocalOf { Sizes() }
 

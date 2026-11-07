@@ -26,6 +26,20 @@
 - Sesión en memoria y modal "Tu sesión expiró" ante cualquier llamada autenticada que responda `SESSION_EXPIRED` o `UNAUTHORIZED`.
 - Estados y modales comunes (carga, error con Reintentar, progreso bloqueante, error y confirmación) con testTags expuestos como `resource-id`.
 - Punto de extensión para las marcas de contenido visible de cada pantalla.
+- Home con barra inferior Inicio · Mercado · Cambio · Más, donde cada tab conserva su estado.
+- Inicio con saludo y tabs Cuentas · Movimientos: saldo por cuenta y movimientos de todas las cuentas, paginados por cursor.
+- Movimientos de cada cuenta, detalle del movimiento y desglose con su ilustración de categoría.
+- Paginación con fila de Reintentar cuando falla la carga de más, sin perder lo ya cargado.
+- Más: nombre, Servicios clásicos (próximamente), Cerrar sesión con confirmación y Versión.
+- Pantalla Escenario en debug y demo, oculta tras 7 toques en Versión, con Guardar, Valores por defecto y Restablecer datos.
+
+### Changed
+- Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.
+- `hilt-lifecycle-viewmodel-compose` se declara en el catálogo en vez de llegar transitiva.
+
+### Fixed
+- Un 401 sin cuerpo RFC 9457 también abre el modal de sesión expirada.
+- Un monto o una fecha mal formados en una respuesta se muestran como error del servicio en vez de cerrar la app.
 
 ### Security
 - Configuración de seguridad de red: sin tráfico en claro, salvo hacia `127.0.0.1` en debug y demo.

@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
+    <string name="scenario_title">Escenario</string>
+    <string name="scenario_latency">Latencia en ms (default=400,movements=2000)</string>
+    <string name="scenario_failure_rate">Tasa de fallo en % (default=0,transfers=100)</string>
+    <string name="scenario_failure_mode">Tipo de fallo</string>
+    <string name="scenario_session_ttl">TTL de la sesión en s (rige desde el próximo login)</string>
+    <string name="scenario_backend_down">Backend caído</string>
+    <string name="scenario_endpoints">Endpoints: app_config, login, me, accounts, account, movements, movement, breakdown, transfers.</string>
+    <string name="scenario_save">Guardar</string>
+    <string name="scenario_defaults">Valores por defecto</string>
+    <string name="scenario_reset_data">Restablecer datos</string>
+    <string name="scenario_saved">Escenario guardado.</string>
+    <string name="scenario_rejected">Guardado, salvo estos valores inválidos: %1$s</string>
+    <string name="scenario_defaults_restored">Se restablecieron los valores por defecto.</string>
+    <string name="scenario_data_reset">Datos restablecidos a los fixtures.</string>
+    <string name="scenario_data_reset_failed">No se pudo restablecer los datos.</string>
+</resources>

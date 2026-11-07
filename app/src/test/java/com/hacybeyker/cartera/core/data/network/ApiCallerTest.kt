@@ -75,6 +75,16 @@ class ApiCallerTest {
     }
 
     @Test
+    fun `401 without a problem body notifies the session expiry`() = runTest {
+        enqueue(401, "")
+
+        val result = caller { api.me() }
+
+        assertEquals(ApiResult.Failure(ApiError.Http(401)), result)
+        assertEquals(1, sessionExpiries)
+    }
+
+    @Test
     fun `invalid credentials and other failures do not notify the session expiry`() = runTest {
         enqueue(401, problem("INVALID_CREDENTIALS", 401), "application/problem+json")
         enqueue(500, problem("INTERNAL_ERROR", 500), "application/problem+json")

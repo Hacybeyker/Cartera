@@ -22,9 +22,10 @@
 │   └── tools/             # Generador de movimientos (semilla fija)
 ├── app/src/main/java/com/hacybeyker/cartera/
 │   ├── core/              # Compartido: design system y componentes comunes, dominio y datos de sesión,
-│   │                      # configuración y primer uso, cliente HTTP y marcas de contenido visible
+│   │                      # configuración, primer uso, cuentas y movimientos, paginación, cliente HTTP
+│   │                      # y marcas de contenido visible
 │   ├── navigation/        # CarteraApp (raíz), AppNavDisplay (Navigation 3) y la pila de entrada
-│   └── feature/<name>/    # Por features: domain / data / ui / di
+│   └── feature/<name>/    # splash, login, terms, onboarding, home, movements y legacy (domain / data / ui / di)
 ├── app/src/demoTools/     # Backend embebido y escenarios (solo debug y demo)
 ├── AGENTS.md              # Reglas del proyecto para agentes de IA (CLAUDE.md lo importa)
 └── gradle/
@@ -91,11 +92,34 @@ tras el nuevo login, no se repiten Términos ni Onboarding.
 
 ---
 
+## 🏠 Home y movimientos
+
+```
+Home  [barra inferior: Inicio · Mercado · Cambio · Más]
+├─ Inicio  [tabs: Cuentas · Movimientos]
+│   ├─ Cuentas ──► Movimientos de cuenta ──► Detalle ──► Desglose
+│   └─ Movimientos ──► Detalle ──► Desglose
+├─ Mercado · Cambio   (próximamente)
+└─ Más ──► Servicios clásicos (próximamente) · Cerrar sesión · Versión
+```
+
+- Cada tab de Home conserva su estado (scroll y tab superior) mientras se usa otro.
+- **Inicio** pide `GET /me` y `GET /accounts` en paralelo. **Movimientos** carga al abrir el tab.
+- Las listas de movimientos se paginan por cursor, de a 20. Si falla la carga de más, aparece una fila
+  con Reintentar al final y lo ya cargado se mantiene; el scroll no reintenta solo.
+- **Movimientos de cuenta** pide la cuenta y su primera página en paralelo. Detalle y Desglose se
+  apilan sobre Home (sin barra inferior) y vuelven con `barra_volver` o Atrás. Un id que no existe
+  (`NOT_FOUND`) se muestra como error sin Reintentar.
+- **Cerrar sesión** pide confirmación y deja la pila en `[Login]`; el próximo login no repite
+  Términos ni Onboarding. El botón Transferir de Cuentas está deshabilitado por ahora.
+
+---
+
 ## 🏷️ testTags y marcas
 
 La raíz expone los testTags como `resource-id` (`testTagsAsResourceId`), y cada modal hace lo mismo
 en su ventana. La convención es snake_case en español, `<pantalla>_<elemento>`, con los estados
-`<pantalla>_cargando`, `<pantalla>_error` y `<pantalla>_reintentar`.
+`<pantalla>_cargando`, `<pantalla>_error`, `<pantalla>_reintentar` y `<pantalla>_vacio`.
 
 | Pantalla | testTags |
 |---|---|
@@ -104,12 +128,26 @@ en su ventana. La convención es snake_case en español, `<pantalla>_<elemento>`
 | Login | `login_pantalla`, `login_usuario`, `login_contrasena`, `login_mostrar_contrasena`, `login_entrar`, `login_error` |
 | Términos | sin testTags: "Términos y condiciones", "He leído y acepto…", "Aceptar", "Rechazar" |
 | Onboarding | sin testTags: "Siguiente", "Omitir", "Empezar" |
+| Home | `home_pantalla`, `home_tab_inicio`, `home_tab_mercado`, `home_tab_cambio`, `home_tab_mas` |
+| Inicio | `inicio_pantalla`, `inicio_saludo`, `inicio_tab_cuentas`, `inicio_tab_movimientos` |
+| Inicio · Cuentas | `cuentas_lista`, `cuentas_item_<id>`, `cuentas_transferir` y estados `cuentas_*` |
+| Inicio · Movimientos | `movimientos_lista`, `movimientos_item_<id>`, `movimientos_mas_cargando`, `movimientos_mas_reintentar` y estados `movimientos_*` |
+| Movimientos de cuenta | `cuenta_pantalla`, `cuenta_saldo`, `cuenta_movimientos_lista`, `cuenta_movimientos_item_<id>`, `cuenta_movimientos_mas_reintentar` y estados `cuenta_*` |
+| Detalle | `movimiento_detalle`, `movimiento_monto`, `movimiento_ver_desglose` y estados `movimiento_*` |
+| Desglose | `movimiento_desglose`, `desglose_ilustracion`, `desglose_linea_<n>` (desde 1) y estados `desglose_*` |
+| Mercado / Cambio | `mercado_proximamente` / `cambio_proximamente` |
+| Más | `mas_pantalla`, `mas_nombre`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
+| Servicios clásicos | `legacy_proximamente` |
+| Escenario (debug y demo) | `escenario_pantalla`, `escenario_<clave>` (las claves de adb), `escenario_failure_mode_<valor>`, `escenario_guardar`, `escenario_valores_defecto`, `escenario_restablecer_datos`, `escenario_mensaje` |
 
 Términos y Onboarding no llevan testTags a propósito: imitan pantallas de terceros y se seleccionan
 por texto.
 
-**Marcas de contenido visible.** Cada pantalla avisa una sola vez, tras su primer frame con contenido
-real, con el nombre de su marca (`login`, `terminos`, `onboarding`). Por defecto nadie escucha. Para
+**Marcas de contenido visible.** Cada pantalla avisa con el nombre de su marca tras el primer frame
+con contenido real: una vez por cada carga o refresco, nunca por el estado de carga ni por cargar más
+páginas. Rotar o volver a una pantalla sin datos nuevos no repite la marca. Marcas: `login`,
+`terminos`, `onboarding`, `inicio_cuentas`, `inicio_movimientos`, `cuenta_movimientos`,
+`movimiento_detalle`, `movimiento_desglose`, `mercado`, `cambio` y `mas`. Por defecto nadie escucha. Para
 recibirlas, agrega un `VisibleContentMarker` al conjunto desde un módulo de Hilt propio, sin tocar las
 pantallas:
 
@@ -175,6 +213,10 @@ broadcast, así que cada flow lleva su escenario aunque use `clearState`:
 ```
 
 Si un flow no usa argumentos, el orden es `pm clear` → broadcast → `launchApp` sin `clearState`.
+
+**Desde la app.** En Más, 7 toques en Versión abren la pantalla Escenario, con los mismos campos que
+adb (en el mismo formato), más Guardar, Valores por defecto y Restablecer datos. Release no la
+compila: ahí los 7 toques no hacen nada.
 
 ---
 

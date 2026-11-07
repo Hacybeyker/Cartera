@@ -3,6 +3,7 @@ package com.hacybeyker.cartera.demo
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import androidx.core.content.edit
 import com.hacybeyker.cartera.demo.scenario.ScenarioStorage
 import com.hacybeyker.cartera.demo.scenario.ScenarioStore
 
@@ -25,6 +26,9 @@ class SharedPreferencesScenarioStorage(private val preferences: SharedPreference
         preferences.all.mapNotNull { (key, value) -> (value as? String)?.let { key to it } }.toMap()
 
     override fun write(values: Map<String, String>) {
-        preferences.edit().clear().apply { values.forEach { (key, value) -> putString(key, value) } }.apply()
+        preferences.edit {
+            clear()
+            values.forEach { (key, value) -> putString(key, value) }
+        }
     }
 }

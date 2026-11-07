@@ -17,8 +17,14 @@ fun ApiError.toAppError(): AppError = when (this) {
     is ApiError.Problem -> code.toAppError(this)
 }
 
+// Un 401 sin cuerpo RFC 9457 (un proxy o un servidor que no sigue el contrato) también deja la sesión inservible.
+// INVALID_CREDENTIALS llega con cuerpo, así que el login no cuenta como sesión vencida.
 val ApiError.isSessionExpiry: Boolean
-    get() = this is ApiError.Problem && (code == ProblemCode.SESSION_EXPIRED || code == ProblemCode.UNAUTHORIZED)
+    get() = when (this) {
+        is ApiError.Problem -> code == ProblemCode.SESSION_EXPIRED || code == ProblemCode.UNAUTHORIZED
+        is ApiError.Http -> status == HTTP_UNAUTHORIZED
+        else -> false
+    }
 
 private fun ProblemCode.toAppError(problem: ApiError.Problem): AppError = when (this) {
     ProblemCode.INVALID_CREDENTIALS -> AppError.InvalidCredentials
@@ -32,3 +38,5 @@ inline fun <T, R> ApiResult<T>.toOutcome(transform: (T) -> R): Outcome<R> = when
     is ApiResult.Success -> Outcome.Success(transform(value))
     is ApiResult.Failure -> Outcome.Failure(error.toAppError())
 }
+
+fun <T> ApiResult<T>.toOutcome(): Outcome<T> = toOutcome { it }

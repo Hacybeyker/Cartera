@@ -9,10 +9,17 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.hacybeyker.cartera.core.domain.entry.EntryStep
+import com.hacybeyker.cartera.feature.home.ui.HomeActions
 import com.hacybeyker.cartera.feature.home.ui.HomeNavKey
 import com.hacybeyker.cartera.feature.home.ui.homeEntry
+import com.hacybeyker.cartera.feature.legacy.ui.LegacyNavKey
+import com.hacybeyker.cartera.feature.legacy.ui.legacyEntry
 import com.hacybeyker.cartera.feature.login.ui.LoginNavKey
 import com.hacybeyker.cartera.feature.login.ui.loginEntry
+import com.hacybeyker.cartera.feature.movements.ui.AccountMovementsNavKey
+import com.hacybeyker.cartera.feature.movements.ui.MovementBreakdownNavKey
+import com.hacybeyker.cartera.feature.movements.ui.MovementDetailNavKey
+import com.hacybeyker.cartera.feature.movements.ui.movementsEntries
 import com.hacybeyker.cartera.feature.onboarding.ui.OnboardingNavKey
 import com.hacybeyker.cartera.feature.onboarding.ui.onboardingEntry
 import com.hacybeyker.cartera.feature.splash.ui.splashEntry
@@ -23,12 +30,14 @@ import com.hacybeyker.cartera.feature.terms.ui.termsEntry
 fun AppNavDisplay(
     backStack: NavBackStack<NavKey>,
     modifier: Modifier = Modifier,
-    extraEntries: Set<NavEntryInstaller> = emptySet()
+    extraEntries: Set<NavEntryInstaller> = emptySet(),
+    hiddenScreens: Set<HiddenScreen> = emptySet()
 ) {
+    val back: () -> Unit = { backStack.removeLastOrNull() }
     NavDisplay(
         backStack = backStack,
         modifier = modifier,
-        onBack = { backStack.removeLastOrNull() },
+        onBack = back,
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
             rememberViewModelStoreNavEntryDecorator()
@@ -41,8 +50,23 @@ fun AppNavDisplay(
                 onRejected = { backStack.resetTo(LoginNavKey) }
             )
             onboardingEntry(onFinished = { backStack.resetTo(HomeNavKey) })
-            homeEntry()
-            extraEntries.forEach { installer -> with(installer) { install() } }
+            homeEntry(
+                actions = HomeActions(
+                    onAccountClick = { backStack.add(AccountMovementsNavKey(it)) },
+                    onMovementClick = { backStack.add(MovementDetailNavKey(it)) },
+                    onLegacyClick = { backStack.add(LegacyNavKey) },
+                    onLoggedOut = { backStack.resetTo(LoginNavKey) },
+                    // Sin pantalla oculta (release), los 7 toques no hacen nada.
+                    onHiddenScreenRequested = { hiddenScreens.firstOrNull()?.let { backStack.add(it.navKey()) } }
+                )
+            )
+            movementsEntries(
+                onBack = back,
+                onMovementClick = { backStack.add(MovementDetailNavKey(it)) },
+                onBreakdownClick = { backStack.add(MovementBreakdownNavKey(it)) }
+            )
+            legacyEntry(onBack = back)
+            extraEntries.forEach { installer -> with(installer) { install(onBack = back) } }
         }
     )
 }

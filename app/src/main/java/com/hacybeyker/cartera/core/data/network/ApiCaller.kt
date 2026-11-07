@@ -3,9 +3,9 @@ package com.hacybeyker.cartera.core.data.network
 import com.hacybeyker.cartera.core.data.network.dto.ProblemDto
 import java.io.IOException
 import java.io.InterruptedIOException
+import java.time.DateTimeException
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
@@ -27,7 +27,11 @@ class ApiCaller @Inject constructor(private val json: Json, private val sessionE
         ApiResult.Failure(ApiError.Timeout)
     } catch (_: IOException) {
         ApiResult.Failure(ApiError.Network)
-    } catch (_: SerializationException) {
+    } catch (_: IllegalArgumentException) {
+        // SerializationException es una IllegalArgumentException; también llegan aquí un monto o una fecha mal
+        // formados al mapear el DTO dentro de la llamada.
+        ApiResult.Failure(ApiError.InvalidResponse)
+    } catch (_: DateTimeException) {
         ApiResult.Failure(ApiError.InvalidResponse)
     }
 

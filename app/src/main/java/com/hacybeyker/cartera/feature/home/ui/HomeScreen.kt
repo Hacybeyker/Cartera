@@ -1,31 +1,43 @@
 package com.hacybeyker.cartera.feature.home.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import com.hacybeyker.cartera.R
-import com.hacybeyker.cartera.core.designsystem.CarteraTheme
+import com.hacybeyker.cartera.core.designsystem.component.ComingSoonState
+import com.hacybeyker.cartera.core.ui.marks.ReportContentVisible
+import com.hacybeyker.cartera.feature.home.ui.more.MoreScreen
+import com.hacybeyker.cartera.feature.home.ui.overview.OverviewScreen
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.headlineMedium
-        )
+fun HomeScreen(actions: HomeActions, modifier: Modifier = Modifier) {
+    var selectedTab by rememberSaveable { mutableStateOf(HomeTab.START) }
+    // Cada tab guarda su estado (scroll, tab superior) mientras se usa otro; sus ViewModels viven con la entrada.
+    val tabStates = rememberSaveableStateHolder()
+    HomeContent(selectedTab = selectedTab, onTabSelected = { selectedTab = it }, modifier = modifier) { tab ->
+        tabStates.SaveableStateProvider(key = tab.name) {
+            when (tab) {
+                HomeTab.START -> OverviewScreen(
+                    onAccountClick = actions.onAccountClick,
+                    onMovementClick = actions.onMovementClick
+                )
+                HomeTab.MARKET -> ComingSoonTab(screen = HomeTestTags.MARKET)
+                HomeTab.EXCHANGE -> ComingSoonTab(screen = HomeTestTags.EXCHANGE)
+                HomeTab.MORE -> MoreScreen(
+                    onLegacyClick = actions.onLegacyClick,
+                    onLoggedOut = actions.onLoggedOut,
+                    onHiddenScreenRequested = actions.onHiddenScreenRequested
+                )
+            }
+        }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-private fun HomeScreenPreview() {
-    CarteraTheme {
-        HomeScreen()
-    }
+private fun ComingSoonTab(screen: String) {
+    ReportContentVisible(mark = screen)
+    ComingSoonState(screen = screen)
 }

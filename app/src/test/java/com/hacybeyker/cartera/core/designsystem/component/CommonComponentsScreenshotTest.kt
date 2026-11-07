@@ -28,6 +28,21 @@ class CommonComponentsScreenshotTest {
     }
 
     @Test
+    fun errorStateWithoutRetry() = compose.captureLightAndDark("comun_error_sin_reintento") {
+        ErrorState(screen = "muestra", message = "No encontramos lo que buscabas.", onRetry = null)
+    }
+
+    @Test
+    fun emptyState() = compose.captureLightAndDark("comun_vacio") {
+        EmptyState(screen = "muestra", message = "Todavía no hay movimientos.")
+    }
+
+    @Test
+    fun comingSoonState() = compose.captureLightAndDark("comun_proximamente") {
+        ComingSoonState(screen = "muestra")
+    }
+
+    @Test
     fun backTopBar() = compose.captureLightAndDark("comun_barra_volver") {
         BackTopBar(title = "Detalle", onBack = {})
     }
