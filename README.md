@@ -8,8 +8,7 @@
 ![Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.09.00-4285F4?logo=jetpackcompose&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-minSdk_26-3DDC84?logo=android&logoColor=white)
 
-> <!-- TODO: escribe aquí una descripción breve de tu proyecto -->
-> *Descripción del proyecto*
+> App Android demo de billetera digital y banco de pruebas realista para las skills de [agent-skills](https://github.com/Hacybeyker/agent-skills) y las pruebas E2E con [testigo](https://github.com/Hacybeyker/testigo). Fea pero fiel: importa el comportamiento (esperas de red, fallos, sesión que expira, pantallas que se interponen), no el diseño visual.
 
 ---
 
@@ -103,3 +102,9 @@ El agente aplica Clean Architecture + MVVM (UDF) por features con el perfil `hb-
 ## 📄 Changelog
 
 Ver [CHANGELOG.md](./CHANGELOG.md) para el historial de cambios.
+
+---
+
+## 📄 Licencia
+
+[MIT](./LICENSE)
