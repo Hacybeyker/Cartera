@@ -1,0 +1,136 @@
+# CI — Calidad + Build/Tests/Gates Android
+# Genérico: usa las tareas agregadas del módulo app (codeQuality, formatAndAnalyze)
+# y no depende del nombre del proyecto ni del package.
+#
+# Las actions van pineadas al SHA del commit: `@v7` es una etiqueta MUTABLE y quien
+# comprometa el repo del action puede re-apuntarla. El comentario `# vN` no es decorativo:
+# es el formato que Dependabot reconoce para actualizar SHA y comentario juntos.
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# Estrategia de jobs:
+#   quality ──> android
+# `quality` actúa como gate: es el job más rápido y barato. Si falla,
+# no se gasta cómputo en el build/tests.
+jobs:
+  quality:
+    name: Code Quality (ktlint + detekt + Lint)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle (con cache)
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          # Build Scan por build: cuando algo falla aquí y no en tu máquina, el scan muestra qué tarea,
+          # con qué inputs y cuánto tardó, sin repetir el run. Solo en repos públicos: los scans van a la
+          # instancia pública de Gradle y no heredan la privacidad del repo, así que un proyecto privado
+          # creado desde el template no publica.
+          build-scan-publish: ${{ !github.event.repository.private }}
+          build-scan-terms-of-use-url: "https://gradle.com/help/legal-terms-of-use"
+          build-scan-terms-of-use-agree: "yes"
+
+      - name: Run quality checks
+        run: ./gradlew codeQuality
+
+      - name: Upload quality reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-reports
+          path: |
+            **/build/reports/ktlint/
+            **/build/reports/detekt/
+            **/build/reports/lint-results-*.html
+            **/build/reports/lint-results-*.xml
+            **/build/reports/lint-results-*.sarif
+          if-no-files-found: ignore
+          retention-days: 7
+
+  android:
+    name: Android — Build, Test & Analysis
+    runs-on: ubuntu-26.04
+    needs: quality
+    timeout-minutes: 30
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Historial completo: SonarCloud lo necesita para el blame por línea y su new-code period.
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle (con cache)
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          build-scan-publish: ${{ !github.event.repository.private }}
+          build-scan-terms-of-use-url: "https://gradle.com/help/legal-terms-of-use"
+          build-scan-terms-of-use-agree: "yes"
+
+      # Una sola invocación: Gradle corre los tests UNA vez y los tres gates reutilizan esa corrida.
+      - name: Unit tests, coverage gate and screenshot gate
+        run: ./gradlew test koverVerifyDebug koverHtmlReportDebug verifyRoborazziDebug
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      # Sonar es OPT-IN: sin el secret SONAR_TOKEN este paso se salta y el resto del CI queda verde.
+      # Es lo que permite que un fork, un PR externo o un proyecto que aún no tiene proyecto en Sonar
+      # usen este workflow sin tocar nada. Para activarlo basta con añadir el secret al repositorio
+      # (y SONAR_HOST_URL si la instancia es self-hosted en vez de SonarCloud).
+      - name: Sonar analysis
+        if: ${{ env.SONAR_TOKEN != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        run: ./gradlew sonar
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+
+      - name: Upload test, coverage and screenshot reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-test-reports
+          path: |
+            **/build/reports/tests/
+            **/build/reports/kover/
+            **/build/reports/roborazzi/
+            app/build/outputs/roborazzi/
+            app/src/test/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,0 +1,58 @@
+# Release — se dispara al pushear un tag v* (ej. v1.0.0)
+# Genera el APK y el AAB de release (SIN firmar) y crea un GitHub Release
+# con los artefactos adjuntos y notas generadas automáticamente.
+#
+# ── Para publicar builds FIRMADOS ────────────────────────────────────────────
+# 1. Agrega los secrets del repo: KEYSTORE_BASE64, KEYSTORE_PASSWORD,
+#    KEY_ALIAS y KEY_PASSWORD.
+# 2. Decodifica el keystore antes del build:
+#      - run: echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
+# 3. Configura signingConfigs en app/build.gradle.kts leyendo esas
+#    variables de entorno.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  android-release:
+    name: Android — Release artifacts
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle (con cache)
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Quality gate
+        run: ./gradlew codeQuality
+
+      # Mismos gates que en CI: no se publica una release que no pasa cobertura ni goldens.
+      - name: Tests, coverage gate and screenshot gate
+        run: ./gradlew test koverVerifyDebug verifyRoborazziDebug
+
+      # R8 está activo en release: lo que usa reflexión (Hilt, serialization) puede compilar y
+      # romper en runtime. Instala el APK y ejercita los flujos antes de publicar el release.
+      - name: Build release APK + AAB (sin firmar)
+        run: ./gradlew assembleRelease bundleRelease
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --generate-notes \
+            app/build/outputs/apk/release/*.apk \
+            app/build/outputs/bundle/release/*.aab

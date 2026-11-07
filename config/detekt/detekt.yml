@@ -1,0 +1,45 @@
+# Configuracion de detekt — se aplica SOBRE el ruleset por defecto
+# (buildUponDefaultConfig = true en el build.gradle del modulo).
+#
+# Para regenerar el fichero por defecto completo:
+#   ./gradlew detektGenerateConfig
+#
+# La validacion se desactiva para tolerar diferencias de nombres de reglas
+# entre versiones de detekt (1.23.x vs 2.0.x).
+config:
+  validation: false
+
+# --- Naming: estandares Kotlin + soporte Jetpack Compose -------------------
+# Las funciones @Composable y @Preview usan PascalCase (estandar de Compose),
+# lo cual choca con FunctionNaming. Se ignoran esas anotaciones en vez de
+# desactivar la regla, para seguir validando el resto de funciones.
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable', 'Preview']
+  TopLevelPropertyNaming:
+    # Constantes de tema/diseno (val LightColors, etc.) en Compose.
+    ignoreAnnotated: ['Composable']
+
+complexity:
+  LongMethod:
+    threshold: 80
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 8
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    thresholdInFiles: 30
+    thresholdInClasses: 30
+
+# --- Style: el FORMATO lo gobierna ktlint (single source of truth) ----------
+# Para no reportar dos veces lo mismo, se desactivan en detekt las reglas que
+# ya cubre ktlint (longitud de linea, wildcard imports, newline final...).
+style:
+  MagicNumber:
+    active: false
+  MaxLineLength:
+    active: false
+  WildcardImport:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
