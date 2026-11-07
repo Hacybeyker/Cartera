@@ -10,9 +10,14 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 
-class ApiCaller @Inject constructor(private val json: Json) {
+// Todas las llamadas pasan por aquí, así que es el único lugar que avisa de una sesión vencida.
+class ApiCaller @Inject constructor(private val json: Json, private val sessionExpiry: SessionExpiryListener) {
 
-    suspend operator fun <T> invoke(call: suspend () -> T): ApiResult<T> = try {
+    suspend operator fun <T> invoke(call: suspend () -> T): ApiResult<T> = execute(call).also { result ->
+        if (result is ApiResult.Failure && result.error.isSessionExpiry) sessionExpiry.onSessionExpired()
+    }
+
+    private suspend fun <T> execute(call: suspend () -> T): ApiResult<T> = try {
         ApiResult.Success(call())
     } catch (cancellation: CancellationException) {
         throw cancellation

@@ -20,6 +20,12 @@
 - Cliente HTTP de la API: servicios Retrofit, DTO del contrato, errores RFC 9457 tipados, token Bearer en memoria y `BASE_URL` y timeouts en BuildConfig.
 - Escenarios de demo controlables por adb (`SET_SCENARIO`, `RESET_DATA`) y por los argumentos de `launchApp` de Maestro, guardados en el dispositivo.
 - README con el usuario de prueba y cómo cambiar los escenarios.
+- Splash que pide la configuración de la app, con Reintentar ante un error o el backend caído.
+- Login con usuario y contraseña (mostrar u ocultar): credenciales incorrectas bajo el formulario y errores de red en un modal.
+- Términos y condiciones, que reaparecen cuando cambia su versión, y onboarding de tres páginas que se ve una vez por instalación.
+- Sesión en memoria y modal "Tu sesión expiró" ante cualquier llamada autenticada que responda `SESSION_EXPIRED` o `UNAUTHORIZED`.
+- Estados y modales comunes (carga, error con Reintentar, progreso bloqueante, error y confirmación) con testTags expuestos como `resource-id`.
+- Punto de extensión para las marcas de contenido visible de cada pantalla.
 
 ### Security
 - Configuración de seguridad de red: sin tráfico en claro, salvo hacia `127.0.0.1` en debug y demo.

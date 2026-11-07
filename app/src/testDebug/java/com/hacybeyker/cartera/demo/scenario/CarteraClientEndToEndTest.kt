@@ -29,7 +29,7 @@ class CarteraClientEndToEndTest {
     private val storage = FakeScenarioStorage()
     private val scenario = ScenarioStore(storage)
     private val tokens = InMemoryAccessTokenStore()
-    private val caller = ApiCaller(CarteraHttpClient.json)
+    private val caller = ApiCaller(CarteraHttpClient.json) {}
     private lateinit var client: OkHttpClient
     private lateinit var api: CarteraApi
 

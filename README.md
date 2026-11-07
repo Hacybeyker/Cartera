@@ -21,8 +21,9 @@
 │   ├── fixtures/          # Datos del backend embebido
 │   └── tools/             # Generador de movimientos (semilla fija)
 ├── app/src/main/java/com/hacybeyker/cartera/
-│   ├── core/              # Compartido (design tokens en core/designsystem/, cliente HTTP en core/data/network/)
-│   ├── navigation/        # AppNavDisplay (Navigation 3)
+│   ├── core/              # Compartido: design system y componentes comunes, dominio y datos de sesión,
+│   │                      # configuración y primer uso, cliente HTTP y marcas de contenido visible
+│   ├── navigation/        # CarteraApp (raíz), AppNavDisplay (Navigation 3) y la pila de entrada
 │   └── feature/<name>/    # Por features: domain / data / ui / di
 ├── app/src/demoTools/     # Backend embebido y escenarios (solo debug y demo)
 ├── AGENTS.md              # Reglas del proyecto para agentes de IA (CLAUDE.md lo importa)
@@ -63,6 +64,64 @@ embebido. La sesión vive en memoria, así que cada arranque en frío pide login
 Destinos de transferencia: `999-0000001-0-01` (Luis Ramírez, PEN), `999-0000002-0-02` (Comercial
 Andina S.A.C., PEN) y `999-0000003-0-10` (María Quispe, USD). Cualquier otro número da
 `DESTINATION_NOT_FOUND`; enviar soles a la cuenta en dólares da `CURRENCY_MISMATCH`.
+
+---
+
+## 🚪 Recorrido de entrada
+
+```
+Splash ──► Login ──► Términos* ──► Onboarding* ──► Home
+```
+
+- **Splash** pide `GET /app/config`. Si falla o el backend está caído, muestra el error y Reintentar
+  en la misma pantalla.
+- **Login**: usuario y contraseña incorrectos se avisan bajo el formulario; un error de red o del
+  servidor, en un modal con Reintentar y Cancelar. Mientras ingresa, un progreso bloquea la pantalla.
+- **Términos** (\*) aparece si la versión aceptada en el dispositivo difiere de `termsVersion`.
+  Aceptar se activa al marcar la casilla; Rechazar (o Atrás) descarta la sesión y vuelve a Login.
+- **Onboarding** (\*) aparece una vez por instalación: tres páginas con Siguiente, Omitir en todas y
+  Empezar en la última.
+- Al terminar, la pila queda en `[Home]` y Atrás sale de la app.
+
+Los términos aceptados y el onboarding visto se guardan en SharedPreferences: `pm clear` (o
+`clearState` en Maestro) los vuelve a mostrar. El token vive solo en memoria. Si una llamada
+autenticada responde `SESSION_EXPIRED` o `UNAUTHORIZED` (por ejemplo, con `session_ttl` corto o tras
+la muerte del proceso), aparece el modal "Tu sesión expiró"; Ingresar deja la pila en `[Login]` y,
+tras el nuevo login, no se repiten Términos ni Onboarding.
+
+---
+
+## 🏷️ testTags y marcas
+
+La raíz expone los testTags como `resource-id` (`testTagsAsResourceId`), y cada modal hace lo mismo
+en su ventana. La convención es snake_case en español, `<pantalla>_<elemento>`, con los estados
+`<pantalla>_cargando`, `<pantalla>_error` y `<pantalla>_reintentar`.
+
+| Pantalla | testTags |
+|---|---|
+| Comunes | `barra_volver`, `progreso_bloqueante`, `modal_sesion_expirada` (`_aceptar`), `modal_error` (`_reintentar`, `_cancelar`), `modal_confirmacion` (`_aceptar`, `_cancelar`) |
+| Splash | `splash_pantalla`, `splash_cargando`, `splash_error`, `splash_reintentar` |
+| Login | `login_pantalla`, `login_usuario`, `login_contrasena`, `login_mostrar_contrasena`, `login_entrar`, `login_error` |
+| Términos | sin testTags: "Términos y condiciones", "He leído y acepto…", "Aceptar", "Rechazar" |
+| Onboarding | sin testTags: "Siguiente", "Omitir", "Empezar" |
+
+Términos y Onboarding no llevan testTags a propósito: imitan pantallas de terceros y se seleccionan
+por texto.
+
+**Marcas de contenido visible.** Cada pantalla avisa una sola vez, tras su primer frame con contenido
+real, con el nombre de su marca (`login`, `terminos`, `onboarding`). Por defecto nadie escucha. Para
+recibirlas, agrega un `VisibleContentMarker` al conjunto desde un módulo de Hilt propio, sin tocar las
+pantallas:
+
+```kotlin
+@Module
+@InstallIn(SingletonComponent::class)
+object MarksModule {
+    @Provides
+    @IntoSet
+    fun marker(): VisibleContentMarker = VisibleContentMarker { mark -> Log.i("Marks", mark) }
+}
+```
 
 ---
 

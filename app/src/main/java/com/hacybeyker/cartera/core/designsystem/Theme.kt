@@ -40,7 +40,7 @@ fun CarteraTheme(
         else -> LightColorScheme
     }
 
-    CompositionLocalProvider(LocalSpacing provides Spacing()) {
+    CompositionLocalProvider(LocalSpacing provides Spacing(), LocalSizes provides Sizes()) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

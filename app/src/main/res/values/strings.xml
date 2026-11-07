@@ -1,3 +1,46 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
     <string name="app_name">Cartera</string>
+
+    <string name="common_loading">Cargando</string>
+    <string name="common_retry">Reintentar</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_back">Volver</string>
+
+    <string name="error_network">No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="error_server">El servicio no está disponible en este momento. Inténtalo de nuevo.</string>
+    <string name="error_not_found">No encontramos lo que buscabas.</string>
+    <string name="error_validation">Revisa los datos ingresados.</string>
+
+    <string name="session_expired_title">Tu sesión expiró</string>
+    <string name="session_expired_message">Por tu seguridad, vuelve a ingresar.</string>
+    <string name="session_expired_confirm">Ingresar</string>
+
+    <string name="splash_tagline">Tu billetera digital</string>
+
+    <string name="login_title">Ingresa a tu cuenta</string>
+    <string name="login_username">Usuario</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_show_password">Mostrar</string>
+    <string name="login_hide_password">Ocultar</string>
+    <string name="login_submit">Entrar</string>
+    <string name="login_invalid_credentials">Usuario o contraseña incorrectos.</string>
+    <string name="login_error_title">No pudimos ingresar</string>
+
+    <string name="terms_title">Términos y condiciones</string>
+    <string name="terms_checkbox">He leído y acepto los términos y condiciones</string>
+    <string name="terms_accept">Aceptar</string>
+    <string name="terms_reject">Rechazar</string>
+    <string name="terms_error_title">No pudimos guardar tu aceptación</string>
+    <string name="terms_body">Cartera es una billetera digital de demostración. Ningún dato que veas en esta app corresponde a personas, cuentas ni operaciones reales.\n\n1. Uso de la app. Puedes consultar tus cuentas, revisar tus movimientos y hacer transferencias entre las cuentas habilitadas. Las operaciones se registran en un servidor de prueba y se pierden al reiniciarlo.\n\n2. Acceso. Ingresas con tu usuario y tu contraseña. Tu sesión vive solo mientras la app está abierta: al cerrarla, o cuando vence el tiempo de la sesión, debes volver a ingresar.\n\n3. Datos en tu dispositivo. La app guarda solo que aceptaste estos términos y que ya viste la presentación inicial. No guarda tu contraseña ni tu sesión.\n\n4. Transferencias. Una transferencia confirmada descuenta el monto del saldo disponible de la cuenta de origen. Si confirmas dos veces la misma operación, se registra una sola vez.\n\n5. Disponibilidad. El servicio puede estar lento o no responder. En ese caso la app te avisa y te deja reintentar; nunca reintenta por su cuenta.\n\n6. Cambios. Si estos términos cambian, te los mostraremos otra vez para que los aceptes antes de seguir.\n\n7. Contacto. Esta es una app de demostración y no ofrece atención al cliente.</string>
+
+    <string name="onboarding_accounts_title">Tus cuentas en un solo lugar</string>
+    <string name="onboarding_accounts_body">Revisa el saldo de todas tus cuentas apenas ingresas.</string>
+    <string name="onboarding_movements_title">Cada movimiento, al detalle</string>
+    <string name="onboarding_movements_body">Consulta tus movimientos y el desglose de cada operación.</string>
+    <string name="onboarding_transfers_title">Transfiere en segundos</string>
+    <string name="onboarding_transfers_body">Envía dinero a otras cuentas y confirma antes de cada operación.</string>
+    <string name="onboarding_page_indicator">Página %1$d de %2$d</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_skip">Omitir</string>
+    <string name="onboarding_start">Empezar</string>
 </resources>

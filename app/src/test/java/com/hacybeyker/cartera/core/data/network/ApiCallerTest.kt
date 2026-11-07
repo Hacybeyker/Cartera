@@ -1,6 +1,7 @@
 package com.hacybeyker.cartera.core.data.network
 
 import com.hacybeyker.cartera.core.data.network.dto.FieldErrorDto
+import com.hacybeyker.cartera.core.data.network.dto.LoginRequestDto
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
@@ -14,7 +15,8 @@ import org.junit.Test
 
 class ApiCallerTest {
     private val server = MockWebServer()
-    private val caller = ApiCaller(CarteraHttpClient.json)
+    private var sessionExpiries = 0
+    private val caller = ApiCaller(CarteraHttpClient.json) { sessionExpiries++ }
     private lateinit var api: CarteraApi
 
     @Before
@@ -59,6 +61,28 @@ class ApiCallerTest {
         val error = (caller { api.accounts() } as ApiResult.Failure).error as ApiError.Problem
 
         assertEquals(listOf(FieldErrorDto("amount.value", "MUST_BE_POSITIVE", "m")), error.fieldErrors)
+    }
+
+    @Test
+    fun `session expired and unauthorized notify the session expiry`() = runTest {
+        enqueue(401, problem("SESSION_EXPIRED", 401), "application/problem+json")
+        enqueue(401, problem("UNAUTHORIZED", 401), "application/problem+json")
+
+        caller { api.me() }
+        caller { api.accounts() }
+
+        assertEquals(2, sessionExpiries)
+    }
+
+    @Test
+    fun `invalid credentials and other failures do not notify the session expiry`() = runTest {
+        enqueue(401, problem("INVALID_CREDENTIALS", 401), "application/problem+json")
+        enqueue(500, problem("INTERNAL_ERROR", 500), "application/problem+json")
+
+        caller { api.login(LoginRequestDto("ana.torres", "x")) }
+        caller { api.accounts() }
+
+        assertEquals(0, sessionExpiries)
     }
 
     @Test
