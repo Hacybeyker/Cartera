@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ACC-001",
+    "ownerId": "USR-001",
+    "alias": "Cuenta Sueldo",
+    "type": "SAVINGS",
+    "currency": "PEN",
+    "numberMasked": "****4821",
+    "availableBalance": { "value": "8450.75", "currency": "PEN" },
+    "accountingBalance": { "value": "8450.75", "currency": "PEN" }
+  },
+  {
+    "id": "ACC-002",
+    "ownerId": "USR-001",
+    "alias": "Cuenta Gastos",
+    "type": "CHECKING",
+    "currency": "PEN",
+    "numberMasked": "****9034",
+    "availableBalance": { "value": "2300.00", "currency": "PEN" },
+    "accountingBalance": { "value": "2300.00", "currency": "PEN" }
+  },
+  {
+    "id": "ACC-003",
+    "ownerId": "USR-001",
+    "alias": "Cuenta Dólares",
+    "type": "SAVINGS",
+    "currency": "USD",
+    "numberMasked": "****1177",
+    "availableBalance": { "value": "1050.20", "currency": "USD" },
+    "accountingBalance": { "value": "1050.20", "currency": "USD" }
+  }
+]

@@ -22,12 +22,33 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = libs.versions.appVersion.get()
+        buildConfigField("String", "BASE_URL", "\"https://cartera.invalid/api/v1/\"")
+        buildConfigField("long", "HTTP_TIMEOUT_SECONDS", "10L")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "BASE_URL", "\"http://127.0.0.1:8765/api/v1/\"")
+        }
         release {
             optimization {
                 enable = true
+            }
+        }
+        create("demo") {
+            initWith(getByName("release"))
+            isProfileable = true
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("String", "BASE_URL", "\"http://127.0.0.1:8765/api/v1/\"")
+        }
+    }
+    sourceSets {
+        listOf("debug", "demo").forEach { buildType ->
+            getByName(buildType) {
+                kotlin.srcDir("src/demoTools/java")
+                res.srcDir("src/demoTools/res")
+                assets.srcDir("$rootDir/api/fixtures")
+                manifest.srcFile("src/demoTools/AndroidManifest.xml")
             }
         }
     }
@@ -37,12 +58,14 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
             all { test ->
                 test.maxHeapSize = "2g"
+                test.systemProperty("cartera.fixturesDir", "$rootDir/api/fixtures")
                 // Robolectric 4.17+ en JDK 17+ necesita abrir paquetes internos del JDK
                 // (https://robolectric.org/getting-started/). Sin jdk.internal.access, el arranque del
                 // entorno de SDK 36+ falla en ApplicationSharedMemory.create().
@@ -92,6 +115,12 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.okhttp)
+    debugImplementation(libs.okhttp.mockwebserver3)
+    "demoImplementation"(libs.okhttp.mockwebserver3)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
@@ -99,6 +128,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    testImplementation(libs.okhttp.mockwebserver3)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     // No es para escribir tests de Espresso: compose-ui-test lo usa por dentro con Robolectric, y la
@@ -120,6 +150,11 @@ detekt {
     buildUponDefaultConfig = true
     parallel = true
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    source.setFrom(
+        "src/main/java",
+        "src/test/java",
+        "src/demoTools/java"
+    )
     basePath = rootDir
 }
 
@@ -216,7 +251,9 @@ kover {
                 classes(
                     "com.hacybeyker.cartera.*.domain.*",
                     "com.hacybeyker.cartera.*.data.*",
-                    "com.hacybeyker.cartera.*ViewModel*"
+                    "com.hacybeyker.cartera.*ViewModel*",
+                    "com.hacybeyker.cartera.demo.backend.*",
+                    "com.hacybeyker.cartera.demo.scenario.*"
                 )
             }
             excludes {
@@ -233,7 +270,7 @@ kover {
             }
         }
         verify {
-            rule("Line coverage of measured classes (domain, data, ViewModels)") {
+            rule("Line coverage of measured classes (domain, data, ViewModels, demo backend and scenario)") {
                 minBound(90)
             }
         }

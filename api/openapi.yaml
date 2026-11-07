@@ -1,0 +1,503 @@
+openapi: 3.1.0
+info:
+  title: Cartera API
+  version: 1.0.0
+  summary: Billetera digital de demo.
+  description: |
+    Contrato del backend de Cartera. En debug y demo lo sirve un backend embebido en la app
+    (`http://127.0.0.1:8765/api/v1/`); en release apunta a un marcador que no resuelve, así que
+    migrar a un servidor real es cambiar solo `BASE_URL`.
+
+    **Convenciones**
+    - JSON en camelCase. Ids como texto.
+    - Fechas ISO 8601 con zona (`2026-11-06T14:32:00-05:00`).
+    - Montos como texto decimal con moneda ISO 4217 (`{"value":"150.00","currency":"PEN"}`).
+    - Toda respuesta trae `X-Request-Id`: el del cliente si lo envió, o uno generado.
+    - Errores con cuerpo RFC 9457 (`application/problem+json`), ver `Problem`.
+    - Paginación por cursor: `?cursor=&limit=` (1 a 1000, 20 por defecto) responde
+      `{ items, nextCursor }`, en orden de fecha descendente, con `nextCursor` en `null` al final.
+      El cursor apunta al último elemento entregado, no a una posición: un movimiento nuevo no
+      desplaza las páginas.
+
+    **Autenticación.** `Authorization: Bearer <JWT>`, HS256 con claims `sub`, `iat` y `exp`
+    (TTL por defecto: 900 s). La clave de demo es pública a propósito: `cartera-demo-hs256-key-2026-not-a-secret`.
+    No hay refresh token.
+
+    **Entornos de demo.** El servidor honra estas cabeceras opcionales y nada más; el cliente
+    decide sus valores:
+
+    | Cabecera | Valores | Efecto |
+    |---|---|---|
+    | `X-Demo-Latency-Ms` | entero ≥ 0 | Retrasa la respuesta, sin jitter. |
+    | `X-Demo-Failure-Rate` | 0–100 | Porcentaje de llamadas que fallan, con semilla fija. |
+    | `X-Demo-Failure-Mode` | `http_500` · `timeout` · `disconnect` | Cómo falla: 500 `INTERNAL_ERROR`, sin respuesta, o cierre del socket. |
+    | `X-Demo-Session-Ttl` | segundos | Solo en el login: TTL del token emitido. |
+    | `X-Demo-Backend-Down` | `true` | 503 `SERVICE_UNAVAILABLE` con `Retry-After` en todos los endpoints. |
+
+    `POST /_demo/reset` no aplica ninguna. El estado vive en memoria y vuelve a los fixtures
+    al reiniciar el proceso o con ese endpoint.
+servers:
+  - url: http://127.0.0.1:8765/api/v1
+    description: Backend embebido (debug y demo)
+  - url: https://cartera.invalid/api/v1
+    description: Marcador de release (no resuelve)
+security:
+  - bearer: []
+tags:
+  - name: app
+  - name: auth
+  - name: profile
+  - name: accounts
+  - name: movements
+  - name: transfers
+  - name: demo
+paths:
+  /app/config:
+    get:
+      tags: [app]
+      operationId: getAppConfig
+      summary: Configuración que lee la splash.
+      security: []
+      responses:
+        "200":
+          description: Configuración vigente.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AppConfig" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Inicia sesión y devuelve un JWT.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/DemoSessionTtl"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Sesión iniciada.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401":
+          description: "`INVALID_CREDENTIALS`: usuario o contraseña incorrectos."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /me:
+    get:
+      tags: [profile]
+      operationId: getMe
+      summary: Perfil de la persona autenticada.
+      responses:
+        "200":
+          description: Perfil.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /accounts:
+    get:
+      tags: [accounts]
+      operationId: listAccounts
+      summary: Cuentas propias.
+      responses:
+        "200":
+          description: Cuentas.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /accounts/{accountId}:
+    get:
+      tags: [accounts]
+      operationId: getAccount
+      summary: Una cuenta propia.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string, examples: ["ACC-001"] }
+      responses:
+        "200":
+          description: Cuenta.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /movements:
+    get:
+      tags: [movements]
+      operationId: listMovements
+      summary: Movimientos paginados, de una cuenta o de todas.
+      parameters:
+        - name: accountId
+          in: query
+          description: Sin este parámetro trae los movimientos de todas las cuentas propias.
+          schema: { type: string, examples: ["ACC-001"] }
+        - name: cursor
+          in: query
+          description: El `nextCursor` de la página anterior.
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 1000, default: 20 }
+      responses:
+        "200":
+          description: Una página.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MovementPage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /movements/{movementId}:
+    get:
+      tags: [movements]
+      operationId: getMovement
+      summary: Detalle de un movimiento.
+      parameters:
+        - $ref: "#/components/parameters/MovementId"
+      responses:
+        "200":
+          description: Movimiento.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MovementDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /movements/{movementId}/breakdown:
+    get:
+      tags: [movements]
+      operationId: getMovementBreakdown
+      summary: Desglose de un movimiento.
+      parameters:
+        - $ref: "#/components/parameters/MovementId"
+      responses:
+        "200":
+          description: Desglose.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Breakdown" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /transfers:
+    post:
+      tags: [transfers]
+      operationId: createTransfer
+      summary: Transfiere a una cuenta de terceros.
+      description: |
+        **Regla de negocio**, validada en este orden:
+        1. `Idempotency-Key` presente y cuerpo válido: monto decimal con hasta dos decimales y
+           mayor que cero, moneda ISO 4217, descripción de hasta 140 caracteres (`VALIDATION_ERROR`).
+        2. El origen es una cuenta propia (`VALIDATION_ERROR`, campo `sourceAccountId`).
+        3. El destino existe entre las cuentas de terceros (`DESTINATION_NOT_FOUND`).
+        4. Origen, destino y monto usan la misma moneda (`CURRENCY_MISMATCH`).
+        5. 0 < monto ≤ saldo disponible del origen (`INSUFFICIENT_FUNDS`).
+
+        Si pasa, se descuenta el monto del saldo disponible del origen y se agrega un movimiento
+        `DEBIT` al inicio de esa cuenta, con un desglose mínimo. No hay comisiones ni ITF.
+
+        Un `Idempotency-Key` repetido devuelve la misma respuesta 201 sin volver a cobrar. Las
+        respuestas de error no se guardan: el mismo key se puede reintentar.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, examples: ["3f1c2a9e-7d4b-4b8e-9c55-1a2b3c4d5e6f"] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransferRequest" }
+      responses:
+        "201":
+          description: Transferencia hecha.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TransferResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422":
+          description: |
+            `VALIDATION_ERROR` (con `errors[]`), `INSUFFICIENT_FUNDS`, `DESTINATION_NOT_FOUND`
+            o `CURRENCY_MISMATCH`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /_demo/reset:
+    post:
+      tags: [demo]
+      operationId: resetDemo
+      summary: Vuelve el estado a los fixtures. Solo existe en entornos de demo.
+      security: []
+      responses:
+        "204":
+          description: Estado restablecido.
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  headers:
+    RequestId:
+      description: Id de la solicitud; coincide con `traceId` en los errores.
+      schema: { type: string, examples: ["req-000001"] }
+  parameters:
+    MovementId:
+      name: movementId
+      in: path
+      required: true
+      schema: { type: string, examples: ["MOV-002-0001"] }
+    DemoSessionTtl:
+      name: X-Demo-Session-Ttl
+      in: header
+      description: Solo entornos de demo. TTL en segundos del token emitido.
+      schema: { type: integer, minimum: 1, examples: [60] }
+  responses:
+    Unauthorized:
+      description: "`SESSION_EXPIRED` si el token venció; `UNAUTHORIZED` si falta o no es válido."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: "`NOT_FOUND`: el id no existe o no es de la persona."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    ValidationError:
+      description: "`VALIDATION_ERROR`, con un elemento en `errors[]` por campo."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    InternalError:
+      description: "`INTERNAL_ERROR`."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    ServiceUnavailable:
+      description: "`SERVICE_UNAVAILABLE`: backend caído."
+      headers:
+        Retry-After:
+          schema: { type: integer, examples: [30] }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+  schemas:
+    Money:
+      type: object
+      required: [value, currency]
+      properties:
+        value: { type: string, pattern: "^-?\\d+\\.\\d{2}$", examples: ["150.00"] }
+        currency: { type: string, pattern: "^[A-Z]{3}$", examples: ["PEN"] }
+    AppConfig:
+      type: object
+      required: [minSupportedVersion, termsVersion]
+      properties:
+        minSupportedVersion: { type: string, examples: ["0.1.0"] }
+        termsVersion: { type: string, examples: ["2026-11-01"] }
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, examples: ["ana.torres"] }
+        password: { type: string, format: password }
+    LoginResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, const: Bearer }
+        expiresIn: { type: integer, description: Segundos de vida del token., examples: [900] }
+    Me:
+      type: object
+      required: [id, fullName, documentMasked, email]
+      properties:
+        id: { type: string, examples: ["USR-001"] }
+        fullName: { type: string, examples: ["Ana Torres"] }
+        documentMasked: { type: string, examples: ["*****678"] }
+        email: { type: string, format: email }
+    Account:
+      type: object
+      required: [id, alias, type, currency, numberMasked, availableBalance, accountingBalance]
+      properties:
+        id: { type: string, examples: ["ACC-001"] }
+        alias: { type: string, examples: ["Cuenta Sueldo"] }
+        type: { type: string, enum: [SAVINGS, CHECKING] }
+        currency: { type: string, examples: ["PEN"] }
+        numberMasked: { type: string, examples: ["****4821"] }
+        availableBalance: { $ref: "#/components/schemas/Money" }
+        accountingBalance: { $ref: "#/components/schemas/Money" }
+    AccountList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Account" }
+    Category:
+      type: string
+      enum: [GROCERIES, RESTAURANTS, TRANSPORT, SHOPPING, SERVICES, HEALTH, ENTERTAINMENT, SALARY, TRANSFER]
+    Movement:
+      type: object
+      required: [id, accountId, date, description, category, amount, type]
+      properties:
+        id: { type: string, examples: ["MOV-002-0001"] }
+        accountId: { type: string, examples: ["ACC-002"] }
+        date: { type: string, format: date-time, examples: ["2026-11-06T14:32:00-05:00"] }
+        description: { type: string }
+        category: { $ref: "#/components/schemas/Category" }
+        amount:
+          $ref: "#/components/schemas/Money"
+          description: "Con signo: negativo en los `DEBIT`."
+        type: { type: string, enum: [DEBIT, CREDIT] }
+    MovementPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Movement" }
+        nextCursor: { type: [string, "null"] }
+    Counterparty:
+      type: object
+      required: [name, reference]
+      properties:
+        name: { type: string, examples: ["Luis Ramírez"] }
+        reference: { type: string, examples: ["999-0000001-0-01"] }
+    MovementDetail:
+      allOf:
+        - $ref: "#/components/schemas/Movement"
+        - type: object
+          required: [operationNumber, channel, status, counterparty]
+          properties:
+            operationNumber: { type: string, examples: ["20000001"] }
+            channel: { type: string, enum: [POS, ONLINE, APP, ATM, BRANCH] }
+            status: { type: string, enum: [COMPLETED] }
+            counterparty: { $ref: "#/components/schemas/Counterparty" }
+    BreakdownLine:
+      type: object
+      required: [concept, amount]
+      properties:
+        concept: { type: string, examples: ["Consumo"] }
+        amount: { $ref: "#/components/schemas/Money" }
+    Merchant:
+      type: object
+      required: [name, city]
+      properties:
+        name: { type: string }
+        city: { type: string }
+    Breakdown:
+      type: object
+      description: La suma de `lines`, `fees` y `taxes` es el valor absoluto del monto del movimiento.
+      required: [lines, fees, taxes, merchant, category]
+      properties:
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/BreakdownLine" }
+        fees: { $ref: "#/components/schemas/Money" }
+        taxes: { $ref: "#/components/schemas/Money" }
+        exchangeRate: { type: string, description: Solo si hubo cambio de moneda., examples: ["3.7520"] }
+        merchant:
+          oneOf:
+            - $ref: "#/components/schemas/Merchant"
+            - type: "null"
+        category: { $ref: "#/components/schemas/Category" }
+    TransferRequest:
+      type: object
+      required: [sourceAccountId, destinationAccountNumber, amount]
+      properties:
+        sourceAccountId: { type: string, examples: ["ACC-002"] }
+        destinationAccountNumber: { type: string, examples: ["999-0000001-0-01"] }
+        amount:
+          type: object
+          required: [value, currency]
+          properties:
+            value: { type: string, pattern: "^\\d{1,9}(\\.\\d{1,2})?$", examples: ["150.00"] }
+            currency: { type: string, pattern: "^[A-Z]{3}$", examples: ["PEN"] }
+        description: { type: string, maxLength: 140 }
+    TransferResponse:
+      type: object
+      required: [transferId, operationNumber, createdAt, sourceAccountId, sourceAvailableBalance, movementId]
+      properties:
+        transferId: { type: string, examples: ["TRF-000001"] }
+        operationNumber: { type: string, examples: ["90000001"] }
+        createdAt: { type: string, format: date-time }
+        sourceAccountId: { type: string, examples: ["ACC-002"] }
+        sourceAvailableBalance: { $ref: "#/components/schemas/Money" }
+        movementId: { type: string, examples: ["MOV-002-T0001"] }
+    FieldError:
+      type: object
+      required: [field, code, message]
+      properties:
+        field: { type: string, examples: ["amount.value"] }
+        code: { type: string, examples: ["MUST_BE_POSITIVE"] }
+        message: { type: string }
+    Problem:
+      type: object
+      description: RFC 9457.
+      required: [type, title, status, detail, code, traceId]
+      properties:
+        type: { type: string, format: uri, examples: ["https://cartera.invalid/problems/insufficient-funds"] }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code:
+          type: string
+          enum:
+            - INVALID_CREDENTIALS
+            - SESSION_EXPIRED
+            - UNAUTHORIZED
+            - NOT_FOUND
+            - VALIDATION_ERROR
+            - INSUFFICIENT_FUNDS
+            - DESTINATION_NOT_FOUND
+            - CURRENCY_MISMATCH
+            - INTERNAL_ERROR
+            - SERVICE_UNAVAILABLE
+        traceId: { type: string, description: Igual al `X-Request-Id` de la respuesta. }
+        errors:
+          type: array
+          description: Solo en `VALIDATION_ERROR`.
+          items: { $ref: "#/components/schemas/FieldError" }

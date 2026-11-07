@@ -11,7 +11,7 @@ import com.hacybeyker.cartera.feature.home.ui.HomeNavKey
 import com.hacybeyker.cartera.feature.home.ui.homeEntry
 
 @Composable
-fun AppNavDisplay(modifier: Modifier = Modifier) {
+fun AppNavDisplay(modifier: Modifier = Modifier, extraEntries: Set<NavEntryInstaller> = emptySet()) {
     val backStack = rememberNavBackStack(HomeNavKey)
     NavDisplay(
         backStack = backStack,
@@ -23,6 +23,7 @@ fun AppNavDisplay(modifier: Modifier = Modifier) {
         ),
         entryProvider = entryProvider {
             homeEntry()
+            extraEntries.forEach { installer -> with(installer) { install() } }
         }
     )
 }

@@ -1,0 +1,52 @@
+package com.hacybeyker.cartera.demo.backend
+
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+
+class SessionDesk(private val state: BackendState, private val jwt: JwtSigner) {
+
+    fun login(request: BackendRequest): BackendResponse {
+        val body = request.jsonBody()
+        val username = (body["username"] as? JsonPrimitive)?.content
+        val password = (body["password"] as? JsonPrimitive)?.content
+        val missing = listOfNotNull(
+            "username".takeIf { username.isNullOrBlank() },
+            "password".takeIf { password.isNullOrBlank() }
+        )
+        if (missing.isNotEmpty()) {
+            throw ProblemException(
+                code = ProblemCode.VALIDATION_ERROR,
+                detail = "Faltan datos para iniciar sesión.",
+                errors = missing.map { FieldError(it, "REQUIRED", "El campo es obligatorio.") }
+            )
+        }
+        val user = state.userByUsername(username.orEmpty())?.takeIf { it.string("password") == password }
+            ?: throw ProblemException(ProblemCode.INVALID_CREDENTIALS, "Usuario o contraseña incorrectos.")
+        val ttl = request.header(DemoScenario.SESSION_TTL_HEADER)?.toLongOrNull()?.takeIf { it > 0 }
+            ?: DEFAULT_SESSION_TTL
+        return json(
+            OK,
+            buildJsonObject {
+                put("accessToken", jwt.issue(user.string("id"), ttl))
+                put("tokenType", "Bearer")
+                put("expiresIn", ttl)
+            }
+        )
+    }
+
+    fun authenticate(request: BackendRequest): String {
+        val token = request.header("Authorization")?.removePrefix("Bearer ")?.trim().orEmpty()
+        return when (val check = jwt.check(token)) {
+            is TokenCheck.Valid -> check.subject.takeIf { state.user(it) != null }
+            TokenCheck.Expired ->
+                throw ProblemException(ProblemCode.SESSION_EXPIRED, "La sesión expiró. Vuelve a ingresar.")
+            TokenCheck.Invalid -> null
+        } ?: throw ProblemException(ProblemCode.UNAUTHORIZED, "Falta un token válido.")
+    }
+
+    private companion object {
+        const val OK = 200
+        const val DEFAULT_SESSION_TTL = 900L
+    }
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- initOrder alto: el backend debe escuchar antes de que la app haga su primera llamada. -->
+        <provider
+            android:name=".demo.DemoToolsProvider"
+            android:authorities="${applicationId}.demotools"
+            android:exported="false"
+            android:initOrder="1000" />
+
+        <!-- DUMP solo lo tiene el shell de adb: ninguna otra app puede cambiar el escenario. -->
+        <receiver
+            android:name=".demo.ScenarioReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="${applicationId}.demo.SET_SCENARIO" />
+                <action android:name="${applicationId}.demo.RESET_DATA" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

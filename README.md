@@ -16,10 +16,15 @@
 
 ```
 .
+├── api/
+│   ├── openapi.yaml       # Contrato de la API (OpenAPI 3.1)
+│   ├── fixtures/          # Datos del backend embebido
+│   └── tools/             # Generador de movimientos (semilla fija)
 ├── app/src/main/java/com/hacybeyker/cartera/
-│   ├── core/              # Compartido (design tokens en core/designsystem/)
+│   ├── core/              # Compartido (design tokens en core/designsystem/, cliente HTTP en core/data/network/)
 │   ├── navigation/        # AppNavDisplay (Navigation 3)
 │   └── feature/<name>/    # Por features: domain / data / ui / di
+├── app/src/demoTools/     # Backend embebido y escenarios (solo debug y demo)
 ├── AGENTS.md              # Reglas del proyecto para agentes de IA (CLAUDE.md lo importa)
 └── gradle/
     └── libs.versions.toml # Catálogo centralizado de versiones
@@ -31,7 +36,86 @@
 
 ```bash
 ./gradlew assembleDebug    # o Run desde Android Studio
+./gradlew assembleDemo     # Variante para medir: R8 como release, profileable y firmada con la clave debug
 ```
+
+Debug y demo traen un backend embebido que escucha en `http://127.0.0.1:8765/api/v1/` y sirve los
+datos de `api/fixtures/` según el contrato de `api/openapi.yaml`. Release apunta a
+`https://cartera.invalid/api/v1/`, un marcador que no resuelve.
+
+---
+
+## 👤 Usuario de prueba
+
+| Usuario | Contraseña | Nombre |
+|---|---|---|
+| `ana.torres` | `Cartera2026` | Ana Torres |
+
+Sin OTP. Son datos de demo, públicos a propósito: solo existen en `api/fixtures/` y en el backend
+embebido. La sesión vive en memoria, así que cada arranque en frío pide login.
+
+| Cuenta | Alias | Moneda | Saldo disponible | Movimientos |
+|---|---|---|---|---|
+| ACC-001 | Cuenta Sueldo | PEN | S/ 8,450.75 | 1.200 |
+| ACC-002 | Cuenta Gastos | PEN | S/ 2,300.00 | 30 |
+| ACC-003 | Cuenta Dólares | USD | US$ 1,050.20 | 12 |
+
+Destinos de transferencia: `999-0000001-0-01` (Luis Ramírez, PEN), `999-0000002-0-02` (Comercial
+Andina S.A.C., PEN) y `999-0000003-0-10` (María Quispe, USD). Cualquier otro número da
+`DESTINATION_NOT_FOUND`; enviar soles a la cuenta en dólares da `CURRENCY_MISMATCH`.
+
+---
+
+## 🎛️ Escenarios de red (debug y demo)
+
+La app resuelve el valor de cada endpoint y lo envía al backend como cabecera `X-Demo-*`. El escenario
+se guarda en el dispositivo y sobrevive a los reinicios; `pm clear` (o `clearState` de Maestro) lo
+devuelve a los valores por defecto. Release no tiene nada de esto.
+
+| Parámetro | Extra | Valores | Por defecto |
+|---|---|---|---|
+| Latencia | `--es latency "default=400,movements=2000"` | ms, global y por endpoint, sin jitter | 400 |
+| Tasa de fallo | `--es failure_rate "default=0,transfers=100"` | 0–100 %, global y por endpoint, con semilla fija | 0 |
+| Tipo de fallo | `--es failure_mode timeout` | `http_500` · `timeout` · `disconnect` | `http_500` |
+| TTL de la sesión | `--ei session_ttl 60` | segundos; rige desde el próximo login | 900 |
+| Backend caído | `--ez backend_down true` | 503 en todos los endpoints | `false` |
+| Valores por defecto | `--ez defaults true` | restablece el escenario antes de aplicar el resto | — |
+
+Ids de endpoint: `app_config`, `login`, `me`, `accounts`, `account`, `movements`, `movement`,
+`breakdown`, `transfers`.
+
+- Lo que no se envía no cambia. Un valor por endpoint sin `default=` usa el valor de fábrica como global.
+- Un valor inválido no se aplica: el escenario efectivo y lo rechazado se imprimen en logcat con la
+  etiqueta `CarteraDemo`.
+
+**Por adb.** El receptor está protegido con `android.permission.DUMP`, así que solo adb puede usarlo.
+`--include-stopped-packages` hace que el broadcast llegue también después de un `pm clear`.
+
+```bash
+adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
+  -a com.hacybeyker.cartera.demo.SET_SCENARIO \
+  --es latency "default=400,movements=2000" --ei session_ttl 60
+
+# Volver a los fixtures (saldos, movimientos e idempotencia)
+adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
+  -a com.hacybeyker.cartera.demo.RESET_DATA
+
+# Ver el escenario efectivo y cada llamada al backend
+adb logcat -s CarteraDemo CarteraBackend
+```
+
+**Con Maestro.** Los argumentos de `launchApp` usan las mismas claves y se guardan igual que un
+broadcast, así que cada flow lleva su escenario aunque use `clearState`:
+
+```yaml
+- launchApp:
+    clearState: true
+    arguments:
+      latency: "default=400,movements=2000"
+      session_ttl: 60
+```
+
+Si un flow no usa argumentos, el orden es `pm clear` → broadcast → `launchApp` sin `clearState`.
 
 ---
 

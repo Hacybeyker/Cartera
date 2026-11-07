@@ -11,6 +11,18 @@
 - Proyecto inicializado a partir de [ScaffoldingAndroidCompose](https://github.com/hacybeyker/ScaffoldingAndroidCompose)
 - Documento de alcance de la fase 1 (`docs/ALCANCE-FASE-1.md`).
 - Licencia MIT.
+- Contrato de la API en OpenAPI 3.1 (`api/openapi.yaml`), con errores RFC 9457 y la regla de transferencia.
+- Fixtures de la usuaria de prueba, sus tres cuentas y sus movimientos, con un generador de semilla fija (`api/tools/`).
+- Backend embebido para debug y demo: login con JWT, cuentas, movimientos paginados por cursor, detalle, desglose, transferencias con `Idempotency-Key` y `POST /_demo/reset`.
+- Escenarios de red por cabecera en el backend embebido: latencia, tasa y tipo de fallo, TTL de la sesión y backend caído.
+- Variante `demo`: hereda de release, es `profileable` y se firma con la clave debug.
+- Dependencias de red: Retrofit 3, OkHttp 5 y `kotlinx-serialization-json`.
+- Cliente HTTP de la API: servicios Retrofit, DTO del contrato, errores RFC 9457 tipados, token Bearer en memoria y `BASE_URL` y timeouts en BuildConfig.
+- Escenarios de demo controlables por adb (`SET_SCENARIO`, `RESET_DATA`) y por los argumentos de `launchApp` de Maestro, guardados en el dispositivo.
+- README con el usuario de prueba y cómo cambiar los escenarios.
+
+### Security
+- Configuración de seguridad de red: sin tráfico en claro, salvo hacia `127.0.0.1` en debug y demo.
 
 ---
 
