@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint)
@@ -49,15 +50,24 @@ dependencies {
     implementation(libs.rxjava)
     implementation(libs.rxandroid)
     implementation(libs.retrofit.adapter.rxjava3)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.kotlinx.serialization.json)
+    api(libs.okhttp)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver3)
     // Roborazzi lo usa por dentro al capturar Views; la 3.5.1 que llega transitiva falla en la API 37 (llama a
     // InputManager.getInstance(), que ya no existe).
     testImplementation(libs.androidx.espresso.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
+}
+
+tasks.withType<Test>().configureEach {
+    systemProperty("cartera.fixturesDir", "$rootDir/api/fixtures")
 }
 
 detekt {

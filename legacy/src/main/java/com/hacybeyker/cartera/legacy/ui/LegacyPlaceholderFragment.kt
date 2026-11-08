@@ -1,21 +1,7 @@
 package com.hacybeyker.cartera.legacy.ui
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-import com.hacybeyker.cartera.legacy.databinding.LegacyFragmentPlaceholderBinding
+import com.hacybeyker.cartera.legacy.R
 
-internal class LegacyPlaceholderFragment : Fragment() {
-
-    private var binding: LegacyFragmentPlaceholderBinding? = null
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
-        LegacyFragmentPlaceholderBinding.inflate(inflater, container, false).also { binding = it }.root
-
-    override fun onDestroyView() {
-        binding = null
-        super.onDestroyView()
-    }
-}
+/** La pantalla de la clave de operaciones mientras no exista: la reemplaza el bloque del pago. */
+internal class LegacyPlaceholderFragment :
+    LegacyScreenFragment(R.layout.legacy_fragment_placeholder, R.string.legacy_pin_title)

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/legacy_screen_padding">
+
+            <TextView
+                android:id="@+id/legacy_cuenta_empresa"
+                style="@style/TextAppearance.MaterialComponents.Headline6"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/legacy_cuenta_resumen_titulo"
+                style="@style/TextAppearance.MaterialComponents.Overline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/legacy_spacing_medium"
+                android:text="@string/legacy_account_summary_heading"
+                android:textColor="?attr/colorPrimary" />
+
+            <LinearLayout
+                android:id="@+id/legacy_cuenta_resumen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/legacy_spacing_medium"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/legacy_account_total_label" />
+
+                <TextView
+                    android:id="@+id/legacy_cuenta_total"
+                    style="@style/TextAppearance.MaterialComponents.Headline6"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/TextAppearance.MaterialComponents.Overline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/legacy_screen_padding"
+                android:text="@string/legacy_account_choose_heading"
+                android:textColor="?attr/colorPrimary" />
+
+            <ProgressBar
+                android:id="@+id/legacy_cuenta_cargando"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="@dimen/legacy_spacing_medium"
+                android:contentDescription="@string/legacy_loading"
+                android:indeterminate="true" />
+
+            <RadioGroup
+                android:id="@+id/legacy_cuenta_grupo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/legacy_cuenta_vacio"
+                style="@style/TextAppearance.MaterialComponents.Body1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/legacy_spacing_medium"
+                android:text="@string/legacy_account_empty"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/legacy_cuenta_aviso"
+                style="@style/TextAppearance.MaterialComponents.Body2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/legacy_spacing_small"
+                android:text="@string/legacy_account_insufficient"
+                android:textColor="?attr/colorError"
+                android:visibility="gone" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/legacy_cuenta_continuar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/legacy_spacing_medium"
+        android:enabled="false"
+        android:text="@string/legacy_account_continue" />
+
+</LinearLayout>

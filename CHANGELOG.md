@@ -76,6 +76,9 @@
 - Fixtures del pago de servicios con un generador de semilla fija (`api/tools/generate_billers.py`): veinte empresas por rubro, cuatro con clientes y recibos de referencia, el histórico de 24 meses de Luz del Norte y la clave de operaciones de Ana (`operationsPin`).
 - Backend embebido: `BillDesk` con empresas, recibos pendientes, pago de recibos con clave de operaciones, saldo e idempotencia (movimiento `SERVICES` "Pago de <empresa>" y operaciones desde 80000001) y constancia HTML sin ids ni scripts.
 - Escenario: ids de endpoint `billers`, `biller_debts`, `bill_payments` y `bill_voucher` con latencia y fallos por endpoint, y la semilla del teclado de la clave (`pin_pad_seed`) por adb, launchApp y la pantalla Escenario; el cliente la lee con `PinPadSeed`.
+- Pago de servicios en `:legacy` (MVP con RxJava 3, Fragments y XML): Empresas con buscador en el servidor y lista por rubro, Código de cliente con su validación de formato, Recibos pendientes con casillas y total exacto, y Cuenta y resumen con cuentas en soles; errores de red y del servidor en un diálogo de AppCompat con Reintentar y Cancelar.
+- Red propia de `:legacy` (Retrofit con `adapter-rxjava3` y `kotlinx-serialization`) sobre el cliente HTTP de la app, que `app` entrega con `LegacyHttpClient`: sus llamadas llevan el token y pasan por los interceptores del escenario. Un 401 cierra la Activity y abre el modal de sesión expirada.
+- Marcas de contenido visible `legacy_empresas` y `legacy_recibos`, y goldens de cada pantalla de `:legacy` en claro y oscuro.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -98,6 +101,7 @@
 - El tab Cambio deja de ser "Próximamente".
 - Un cambio confirmado, o que terminó sin respuesta o con un error del servidor, invalida las cuentas: Cambio e Inicio vuelven a pedirlas al mostrarse.
 - Servicios clásicos abre `LegacyActivity` en vez de mostrar "Próximamente"; al volver se ve Más.
+- `LegacyActivity` abre en Empresas, la primera pantalla del pago de servicios, en vez de en el fragmento reservado (que queda para la clave de operaciones).
 - Los gates (ktlint, detekt, Lint, Kover y Roborazzi) y el DoD cubren `:app` y `:legacy`; la configuración común vive en el `build.gradle.kts` raíz.
 - Sonar y el CI analizan y publican los reportes de los dos módulos.
 - Fragment 1.9.1 llega a `app` por `:legacy`.

@@ -1,11 +1,17 @@
 package com.hacybeyker.cartera.feature.legacy.data
 
 import com.hacybeyker.cartera.BuildConfig
+import com.hacybeyker.cartera.core.data.network.BearerInterceptor
+import com.hacybeyker.cartera.core.data.network.CarteraHttpClient
 import com.hacybeyker.cartera.core.data.session.InMemoryAccessTokenStore
 import com.hacybeyker.cartera.core.data.session.InMemorySessionRepository
 import com.hacybeyker.cartera.core.ui.marks.VisibleContentMarker
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.Request
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -64,5 +70,22 @@ class LegacyBridgeTest {
         val marker = VisibleContentLegacyMarker(emptySet())
 
         marker.onContentVisible("legacy_constancia")
+    }
+
+    @Test
+    fun `the module gets the http client of the app, with its interceptors`() {
+        val client = CarteraHttpClient.okHttpClient(10, listOf(BearerInterceptor(tokens)))
+        val legacyClient = OkHttpLegacyHttpClient(client)
+        sessionRepository.start("jwt")
+
+        assertSame(client, legacyClient.callFactory())
+        MockWebServer().use { server ->
+            server.start()
+            server.enqueue(MockResponse.Builder().code(204).build())
+            legacyClient.callFactory().newCall(Request.Builder().url(server.url("/api/v1/billers")).build())
+                .execute().close()
+
+            assertEquals("Bearer jwt", server.takeRequest().headers["Authorization"])
+        }
     }
 }

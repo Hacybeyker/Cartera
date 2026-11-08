@@ -2,6 +2,42 @@
 <resources>
     <string name="legacy_title">Servicios clásicos</string>
     <string name="legacy_back">Volver</string>
+    <string name="legacy_loading">Cargando</string>
     <string name="legacy_placeholder_title">Próximamente</string>
     <string name="legacy_placeholder_message">Estamos preparando el pago de servicios.</string>
+
+    <string name="legacy_error_title">No pudimos completar la operación</string>
+    <string name="legacy_error_network">No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="legacy_error_server">El servicio no está disponible por ahora. Inténtalo de nuevo.</string>
+    <string name="legacy_error_retry">Reintentar</string>
+    <string name="legacy_error_cancel">Cancelar</string>
+
+    <string name="legacy_billers_title">Empresas</string>
+    <string name="legacy_billers_search_hint">Buscar empresa</string>
+    <string name="legacy_billers_empty">No se encontraron empresas</string>
+
+    <string name="legacy_customer_title">Código de cliente</string>
+    <string name="legacy_customer_prompt">Ingresa el código con el que %1$s te identifica.</string>
+    <string name="legacy_customer_hint">Código de cliente</string>
+    <string name="legacy_customer_continue">Continuar</string>
+    <string name="legacy_customer_error_empty">Ingresa tu código de cliente</string>
+    <string name="legacy_customer_error_format">El código no tiene el formato de esta empresa</string>
+    <string name="legacy_customer_error_unknown">No encontramos ese código de cliente en esta empresa</string>
+
+    <string name="legacy_debts_title">Recibos pendientes</string>
+    <string name="legacy_debts_empty">No tienes recibos pendientes</string>
+    <string name="legacy_debts_due">Vence el %1$s</string>
+    <string name="legacy_debts_total_label">Total seleccionado</string>
+    <string name="legacy_debts_continue">Continuar</string>
+
+    <string name="legacy_account_title">Cuenta y resumen</string>
+    <string name="legacy_account_summary_heading">Resumen del pago</string>
+    <string name="legacy_account_total_label">Total a pagar</string>
+    <string name="legacy_account_choose_heading">Elige la cuenta de cargo</string>
+    <string name="legacy_account_option">%1$s\n%2$s · Disponible %3$s</string>
+    <string name="legacy_account_empty">No tienes cuentas en soles para pagar servicios</string>
+    <string name="legacy_account_insufficient">El saldo de esta cuenta no alcanza para pagar el total.</string>
+    <string name="legacy_account_continue">Continuar</string>
+
+    <string name="legacy_pin_title">Clave</string>
 </resources>
