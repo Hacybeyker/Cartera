@@ -36,6 +36,7 @@ abstract class BasePresenter<V : MvpView<S>, S : Any>(initialState: S) {
     fun destroy() {
         detach()
         disposables.dispose()
+        onDestroy()
     }
 
     /** Se llama una sola vez, antes de que la primera vista reciba el estado. */
@@ -43,6 +44,9 @@ abstract class BasePresenter<V : MvpView<S>, S : Any>(initialState: S) {
 
     /** Se llama cada vez que una vista se engancha, antes de que reciba el estado. */
     protected open fun onAttached() = Unit
+
+    /** Se llama al soltar el Presenter, para que descarte lo que no deba sobrevivirle. */
+    protected open fun onDestroy() = Unit
 
     /** Se llama después de que una vista recibió [state]. */
     protected open fun onRendered(state: S) = Unit

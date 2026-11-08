@@ -18,6 +18,9 @@ import androidx.core.app.ActivityOptionsCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.hacybeyker.cartera.core.designsystem.component.CommonTestTags
+import com.hacybeyker.cartera.core.testing.FakeAccountChanges
+import com.hacybeyker.cartera.feature.legacy.domain.usecase.RegisterBillPaymentUseCase
+import com.hacybeyker.cartera.legacy.integration.LegacyContract
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -29,7 +32,10 @@ class LegacyScreenTest {
     val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val registry = RecordingRegistry(ApplicationProvider.getApplicationContext())
+    private val changes = FakeAccountChanges()
+    private val viewModel = LegacyViewModel(RegisterBillPaymentUseCase(changes))
     private var backs = 0
+    private var revisionAtBack = -1
 
     private val registryOwner = object : ActivityResultRegistryOwner {
         override val activityResultRegistry: ActivityResultRegistry = registry
@@ -38,7 +44,13 @@ class LegacyScreenTest {
     @Composable
     private fun Host() {
         CompositionLocalProvider(LocalActivityResultRegistryOwner provides registryOwner) {
-            LegacyScreen(onBack = { backs++ })
+            LegacyScreen(
+                onBack = {
+                    backs++
+                    revisionAtBack = changes.revision
+                },
+                viewModel = viewModel
+            )
         }
     }
 
@@ -61,6 +73,43 @@ class LegacyScreenTest {
         compose.waitForIdle()
 
         assertEquals(1, backs)
+    }
+
+    @Test
+    fun `a dismissal closes the entry without touching the accounts`() {
+        compose.setContent { Host() }
+        compose.waitForIdle()
+
+        registry.finish(Activity.RESULT_CANCELED)
+        compose.waitForIdle()
+
+        assertEquals(1, backs)
+        assertEquals(0, changes.revision)
+    }
+
+    @Test
+    fun `a payment raises the accounts revision before the entry closes, so the previous screen asks again`() {
+        compose.setContent { Host() }
+        compose.waitForIdle()
+
+        registry.finish(Activity.RESULT_OK, LegacyContract.paidResult())
+        compose.waitForIdle()
+
+        assertEquals(1, backs)
+        assertEquals(1, changes.revision)
+        assertEquals(1, revisionAtBack)
+    }
+
+    @Test
+    fun `an ok result without the payment flag is a dismissal`() {
+        compose.setContent { Host() }
+        compose.waitForIdle()
+
+        registry.finish(Activity.RESULT_OK, Intent())
+        compose.waitForIdle()
+
+        assertEquals(1, backs)
+        assertEquals(0, changes.revision)
     }
 
     @Test
@@ -99,6 +148,6 @@ class LegacyScreenTest {
             intents += contract.createIntent(context, input)
         }
 
-        fun finish(resultCode: Int) = dispatchResult(lastRequestCode, resultCode, Intent())
+        fun finish(resultCode: Int, data: Intent = Intent()) = dispatchResult(lastRequestCode, resultCode, data)
     }
 }

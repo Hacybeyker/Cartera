@@ -14,6 +14,8 @@ internal object HostEnvironment {
     lateinit var screen: () -> Fragment
 
     val navigated = mutableListOf<LegacyScreen>()
+    val stackReplacedWith = mutableListOf<LegacyScreen>()
+    val restartedAt = mutableListOf<LegacyScreen>()
     var backs = 0
     var closes = 0
 
@@ -21,6 +23,8 @@ internal object HostEnvironment {
         this.presenters = presenters
         this.screen = screen
         navigated.clear()
+        stackReplacedWith.clear()
+        restartedAt.clear()
         backs = 0
         closes = 0
     }
@@ -50,6 +54,14 @@ internal class LegacyHostActivity :
 
     override fun navigateTo(screen: LegacyScreen) {
         HostEnvironment.navigated += screen
+    }
+
+    override fun replaceStackWith(screen: LegacyScreen) {
+        HostEnvironment.stackReplacedWith += screen
+    }
+
+    override fun restartAt(screen: LegacyScreen) {
+        HostEnvironment.restartedAt += screen
     }
 
     override fun goBack() {

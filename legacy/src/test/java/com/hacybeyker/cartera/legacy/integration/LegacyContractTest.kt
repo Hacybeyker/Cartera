@@ -34,6 +34,26 @@ class LegacyContractTest {
     }
 
     @Test
+    fun `the result the activity sets when a payment was made is a payment`() {
+        assertEquals(LegacyResult.Paid, contract.parseResult(Activity.RESULT_OK, LegacyContract.paidResult()))
+    }
+
+    @Test
+    fun `a payment flag without an ok result is still a dismissal`() {
+        assertEquals(
+            LegacyResult.Dismissed,
+            contract.parseResult(Activity.RESULT_CANCELED, LegacyContract.paidResult())
+        )
+    }
+
+    @Test
+    fun `an ok result with the flag off is a dismissal`() {
+        val intent = Intent().putExtra(LegacyContract.EXTRA_PAID, false)
+
+        assertEquals(LegacyResult.Dismissed, contract.parseResult(Activity.RESULT_OK, intent))
+    }
+
+    @Test
     fun `the marks are the names the scope fixes`() {
         assertEquals(
             listOf("legacy_empresas", "legacy_recibos", "legacy_constancia"),

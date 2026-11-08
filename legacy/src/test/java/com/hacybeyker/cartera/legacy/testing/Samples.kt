@@ -9,6 +9,7 @@ import com.hacybeyker.cartera.legacy.core.domain.Money
 import com.hacybeyker.cartera.legacy.core.domain.PEN
 import com.hacybeyker.cartera.legacy.debts.domain.CustomerDebts
 import com.hacybeyker.cartera.legacy.debts.domain.Debt
+import com.hacybeyker.cartera.legacy.payment.domain.BillPayment
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -32,6 +33,18 @@ object Samples {
     val sueldo = Account("ACC-001", "Cuenta Sueldo", "****4821", pen("8450.75"))
     val gastos = Account("ACC-002", "Cuenta Gastos", "****9034", pen("2300.00"))
     val dolares = Account("ACC-003", "Cuenta Dólares", "****1177", Money(BigDecimal("1050.20"), "USD"))
+    val payment = BillPayment("PAY-000001", "80000001", pen("177.50"), pen("2122.50"))
+
+    val voucherHtml = """
+        <!DOCTYPE html>
+        <html lang="es"><head><meta charset="utf-8"><title>Constancia de pago</title></head>
+        <body><main><h1>Constancia de pago</h1>
+        <dl><dt>Número de operación</dt><dd>80000001</dd><dt>Empresa</dt><dd>Luz del Norte</dd></dl>
+        <table><tbody><tr><td>Octubre 2026</td><td>S/ 85.40</td></tr><tr><td>Noviembre 2026</td><td>S/ 92.10</td></tr></tbody>
+        <tfoot><tr><th scope="row">Total pagado</th><td>S/ 177.50</td></tr></tfoot></table>
+        <dl><dt>Nuevo saldo disponible</dt><dd>S/ 2,122.50</dd></dl></main></body></html>
+    """.trimIndent()
+
     val poca = Account("ACC-004", "Cuenta Chica", "****0001", pen("50.00"))
 }
 

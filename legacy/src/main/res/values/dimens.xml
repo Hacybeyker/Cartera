@@ -4,4 +4,14 @@
     <dimen name="legacy_spacing_small">8dp</dimen>
     <dimen name="legacy_spacing_medium">16dp</dimen>
     <dimen name="legacy_row_min_height">56dp</dimen>
+    <dimen name="legacy_pin_key_height">72dp</dimen>
+    <dimen name="legacy_pin_pad_max_width">360dp</dimen>
+    <dimen name="legacy_pin_key_margin">6dp</dimen>
+    <dimen name="legacy_pin_key_radius">16dp</dimen>
+    <dimen name="legacy_pin_key_text_size">28sp</dimen>
+    <dimen name="legacy_pin_delete_text_size">16sp</dimen>
+    <dimen name="legacy_pin_dot_size">16dp</dimen>
+    <dimen name="legacy_pin_dot_gap">20dp</dimen>
+    <dimen name="legacy_pin_dot_stroke">2dp</dimen>
+    <dimen name="legacy_pin_message_height">48dp</dimen>
 </resources>

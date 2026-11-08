@@ -8,6 +8,7 @@ import com.hacybeyker.cartera.legacy.debts.data.DebtsApi
 import com.hacybeyker.cartera.legacy.integration.LegacyApiConfig
 import com.hacybeyker.cartera.legacy.integration.LegacyHttpClient
 import com.hacybeyker.cartera.legacy.integration.LegacySessionExpiry
+import com.hacybeyker.cartera.legacy.payment.data.PaymentsApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -49,4 +50,8 @@ object LegacyNetworkModule {
     @Provides
     @Singleton
     fun provideAccountsApi(@LegacyNetwork retrofit: Retrofit): AccountsApi = retrofit.create(AccountsApi::class.java)
+
+    @Provides
+    @Singleton
+    fun providePaymentsApi(@LegacyNetwork retrofit: Retrofit): PaymentsApi = retrofit.create(PaymentsApi::class.java)
 }

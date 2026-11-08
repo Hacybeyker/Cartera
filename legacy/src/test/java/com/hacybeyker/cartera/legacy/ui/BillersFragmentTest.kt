@@ -5,20 +5,27 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.ViewCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.appbar.MaterialToolbar
 import com.hacybeyker.cartera.legacy.R
+import com.hacybeyker.cartera.legacy.billers.BillersPresenter
 import com.hacybeyker.cartera.legacy.core.domain.LegacyError
 import com.hacybeyker.cartera.legacy.testing.Samples
 import com.hacybeyker.cartera.legacy.testing.failure
+import com.hacybeyker.cartera.legacy.testing.fixtureBillers
 import io.reactivex.rxjava3.core.Single
 import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
+import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowDialog
@@ -132,6 +139,47 @@ class BillersFragmentTest {
     }
 
     @Test
+    @Config(qualifiers = "w411dp-h300dp")
+    fun `clearing the search shows the whole list again from its first row`() {
+        val all = fixtureBillers()
+        presenters.billers.respond = { query ->
+            Single.just(if (query.isEmpty()) all else all.filter { it.name.contains(query, ignoreCase = true) })
+        }
+        val activity = launchInWindow().get()
+        awaitRows(activity, ALL_ROWS)
+        activity.findViewById<RecyclerView>(R.id.legacy_empresas_lista).scrollToPosition(ALL_ROWS - 1)
+        idle()
+
+        search(activity, "agua")
+        awaitRows(activity, WATER_ROWS)
+        search(activity, "")
+        awaitRows(activity, ALL_ROWS)
+
+        assertEquals(0, firstVisiblePosition(activity))
+        assertEquals("Electricidad", texts(activity.window.decorView).first())
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h300dp")
+    fun `reloading the same query keeps the scroll of the list`() {
+        presenters.billers.respond = { Single.just(fixtureBillers()) }
+        lateinit var presenter: BillersPresenter
+        presenters.onBillersPresenter = { presenter = it }
+        val activity = launchInWindow().get()
+        awaitRows(activity, ALL_ROWS)
+        activity.findViewById<RecyclerView>(R.id.legacy_empresas_lista).scrollToPosition(ALL_ROWS - 1)
+        idle()
+        val scrolledTo = firstVisiblePosition(activity)
+
+        presenter.onRetry()
+        idle()
+        idle()
+
+        assertNotEquals(0, scrolledTo)
+        assertEquals(scrolledTo, firstVisiblePosition(activity))
+    }
+
+    @Test
     fun `a network error shows an appcompat dialog with retry and cancel`() {
         presenters.billers.respond = { Single.error(failure(LegacyError.Network)) }
         launch()
@@ -167,5 +215,41 @@ class BillersFragmentTest {
         launch()
 
         assertEquals(1, HostEnvironment.closes)
+    }
+
+    private fun launchInWindow(): ActivityController<LegacyHostActivity> {
+        HostEnvironment.reset(presenters) { BillersFragment() }
+        return Robolectric.buildActivity(LegacyHostActivity::class.java).setup().also { idle() }
+    }
+
+    private fun search(activity: LegacyHostActivity, text: String) {
+        activity.findViewById<TextView>(R.id.legacy_empresas_buscar).text = text
+        presenters.schedulers.clock.advanceTimeBy(300, TimeUnit.MILLISECONDS)
+        idle()
+    }
+
+    private fun firstVisiblePosition(activity: LegacyHostActivity): Int {
+        val list = activity.findViewById<RecyclerView>(R.id.legacy_empresas_lista)
+        return (list.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+    }
+
+    private fun awaitRows(activity: LegacyHostActivity, count: Int) {
+        val list = activity.findViewById<RecyclerView>(R.id.legacy_empresas_lista)
+        repeat(AWAIT_ATTEMPTS) {
+            idle()
+            if (list.adapter?.itemCount == count) {
+                idle()
+                return
+            }
+            Thread.sleep(AWAIT_MILLIS)
+        }
+        fail("The list never reached $count rows")
+    }
+
+    private companion object {
+        const val ALL_ROWS = 28
+        const val WATER_ROWS = 4
+        const val AWAIT_ATTEMPTS = 200
+        const val AWAIT_MILLIS = 10L
     }
 }

@@ -40,6 +40,10 @@ class BasePresenterTest {
         fun increment() = update { it + 1 }
 
         fun announce(text: String) = emit { it.events += text }
+
+        override fun onDestroy() {
+            order += "destroyed"
+        }
     }
 
     @Test
@@ -114,6 +118,17 @@ class BasePresenterTest {
         presenter.increment()
 
         assertEquals(listOf(10), view.rendered)
+        assertTrue(presenter.subscription.isDisposed)
+    }
+
+    @Test
+    fun `destroying lets the presenter drop what must not outlive it, after the subscriptions`() {
+        val presenter = CounterPresenter()
+        presenter.attach(CounterView())
+
+        presenter.destroy()
+
+        assertEquals("destroyed", presenter.order.last())
         assertTrue(presenter.subscription.isDisposed)
     }
 }

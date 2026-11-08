@@ -4,4 +4,7 @@ package com.hacybeyker.cartera.legacy.integration
 sealed interface LegacyResult {
     /** El usuario salió sin que el módulo cambiara nada de lo que ve quien lo aloja. */
     data object Dismissed : LegacyResult
+
+    /** El módulo pagó, o pudo haber pagado, recibos con una cuenta: quien lo aloja debe volver a pedir los saldos. */
+    data object Paid : LegacyResult
 }

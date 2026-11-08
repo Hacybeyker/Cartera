@@ -19,7 +19,8 @@
             android:layout_height="wrap_content"
             android:imeOptions="actionSearch"
             android:inputType="text"
-            android:maxLines="1" />
+            android:maxLines="1"
+            android:saveEnabled="false" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.progressindicator.LinearProgressIndicator

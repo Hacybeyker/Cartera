@@ -87,7 +87,13 @@ class BillersPresenter @Inject constructor(
         is RemoteResult.Success -> {
             billers = result.value
             val rows = result.value.toRows()
-            update { it.copy(phase = if (rows.isEmpty()) LoadPhase.EMPTY else LoadPhase.CONTENT, rows = rows) }
+            update {
+                it.copy(
+                    phase = if (rows.isEmpty()) LoadPhase.EMPTY else LoadPhase.CONTENT,
+                    rows = rows,
+                    resultsFor = requestedQuery
+                )
+            }
         }
         is RemoteResult.Failure -> onFailure(result.error)
     }

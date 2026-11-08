@@ -8,6 +8,10 @@ import com.hacybeyker.cartera.legacy.core.data.RxSchedulerProvider
 import com.hacybeyker.cartera.legacy.core.domain.SchedulerProvider
 import com.hacybeyker.cartera.legacy.debts.data.RemoteDebtRepository
 import com.hacybeyker.cartera.legacy.debts.domain.DebtRepository
+import com.hacybeyker.cartera.legacy.payment.data.RemotePaymentRepository
+import com.hacybeyker.cartera.legacy.payment.data.UuidIdempotencyKeyFactory
+import com.hacybeyker.cartera.legacy.payment.domain.IdempotencyKeyFactory
+import com.hacybeyker.cartera.legacy.payment.domain.PaymentRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -25,6 +29,12 @@ abstract class LegacyBindingsModule {
 
     @Binds
     abstract fun bindAccountRepository(repository: RemoteAccountRepository): AccountRepository
+
+    @Binds
+    abstract fun bindPaymentRepository(repository: RemotePaymentRepository): PaymentRepository
+
+    @Binds
+    abstract fun bindIdempotencyKeyFactory(factory: UuidIdempotencyKeyFactory): IdempotencyKeyFactory
 
     @Binds
     abstract fun bindSchedulerProvider(provider: RxSchedulerProvider): SchedulerProvider

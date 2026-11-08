@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="@dimen/legacy_screen_padding">
+
+        <TextView
+            android:id="@+id/legacy_clave_titulo"
+            style="@style/TextAppearance.MaterialComponents.Headline6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/legacy_pin_heading" />
+
+        <com.hacybeyker.cartera.legacy.ui.pinpad.PinDotsView
+            android:id="@+id/legacy_clave_puntos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/legacy_screen_padding"
+            android:contentDescription="@string/legacy_pin_progress"
+            android:importantForAccessibility="yes" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/legacy_pin_message_height"
+            android:layout_marginTop="@dimen/legacy_spacing_small">
+
+            <TextView
+                android:id="@+id/legacy_clave_mensaje"
+                style="@style/TextAppearance.MaterialComponents.Body2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:textColor="?attr/colorError"
+                android:visibility="invisible" />
+
+            <ProgressBar
+                android:id="@+id/legacy_clave_cargando"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:contentDescription="@string/legacy_loading"
+                android:indeterminate="true"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <com.hacybeyker.cartera.legacy.ui.pinpad.PinPadView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/legacy_spacing_medium"
+            android:tag="legacy_pin_pad" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
+import androidx.recyclerview.widget.RecyclerView
 import com.hacybeyker.cartera.legacy.R
 import com.hacybeyker.cartera.legacy.billers.BillersView
 import com.hacybeyker.cartera.legacy.billers.BillersViewState
@@ -18,11 +19,13 @@ internal class BillersFragment :
     private val adapter = BillersAdapter { presenter.onBillerSelected(it) }
     private var binding: LegacyFragmentBillersBinding? = null
     private var errorDialog: ErrorDialog? = null
+    private var shownResultsFor: String? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val views = LegacyFragmentBillersBinding.bind(view)
         binding = views
         errorDialog = ErrorDialog(requireContext(), presenter::onRetry, presenter::onCancel)
+        shownResultsFor = null
         views.legacyEmpresasLista.adapter = adapter
         views.legacyEmpresasBuscar.doAfterTextChanged { presenter.onQueryChanged(it?.toString().orEmpty()) }
         presenter.attach(this)
@@ -38,7 +41,7 @@ internal class BillersFragment :
 
     override fun render(state: BillersViewState) {
         val views = binding ?: return
-        adapter.submitList(state.rows)
+        submitRows(views.legacyEmpresasLista, state)
         views.legacyEmpresasCargando.isVisible = state.phase == LoadPhase.LOADING
         views.legacyEmpresasLista.isVisible = state.rows.isNotEmpty()
         views.legacyEmpresasVacio.isVisible = state.phase == LoadPhase.EMPTY
@@ -48,6 +51,17 @@ internal class BillersFragment :
             search.setSelection(state.query.length)
         }
         errorDialog?.show(state.error)
+    }
+
+    private fun submitRows(list: RecyclerView, state: BillersViewState) {
+        val resultsFor = state.resultsFor
+        val newQuery = resultsFor != null && shownResultsFor != null && resultsFor != shownResultsFor
+        shownResultsFor = resultsFor ?: shownResultsFor
+        if (newQuery) {
+            adapter.submitList(state.rows) { list.scrollToPosition(0) }
+        } else {
+            adapter.submitList(state.rows)
+        }
     }
 
     override fun showCustomerCode() = legacyHost.navigator.navigateTo(LegacyScreen.CUSTOMER_CODE)

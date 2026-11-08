@@ -3,6 +3,8 @@ package com.hacybeyker.cartera.feature.legacy.data
 import com.hacybeyker.cartera.BuildConfig
 import com.hacybeyker.cartera.core.data.network.BearerInterceptor
 import com.hacybeyker.cartera.core.data.network.CarteraHttpClient
+import com.hacybeyker.cartera.core.data.pinpad.PinPadSeedSource
+import com.hacybeyker.cartera.core.data.pinpad.SourcedPinPadSeed
 import com.hacybeyker.cartera.core.data.session.InMemoryAccessTokenStore
 import com.hacybeyker.cartera.core.data.session.InMemorySessionRepository
 import com.hacybeyker.cartera.core.ui.marks.VisibleContentMarker
@@ -87,5 +89,16 @@ class LegacyBridgeTest {
 
             assertEquals("Bearer jwt", server.takeRequest().headers["Authorization"])
         }
+    }
+
+    @Test
+    fun `the keyboard seed of the module is the one of the app, and fixed without a source`() {
+        assertEquals(0, PinPadSeedLegacySeed(SourcedPinPadSeed(emptySet())).current())
+
+        var seed: Int? = 7
+        val legacy = PinPadSeedLegacySeed(SourcedPinPadSeed(setOf(PinPadSeedSource { seed })))
+        assertEquals(7, legacy.current())
+        seed = 12
+        assertEquals(12, legacy.current())
     }
 }

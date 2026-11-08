@@ -26,8 +26,9 @@
 │       ├── integration/   # Lo único que ve `app`: LegacyContract y las interfaces que `app` implementa
 │       ├── core/          # Red propia (Retrofit con RxJava 3), errores, dinero, schedulers y MVP base
 │       ├── flow/          # PaymentFlow: lo que la persona va eligiendo, retenido con la Activity
-│       ├── billers/ customer/ debts/ account/   # Presenter, vista, dominio y datos de cada pantalla
-│       └── ui/            # LegacyActivity (Hilt) y sus Fragments
+│       ├── billers/ customer/ debts/ account/ pin/ voucher/   # Presenter, vista, dominio y datos de cada pantalla
+│       ├── payment/       # El pago y su constancia: repositorio, `POST /bill-payments` y el voucher
+│       └── ui/            # LegacyActivity (Hilt), sus Fragments y `ui/pinpad/` (el teclado sin ids)
 ├── app/src/main/java/com/hacybeyker/cartera/
 │   ├── core/              # Compartido: design system y componentes comunes, dominio y datos de sesión,
 │   │                      # configuración, primer uso, cuentas y movimientos, mercado y portafolio,
@@ -481,7 +482,7 @@ en su ventana (también los bottom sheets). La convención es snake_case en espa
 | Más | `mas_pantalla`, `mas_nombre`, `mas_seguridad`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
 | Seguridad | `seguridad_pantalla`, `seguridad_huella` (interruptor) |
 | Servicios clásicos (puente en Compose) | `legacy_cargando` y `barra_volver`: se ve unos instantes mientras abre `LegacyActivity` |
-| Servicios clásicos (`:legacy`, `android:id`) | `legacy_actividad_barra`, `legacy_actividad_contenedor` y, por pantalla, los de la sección `:legacy`; la lista de Empresas no tiene ids por fila a propósito |
+| Servicios clásicos (`:legacy`, `android:id`) | `legacy_actividad_barra`, `legacy_actividad_contenedor` y, por pantalla, los de la sección `:legacy`; la lista de Empresas, el teclado de la Clave y el WebView de la Constancia no tienen ids a propósito |
 | Ayuda | `ayuda_proximamente` |
 | Transferir · formulario | `transferir_pantalla`, `transferir_origen`, `transferir_origen_item_<id>`, `transferir_destino`, `transferir_monto`, `transferir_descripcion`, `transferir_continuar`, `<campo>_error` y estados `transferir_*` |
 | Transferir · confirmación | `transferir_confirmacion`, `transferir_confirmar`, `transferir_cancelar`, `<campo>_error`, `modal_fondos_insuficientes`, `modal_destino_inexistente`, `modal_moneda_distinta` (cada uno con `_aceptar`) |
@@ -552,7 +553,9 @@ handshake del canal en vivo), `portfolio`, `orders`, `fx_rates`, `fx_exchanges`,
 - `pin_pad_seed` no viaja al backend: el cliente lo lee del escenario guardado cada vez que lo necesita
   (`PinPadSeed`, con `PinPadSeedSource` como punto de extensión: release no tiene ninguna fuente y rige el
   orden fijo). Un valor negativo o que no es un entero se rechaza. La pantalla Escenario lo edita en
-  `escenario_pin_pad_seed`.
+  `escenario_pin_pad_seed`. `:legacy` lo recibe por `LegacyPinPadSeed` y lo lee al abrir la Clave: se cambia con
+  `SET_SCENARIO --ei pin_pad_seed 7` por adb o con `pin_pad_seed: 7` en los argumentos de `launchApp`, antes de
+  entrar a la pantalla.
 
 - Página completa de movimientos y las cuatro filas que la siguen son interruptores del cliente: no
   viajan al backend y tienen el mismo nombre en BuildConfig (`MOVEMENTS_FULL_PAGE`, `ACCOUNTS_EAGER_REFRESH`,
@@ -579,6 +582,10 @@ adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
 adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
   -a com.hacybeyker.cartera.demo.SET_SCENARIO --ei tick_ms 250 \
   --ez quotes_full_refresh true --ez chart_live_path true
+
+# Teclado de la clave en un orden determinista (semilla 7); 0 lo deja fijo
+adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
+  -a com.hacybeyker.cartera.demo.SET_SCENARIO --ei pin_pad_seed 7
 
 # Volver a los fixtures (saldos, movimientos, tenencias, precios, cotizaciones, huella e idempotencia;
 # los dispositivos registrados para la huella son lo único que sobrevive a cerrar la app)
@@ -634,6 +641,7 @@ de Roborazzi en claro y oscuro.
 
 Servicios clásicos es el pago de servicios, que `:legacy` recorre con la pila de Fragments de
 `LegacyActivity`; la flecha de la barra y Atrás retroceden una pantalla y, en Empresas, cierran la Activity.
+Al pagar, la Constancia queda como única pantalla: Atrás y Finalizar cierran la Activity.
 
 | Pantalla | Qué hace | Ids (`android:id`) |
 |---|---|---|
@@ -641,13 +649,32 @@ Servicios clásicos es el pago de servicios, que `:legacy` recorre con la pila d
 | Código de cliente | Valida el código con el formato de la empresa | `legacy_codigo_empresa`, `legacy_codigo_campo`, `legacy_codigo_continuar` |
 | Recibos pendientes | Casillas con período, vencimiento e importe, y el total elegido (`GET /billers/{id}/debts`) | `legacy_recibos_cliente`, `legacy_recibos_lista`, `legacy_recibos_total`, `legacy_recibos_continuar`, `legacy_recibos_vacio`, `legacy_recibos_cargando` |
 | Cuenta y resumen | Resumen de los recibos y cuenta de cargo en soles (`GET /accounts`) | `legacy_cuenta_resumen`, `legacy_cuenta_total`, `legacy_cuenta_grupo`, `legacy_cuenta_aviso`, `legacy_cuenta_continuar`, `legacy_cuenta_vacio`, `legacy_cuenta_cargando` |
+| Clave | Teclado de cuatro dígitos; al completar el cuarto envía el pago por sí solo (`POST /bill-payments`) | `legacy_clave_titulo`, `legacy_clave_puntos`, `legacy_clave_mensaje`, `legacy_clave_cargando`. El teclado no tiene id ni descripción: cada tecla es un nodo virtual de accesibilidad con su texto (`0` a `9` y `Borrar`) |
+| Constancia | La constancia del pago en un WebView (`GET /bill-payments/{id}/voucher`, HTML) y Finalizar | `legacy_constancia_contenedor`, `legacy_constancia_cargando`, `legacy_constancia_mensaje`, `legacy_constancia_finalizar`. El WebView no tiene id: su texto se lee por accesibilidad |
 
-Las marcas de contenido visible son `legacy_empresas` (la lista cargada) y `legacy_recibos` (la lista o el
-estado vacío), una vez por entrada a la pantalla. Un error de red o del servidor abre un diálogo de AppCompat
+Las marcas de contenido visible son `legacy_empresas` (la lista cargada), `legacy_recibos` (la lista o el
+estado vacío) y `legacy_constancia` (cuando el WebView terminó de cargar la constancia), una vez por entrada a la
+pantalla. Un error de red o del servidor abre un diálogo de AppCompat
 con Reintentar y Cancelar; un 401 cierra la Activity y abre el modal de sesión expirada en Compose.
 
 `:legacy` hace sus llamadas con su propio Retrofit sobre el cliente HTTP de la app (`LegacyHttpClient`), así
 llevan el token y pasan por los interceptores del escenario como las de Compose.
+
+**La Clave.** El orden de los dígitos sale de la semilla del escenario, `pin_pad_seed` (ver Escenarios de red):
+con 0 el orden es fijo (1 al 9 y luego 0) y con otro valor es una permutación determinista, la misma en cada
+ejecución (`java.util.Random(semilla)` con Fisher-Yates; con la semilla 7 queda `1 2 0 / 4 8 5 / 9 6 3 / 7`).
+Tras una clave incorrecta (`INVALID_PIN`) el teclado se reordena con `semilla + rechazos`; con la semilla 0 queda
+fijo. Cada intento de clave lleva una `Idempotency-Key` nueva y Reintentar tras un error de red o del servidor
+reenvía la misma orden con la misma clave. Un saldo insuficiente vuelve a Cuenta y resumen y un recibo ya pagado, a
+Recibos pendientes recargados, los dos con un diálogo. La clave nunca se muestra, se registra ni se guarda: la
+pantalla solo conoce cuántos dígitos van. Con una clave en vuelo el teclado no acepta toques y Atrás se ignora.
+`LegacyActivity` no usa `FLAG_SECURE`, a propósito: es una app de demo y las capturas de la verificación lo
+necesitan.
+
+**Vuelta a Compose.** `LegacyResult` es `Dismissed` (salir sin cambios) o `Paid`: `Finalizar` y Atrás en la
+Constancia devuelven `Paid`, y también cualquier salida posterior a un pago, o a un intento que terminó sin respuesta
+y pudo cobrarse. Con `Paid`, `LegacyScreen` sube la revisión de `AccountChanges` y vuelve a Más: Inicio, Movimientos
+y las demás pantallas que muestran saldos vuelven a pedir las cuentas una sola vez (`GET /accounts`) al mostrarse.
 
 ---
 

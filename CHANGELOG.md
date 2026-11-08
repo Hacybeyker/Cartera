@@ -68,7 +68,7 @@
 - Pantalla Seguridad, desde Más, con el interruptor "Ingresar con huella": activarlo registra el dispositivo y desactivarlo lo revoca (`DELETE /auth/biometric`) y borra el token y la clave; sin huella en el dispositivo queda deshabilitado con su explicación.
 - Menú lateral en Home, abierto con el botón de la barra de Inicio: Mi portafolio, Cambio (elige el tab), Seguridad, Ayuda (próximamente) y Cerrar sesión con la misma confirmación que Más. Se cierra deslizando, tocando fuera o con Atrás.
 - Coach marks la primera vez que se entra a Home: tres pasos (Transferir, el tab Mercado y el botón del menú) que resaltan cada elemento, con Siguiente, Entendido en el último y Omitir. Se ven una vez por instalación.
-- Módulo `:legacy` (Android library con Fragments, XML con ViewBinding, AppCompat, Material Components, RxJava 3 e Hilt) con `LegacyActivity` y un fragmento reservado, del que depende `app`.
+- Módulo `:legacy` (Android library con Fragments, XML con ViewBinding, AppCompat, Material Components, RxJava 3 e Hilt) con `LegacyActivity`, del que depende `app`.
 - `LegacyContract` y `LegacyResult`: el punto de entrada a `:legacy`, con un resultado tipado.
 - Interfaces propias de `:legacy` para la sesión, la URL base, el aviso de sesión expirada y las marcas de contenido visible, que `app` conecta con Hilt (`feature/legacy/`).
 - Goldens de Views de Roborazzi, en claro y oscuro, para `:legacy` (`legacy/src/test/screenshots/`).
@@ -79,6 +79,10 @@
 - Pago de servicios en `:legacy` (MVP con RxJava 3, Fragments y XML): Empresas con buscador en el servidor y lista por rubro, Código de cliente con su validación de formato, Recibos pendientes con casillas y total exacto, y Cuenta y resumen con cuentas en soles; errores de red y del servidor en un diálogo de AppCompat con Reintentar y Cancelar.
 - Red propia de `:legacy` (Retrofit con `adapter-rxjava3` y `kotlinx-serialization`) sobre el cliente HTTP de la app, que `app` entrega con `LegacyHttpClient`: sus llamadas llevan el token y pasan por los interceptores del escenario. Un 401 cierra la Activity y abre el modal de sesión expirada.
 - Marcas de contenido visible `legacy_empresas` y `legacy_recibos`, y goldens de cada pantalla de `:legacy` en claro y oscuro.
+- Clave de operaciones en `:legacy`: teclado de cuatro dígitos sin ids (`PinPadView`, dibujado con Canvas; cada tecla es un nodo virtual de accesibilidad que solo expone su texto y el clic) cuyo orden sale de la semilla del escenario `pin_pad_seed` (0 = fijo; otra semilla, una permutación determinista) y se reordena tras una clave incorrecta. El cuarto dígito envía el pago (`POST /bill-payments`) con una `Idempotency-Key` nueva por intento; Reintentar tras un error de red o del servidor reenvía la misma orden. Diálogos para saldo insuficiente, recibo ya pagado y otros rechazos.
+- Constancia en `:legacy`: la constancia HTML del pago en un `WebView` sin id (sin JavaScript, archivos, contenido, red ni zoom) con su marca `legacy_constancia` tras `onPageFinished`, y Finalizar; Atrás equivale a Finalizar y la Constancia queda como única pantalla.
+- `LegacyResult.Paid`: al volver de un pago, Servicios clásicos invalida las cuentas (`AccountChanges`) y Más, Inicio y las pantallas con saldos vuelven a pedirlas una sola vez.
+- Goldens de la Clave (orden fijo, con dos dígitos, con la semilla 7, con error y teclado reordenado, enviando) y de la Constancia (cargando, con Finalizar y sin constancia).
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -101,7 +105,7 @@
 - El tab Cambio deja de ser "Próximamente".
 - Un cambio confirmado, o que terminó sin respuesta o con un error del servidor, invalida las cuentas: Cambio e Inicio vuelven a pedirlas al mostrarse.
 - Servicios clásicos abre `LegacyActivity` en vez de mostrar "Próximamente"; al volver se ve Más.
-- `LegacyActivity` abre en Empresas, la primera pantalla del pago de servicios, en vez de en el fragmento reservado (que queda para la clave de operaciones).
+- `LegacyActivity` abre en Empresas, la primera pantalla del pago de servicios.
 - Los gates (ktlint, detekt, Lint, Kover y Roborazzi) y el DoD cubren `:app` y `:legacy`; la configuración común vive en el `build.gradle.kts` raíz.
 - Sonar y el CI analizan y publican los reportes de los dos módulos.
 - Fragment 1.9.1 llega a `app` por `:legacy`.
@@ -111,6 +115,8 @@
 - Los íconos `.webp` del launcher por densidad (`mipmap-*dpi`): con minSdk 26 se usa siempre el ícono adaptativo.
 
 ### Fixed
+- Código de cliente muestra bajo el campo el mensaje de "No encontramos ese código de cliente" al volver desde Recibos pendientes: el estado guardado de la vista ya no borra el error que fija el Presenter.
+- Empresas muestra la lista completa desde su primera fila al vaciar el buscador o cambiar la consulta, en vez de conservar el desplazamiento de la lista anterior.
 - Tras un error del servidor al confirmar una transferencia, volver al inicio vuelve a pedir las cuentas: el cobro no está descartado.
 - Un 401 sin cuerpo RFC 9457 también abre el modal de sesión expirada.
 - Un monto o una fecha mal formados en una respuesta se muestran como error del servicio en vez de cerrar la app.

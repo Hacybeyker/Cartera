@@ -5,6 +5,8 @@ import com.hacybeyker.cartera.legacy.billers.domain.Biller
 import com.hacybeyker.cartera.legacy.core.domain.Money
 import com.hacybeyker.cartera.legacy.debts.domain.Debt
 import com.hacybeyker.cartera.legacy.debts.domain.total
+import com.hacybeyker.cartera.legacy.payment.domain.BillPayment
+import com.hacybeyker.cartera.legacy.payment.domain.PaymentOrder
 import dagger.hilt.android.scopes.ActivityRetainedScoped
 import javax.inject.Inject
 
@@ -34,10 +36,19 @@ class PaymentFlow @Inject constructor() {
     var account: Account? = null
         private set
 
+    /** El pago hecho; la Constancia lo lee y, mientras exista, el módulo se cierra como `Paid`. */
+    var payment: BillPayment? = null
+        private set
+
+    private var mayHaveCharged = false
     private var rejectedCustomerCode: String? = null
 
     val total: Money
         get() = debts.total()
+
+    /** Si el pago se hizo o pudo hacerse: quien aloja el módulo debe volver a pedir los saldos. */
+    val accountsChanged: Boolean
+        get() = payment != null || mayHaveCharged
 
     fun start() {
         isStarted = true
@@ -64,6 +75,25 @@ class PaymentFlow @Inject constructor() {
 
     fun chooseAccount(account: Account) {
         this.account = account
+    }
+
+    /** La orden de pago con lo elegido hasta aquí, la clave tecleada y la clave de idempotencia de este intento. */
+    fun paymentOrder(pin: String, idempotencyKey: String): PaymentOrder = PaymentOrder(
+        billerId = checkNotNull(biller).id,
+        customerCode = checkNotNull(customerCode),
+        debtIds = debts.map { it.id },
+        accountId = checkNotNull(account).id,
+        pin = pin,
+        idempotencyKey = idempotencyKey
+    )
+
+    fun completePayment(payment: BillPayment) {
+        this.payment = payment
+    }
+
+    /** El pago terminó sin respuesta o con un error del servidor: pudo cobrarse. */
+    fun markMayHaveCharged() {
+        mayHaveCharged = true
     }
 
     /** El servidor no conoce el código elegido: la pantalla del código lo avisa al volver a mostrarse. */

@@ -14,6 +14,7 @@ data class BillersViewState(
     val phase: LoadPhase = LoadPhase.LOADING,
     val query: String = "",
     val rows: List<BillerRow> = emptyList(),
+    val resultsFor: String? = null,
     val error: LegacyError? = null
 )
 

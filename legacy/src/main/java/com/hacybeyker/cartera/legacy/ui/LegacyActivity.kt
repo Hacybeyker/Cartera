@@ -6,10 +6,12 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.commit
 import com.hacybeyker.cartera.legacy.R
 import com.hacybeyker.cartera.legacy.databinding.LegacyActivityBinding
 import com.hacybeyker.cartera.legacy.flow.domain.PaymentFlow
+import com.hacybeyker.cartera.legacy.integration.LegacyContract
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -26,6 +28,7 @@ internal class LegacyActivity :
     lateinit var presenterSource: LegacyPresenters
 
     private lateinit var binding: LegacyActivityBinding
+    private val deferred = ArrayDeque<() -> Unit>()
 
     override val presenters: LegacyPresenterSource get() = presenterSource
     override val navigator: LegacyNavigator get() = this
@@ -56,22 +59,51 @@ internal class LegacyActivity :
         }
     }
 
-    override fun navigateTo(screen: LegacyScreen) {
+    override fun onResumeFragments() {
+        super.onResumeFragments()
+        while (deferred.isNotEmpty()) deferred.removeFirst()()
+    }
+
+    override fun navigateTo(screen: LegacyScreen) = whenStateAllows {
         supportFragmentManager.commit {
             setReorderingAllowed(true)
             replace(R.id.legacy_actividad_contenedor, screen.createFragment())
-            addToBackStack(null)
+            addToBackStack(screen.name)
         }
     }
 
-    override fun goBack() = onBackPressedDispatcher.onBackPressed()
+    override fun replaceStackWith(screen: LegacyScreen) = whenStateAllows {
+        supportFragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        supportFragmentManager.commit { replace(R.id.legacy_actividad_contenedor, screen.createFragment()) }
+    }
 
-    override fun close() {
-        setResult(RESULT_CANCELED)
-        finish()
+    override fun restartAt(screen: LegacyScreen) = whenStateAllows {
+        supportFragmentManager.popBackStackImmediate(screen.name, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        supportFragmentManager.commit {
+            setReorderingAllowed(true)
+            replace(R.id.legacy_actividad_contenedor, screen.createFragment())
+            addToBackStack(screen.name)
+        }
+    }
+
+    override fun goBack() = whenStateAllows { onBackPressedDispatcher.onBackPressed() }
+
+    override fun close() = finish()
+
+    override fun finish() {
+        if (flow.accountsChanged) {
+            setResult(RESULT_OK, LegacyContract.paidResult())
+        } else {
+            setResult(RESULT_CANCELED)
+        }
+        super.finish()
     }
 
     override fun setScreenTitle(@StringRes title: Int) {
         binding.legacyActividadBarra.setTitle(title)
+    }
+
+    private fun whenStateAllows(action: () -> Unit) {
+        if (supportFragmentManager.isStateSaved) deferred.addLast(action) else action()
     }
 }

@@ -102,4 +102,46 @@ class PaymentFlowTest {
 
         assertNull(flow.takeRejectedCustomerCode())
     }
+
+    @Test
+    fun `without a payment the accounts did not change`() {
+        fillAll()
+
+        assertNull(flow.payment)
+        assertFalse(flow.accountsChanged)
+    }
+
+    @Test
+    fun `a completed payment is kept for the voucher and changes the accounts`() {
+        fillAll()
+
+        flow.completePayment(Samples.payment)
+
+        assertEquals(Samples.payment, flow.payment)
+        assertTrue(flow.accountsChanged)
+    }
+
+    @Test
+    fun `a payment that may have been charged changes the accounts without a voucher`() {
+        fillAll()
+
+        flow.markMayHaveCharged()
+
+        assertNull(flow.payment)
+        assertTrue(flow.accountsChanged)
+    }
+
+    @Test
+    fun `the payment order carries what was chosen, the pin and the key of the attempt`() {
+        fillAll()
+
+        val order = flow.paymentOrder("1234", "key-1")
+
+        assertEquals("BIL-LUZ", order.billerId)
+        assertEquals("100200", order.customerCode)
+        assertEquals(listOf("DEB-LUZ-202610", "DEB-LUZ-202611"), order.debtIds)
+        assertEquals("ACC-002", order.accountId)
+        assertEquals("1234", order.pin)
+        assertEquals("key-1", order.idempotencyKey)
+    }
 }

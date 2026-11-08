@@ -2,9 +2,14 @@ package com.hacybeyker.cartera.legacy.ui
 
 import androidx.fragment.app.Fragment
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
+import com.hacybeyker.cartera.legacy.core.domain.LegacyError
+import com.hacybeyker.cartera.legacy.core.domain.ProblemCode
 import com.hacybeyker.cartera.legacy.testing.RecordingAccountView
 import com.hacybeyker.cartera.legacy.testing.RecordingDebtsView
+import com.hacybeyker.cartera.legacy.testing.RecordingPinView
+import com.hacybeyker.cartera.legacy.testing.RecordingVoucherView
 import com.hacybeyker.cartera.legacy.testing.Samples
+import com.hacybeyker.cartera.legacy.testing.failure
 import com.hacybeyker.cartera.legacy.testing.fixtureBillers
 import io.reactivex.rxjava3.core.Single
 import org.junit.After
@@ -162,8 +167,85 @@ class LegacyScreenshotTest(private val dark: Boolean) {
         { flowAtAccount().apply { accounts.respond = { Single.never() } } }
     ) { AccountFragment() }
 
-    @Test
-    fun pinPlaceholder() = captureLightAndDark("legacy_clave_pendiente", { TestPresenters() }) {
-        LegacyPlaceholderFragment()
+    private fun flowAtPin(seed: Int = 0): TestPresenters = flowAtAccount().apply {
+        flow.chooseAccount(Samples.gastos)
+        padSeed.seed = seed
     }
+
+    private fun TestPresenters.typing(vararg digits: Int) {
+        onPinPresenter = { presenter ->
+            presenter.attach(RecordingPinView())
+            digits.forEach(presenter::onDigit)
+            presenter.detach()
+        }
+    }
+
+    @Test
+    fun pinFixedOrder() = captureLightAndDark("legacy_clave_orden_fijo", { flowAtPin() }) { PinFragment() }
+
+    @Test
+    fun pinWithTwoDigits() = captureLightAndDark(
+        "legacy_clave_dos_digitos",
+        { flowAtPin().apply { typing(1, 2) } }
+    ) { PinFragment() }
+
+    @Test
+    fun pinShuffledWithSeed7() = captureLightAndDark("legacy_clave_semilla_7", { flowAtPin(seed = 7) }) {
+        PinFragment()
+    }
+
+    @Test
+    fun pinWithWrongPinAndReshuffledKeyboard() = captureLightAndDark(
+        "legacy_clave_error",
+        {
+            flowAtPin(seed = 7).apply {
+                payments.respondPay =
+                    { Single.error(failure(LegacyError.Rejected(422, ProblemCode.INVALID_PIN, "", emptyList()))) }
+                typing(0, 0, 0, 0)
+            }
+        }
+    ) { PinFragment() }
+
+    @Test
+    fun pinSending() = captureLightAndDark(
+        "legacy_clave_cargando",
+        {
+            flowAtPin().apply {
+                payments.respondPay = { Single.never() }
+                typing(1, 2, 3, 4)
+            }
+        }
+    ) { PinFragment() }
+
+    private fun flowAtVoucher(): TestPresenters = TestPresenters().apply {
+        flow.chooseBiller(Samples.luz)
+        flow.completePayment(Samples.payment)
+    }
+
+    @Test
+    fun voucherLoading() = captureLightAndDark(
+        "legacy_constancia_cargando",
+        { flowAtVoucher().apply { payments.respondVoucher = { Single.never() } } }
+    ) { VoucherFragment() }
+
+    @Test
+    fun voucherWithTheFinishButton() = captureLightAndDark(
+        "legacy_constancia_finalizar",
+        { flowAtVoucher().apply { payments.respondVoucher = { Single.just(Samples.voucherHtml) } } }
+    ) { VoucherFragment() }
+
+    @Test
+    fun voucherUnavailable() = captureLightAndDark(
+        "legacy_constancia_sin_constancia",
+        {
+            flowAtVoucher().apply {
+                payments.respondVoucher = { Single.error(failure(LegacyError.Network)) }
+                onVoucherPresenter = { presenter ->
+                    presenter.attach(RecordingVoucherView())
+                    presenter.onCancel()
+                    presenter.detach()
+                }
+            }
+        }
+    ) { VoucherFragment() }
 }

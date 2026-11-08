@@ -25,7 +25,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/legacy_spacing_medium"
-        android:hint="@string/legacy_customer_hint">
+        android:hint="@string/legacy_customer_hint"
+        android:saveEnabled="false">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/legacy_codigo_campo"
@@ -33,7 +34,8 @@
             android:layout_height="wrap_content"
             android:imeOptions="actionDone"
             android:inputType="number"
-            android:maxLines="1" />
+            android:maxLines="1"
+            android:saveEnabled="false" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <Space

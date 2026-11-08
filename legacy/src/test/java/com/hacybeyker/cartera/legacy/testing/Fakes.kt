@@ -10,7 +10,12 @@ import com.hacybeyker.cartera.legacy.core.domain.SchedulerProvider
 import com.hacybeyker.cartera.legacy.debts.domain.CustomerDebts
 import com.hacybeyker.cartera.legacy.debts.domain.DebtRepository
 import com.hacybeyker.cartera.legacy.integration.LegacyContentMarker
+import com.hacybeyker.cartera.legacy.integration.LegacyPinPadSeed
 import com.hacybeyker.cartera.legacy.integration.LegacySessionExpiry
+import com.hacybeyker.cartera.legacy.payment.domain.BillPayment
+import com.hacybeyker.cartera.legacy.payment.domain.IdempotencyKeyFactory
+import com.hacybeyker.cartera.legacy.payment.domain.PaymentOrder
+import com.hacybeyker.cartera.legacy.payment.domain.PaymentRepository
 import io.reactivex.rxjava3.core.Scheduler
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -80,4 +85,33 @@ class FakeAccountRepository : AccountRepository {
         requests++
         respond()
     }
+}
+
+class FakePaymentRepository : PaymentRepository {
+    val orders = mutableListOf<PaymentOrder>()
+    val vouchers = mutableListOf<String>()
+    var respondPay: (PaymentOrder) -> Single<BillPayment> = { Single.never() }
+    var respondVoucher: (String) -> Single<String> = { Single.never() }
+
+    override fun pay(order: PaymentOrder): Single<BillPayment> = Single.defer {
+        orders += order
+        respondPay(order)
+    }
+
+    override fun voucher(paymentId: String): Single<String> = Single.defer {
+        vouchers += paymentId
+        respondVoucher(paymentId)
+    }
+}
+
+class FakePinPadSeed(var seed: Int = 0) : LegacyPinPadSeed {
+    override fun current(): Int = seed
+}
+
+/** Claves de idempotencia predecibles: `key-1`, `key-2`... */
+class SequenceIdempotencyKeys : IdempotencyKeyFactory {
+    var created = 0
+        private set
+
+    override fun create(): String = "key-${++created}"
 }

@@ -6,16 +6,24 @@ import com.hacybeyker.cartera.legacy.account.AccountPresenter
 import com.hacybeyker.cartera.legacy.billers.BillersPresenter
 import com.hacybeyker.cartera.legacy.customer.CustomerCodePresenter
 import com.hacybeyker.cartera.legacy.debts.DebtsPresenter
+import com.hacybeyker.cartera.legacy.pin.PinPresenter
+import com.hacybeyker.cartera.legacy.voucher.VoucherPresenter
 
-internal enum class LegacyScreen { CUSTOMER_CODE, DEBTS, ACCOUNT, PIN }
+internal enum class LegacyScreen { CUSTOMER_CODE, DEBTS, ACCOUNT, PIN, VOUCHER }
 
 internal interface LegacyNavigator {
     fun navigateTo(screen: LegacyScreen)
 
+    /** Deja [screen] como única pantalla de la pila: no se vuelve a ninguna anterior. */
+    fun replaceStackWith(screen: LegacyScreen)
+
+    /** Retira [screen] y las que la siguen, y la abre de nuevo desde cero. */
+    fun restartAt(screen: LegacyScreen)
+
     /** Retrocede una pantalla; en la primera, cierra la Activity. */
     fun goBack()
 
-    /** Cierra la Activity sin cambios para quien la lanzó. */
+    /** Cierra la Activity; si el flujo ya pagó o pudo pagar, quien la lanzó recibe `Paid`. */
     fun close()
 
     fun setScreenTitle(@StringRes title: Int)
@@ -30,6 +38,10 @@ internal interface LegacyPresenterSource {
     fun debts(): DebtsPresenter
 
     fun account(): AccountPresenter
+
+    fun pin(): PinPresenter
+
+    fun voucher(): VoucherPresenter
 }
 
 /** Lo que la Activity ofrece a sus Fragments. */
@@ -45,5 +57,6 @@ internal fun LegacyScreen.createFragment(): Fragment = when (this) {
     LegacyScreen.CUSTOMER_CODE -> CustomerCodeFragment()
     LegacyScreen.DEBTS -> DebtsFragment()
     LegacyScreen.ACCOUNT -> AccountFragment()
-    LegacyScreen.PIN -> LegacyPlaceholderFragment()
+    LegacyScreen.PIN -> PinFragment()
+    LegacyScreen.VOUCHER -> VoucherFragment()
 }

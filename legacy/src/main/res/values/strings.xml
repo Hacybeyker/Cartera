@@ -3,8 +3,6 @@
     <string name="legacy_title">Servicios clásicos</string>
     <string name="legacy_back">Volver</string>
     <string name="legacy_loading">Cargando</string>
-    <string name="legacy_placeholder_title">Próximamente</string>
-    <string name="legacy_placeholder_message">Estamos preparando el pago de servicios.</string>
 
     <string name="legacy_error_title">No pudimos completar la operación</string>
     <string name="legacy_error_network">No pudimos conectarnos. Revisa tu conexión e inténtalo de nuevo.</string>
@@ -40,4 +38,16 @@
     <string name="legacy_account_continue">Continuar</string>
 
     <string name="legacy_pin_title">Clave</string>
+    <string name="legacy_pin_heading">Ingresa tu clave de operaciones</string>
+    <string name="legacy_pin_progress">Avance de la clave</string>
+    <string name="legacy_pin_delete">Borrar</string>
+    <string name="legacy_pin_invalid">La clave es incorrecta. Inténtalo de nuevo.</string>
+    <string name="legacy_pin_notice_funds">El saldo de la cuenta no alcanza para pagar el total.</string>
+    <string name="legacy_pin_notice_paid">Uno de los recibos ya fue pagado.</string>
+    <string name="legacy_pin_notice_rejected">No pudimos procesar el pago. Revisa los datos e inténtalo de nuevo.</string>
+    <string name="legacy_notice_accept">Aceptar</string>
+
+    <string name="legacy_voucher_title">Constancia</string>
+    <string name="legacy_voucher_finish">Finalizar</string>
+    <string name="legacy_voucher_unavailable">No pudimos cargar la constancia, pero tu pago se realizó.</string>
 </resources>

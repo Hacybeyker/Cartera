@@ -107,6 +107,24 @@ class BillersPresenterTest {
     }
 
     @Test
+    fun `the rows say which query they answer, and a reload keeps it`() {
+        presenter.attach(view)
+        assertNull(view.last.resultsFor)
+        settle()
+        assertEquals("", view.last.resultsFor)
+
+        repository.respond = { Single.never() }
+        presenter.onQueryChanged("agua")
+        advance(300)
+        assertEquals("", view.last.resultsFor)
+
+        repository.respond = { Single.just(listOf(Samples.agua)) }
+        presenter.onRetry()
+        settle()
+        assertEquals("agua", view.last.resultsFor)
+    }
+
+    @Test
     fun `a new search cancels the one still in flight`() {
         val first = SingleSubject.create<List<Biller>>()
         val second = SingleSubject.create<List<Biller>>()
