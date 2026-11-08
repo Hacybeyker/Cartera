@@ -36,9 +36,12 @@
 - Reintentar una transferencia reenvía la misma `Idempotency-Key`, así nunca se cobra dos veces.
 - Modales propios para saldo insuficiente, destino inexistente y monedas distintas, y errores de validación por campo.
 - Confirmaciones para salir del formulario con datos y para cancelar en la confirmación.
+- Interruptores del cliente, apagados al inicio y con el mismo nombre en BuildConfig, en el escenario, adb, launchApp y la pantalla Escenario: página completa de movimientos (`movements_full_page`), refresco anticipado de cuentas (`accounts_eager_refresh`) y transición enriquecida del desglose (`breakdown_rich_transition`). Release no los puede encender.
+- Ilustraciones de categoría en `drawable-nodpi`, para la transición enriquecida del desglose.
 - Caché de cuentas en memoria: el formulario la reutiliza y una transferencia la invalida, así al volver al inicio se piden las cuentas una sola vez.
 
 ### Changed
+- El desglose usa un Crossfade entre sus estados (carga, error y contenido).
 - Inicio y Movimientos vuelven a pedir sus datos al mostrarse solo si una transferencia los cambió; Inicio refresca solo las cuentas.
 - `ApiCaller` ya no trata cualquier `IllegalArgumentException` como respuesta inválida, solo los errores de lectura de la respuesta.
 - Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.

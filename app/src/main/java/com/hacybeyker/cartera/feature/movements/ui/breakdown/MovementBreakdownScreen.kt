@@ -18,5 +18,11 @@ fun MovementBreakdownScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     ReportContentVisible(mark = MovementBreakdownTestTags.MARK, contentKey = uiState.contentKey)
-    MovementBreakdownContent(uiState = uiState, onAction = viewModel::onAction, onBack = onBack, modifier = modifier)
+    MovementBreakdownContent(
+        uiState = uiState,
+        richTransition = viewModel.richTransition,
+        onAction = viewModel::onAction,
+        onBack = onBack,
+        modifier = modifier
+    )
 }

@@ -2,6 +2,8 @@ package com.hacybeyker.cartera.feature.movements.ui.breakdown
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.domain.flags.IsFeatureEnabledUseCase
 import com.hacybeyker.cartera.core.ui.LoadUiState
 import com.hacybeyker.cartera.feature.movements.domain.model.Breakdown
 import com.hacybeyker.cartera.feature.movements.domain.usecase.GetBreakdownUseCase
@@ -22,8 +24,12 @@ sealed interface MovementBreakdownAction {
 @HiltViewModel(assistedFactory = MovementBreakdownViewModel.Factory::class)
 class MovementBreakdownViewModel @AssistedInject constructor(
     @Assisted private val movementId: String,
-    private val getBreakdown: GetBreakdownUseCase
+    private val getBreakdown: GetBreakdownUseCase,
+    isFeatureEnabled: IsFeatureEnabledUseCase
 ) : ViewModel() {
+
+    /** Se decide al abrir la pantalla: cambiar el interruptor rige desde el próximo desglose. */
+    val richTransition: Boolean = isFeatureEnabled(FeatureFlag.BREAKDOWN_RICH_TRANSITION)
 
     private val state = MutableStateFlow(LoadUiState<Breakdown>())
     val uiState: StateFlow<LoadUiState<Breakdown>> = state.asStateFlow()

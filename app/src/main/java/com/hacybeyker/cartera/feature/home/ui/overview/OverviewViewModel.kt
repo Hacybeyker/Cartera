@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hacybeyker.cartera.core.domain.Outcome
 import com.hacybeyker.cartera.core.domain.account.GetAccountsRevisionUseCase
-import com.hacybeyker.cartera.core.domain.account.GetAccountsUseCase
+import com.hacybeyker.cartera.core.domain.account.RefreshAccountsUseCase
 import com.hacybeyker.cartera.feature.home.domain.usecase.LoadOverviewUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class OverviewViewModel @Inject constructor(
     private val loadOverview: LoadOverviewUseCase,
-    private val getAccounts: GetAccountsUseCase,
+    private val refreshAccounts: RefreshAccountsUseCase,
     private val getAccountsRevision: GetAccountsRevisionUseCase
 ) : ViewModel() {
 
@@ -35,13 +35,11 @@ class OverviewViewModel @Inject constructor(
         when (action) {
             is OverviewAction.TabSelected -> state.update { it.copy(selectedTab = action.tab) }
             OverviewAction.RetryClicked -> load()
-            OverviewAction.Shown -> if (!state.value.isLoading &&
-                getAccountsRevision() != shownRevision
-            ) {
-                refreshAccounts()
-            }
+            OverviewAction.Shown -> if (hasChanged()) refresh()
         }
     }
+
+    private fun hasChanged(): Boolean = !state.value.isLoading && getAccountsRevision() != shownRevision
 
     private fun load() {
         shownRevision = getAccountsRevision()
@@ -64,10 +62,10 @@ class OverviewViewModel @Inject constructor(
 
     // El saludo no cambia con una transferencia: solo se vuelven a pedir las cuentas, y la lista anterior sigue a la
     // vista hasta que llegan las nuevas.
-    private fun refreshAccounts() {
+    private fun refresh() {
         shownRevision = getAccountsRevision()
         viewModelScope.launch {
-            val outcome = getAccounts()
+            val outcome = refreshAccounts()
             state.update { current ->
                 when (outcome) {
                     is Outcome.Success -> current.copy(

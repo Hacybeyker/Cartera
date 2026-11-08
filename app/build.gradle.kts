@@ -24,6 +24,11 @@ android {
         versionName = libs.versions.appVersion.get()
         buildConfigField("String", "BASE_URL", "\"https://cartera.invalid/api/v1/\"")
         buildConfigField("long", "HTTP_TIMEOUT_SECONDS", "10L")
+        // Interruptores del cliente: false en todas las variantes. En debug y demo los cambia el escenario en tiempo
+        // de ejecución; release no tiene cómo, así que quedan apagados.
+        listOf("MOVEMENTS_FULL_PAGE", "ACCOUNTS_EAGER_REFRESH", "BREAKDOWN_RICH_TRANSITION").forEach { flag ->
+            buildConfigField("boolean", flag, "false")
+        }
     }
 
     buildTypes {

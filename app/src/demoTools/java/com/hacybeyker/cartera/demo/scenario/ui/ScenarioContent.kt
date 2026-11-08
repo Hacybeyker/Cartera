@@ -30,6 +30,7 @@ import com.hacybeyker.cartera.R
 import com.hacybeyker.cartera.core.designsystem.CarteraTheme
 import com.hacybeyker.cartera.core.designsystem.component.BackTopBar
 import com.hacybeyker.cartera.core.designsystem.spacing
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.demo.backend.FailureMode
 
 @Composable
@@ -69,6 +70,15 @@ fun ScenarioContent(
                 keyboardType = KeyboardType.Number
             )
             BackendDownSwitch(checked = uiState.backendDown, onAction = onAction)
+            Text(text = stringResource(R.string.scenario_flags), style = MaterialTheme.typography.titleSmall)
+            FeatureFlag.entries.forEach { flag ->
+                LabeledSwitch(
+                    label = stringResource(flag.labelRes()),
+                    checked = flag in uiState.flags,
+                    testTag = ScenarioTestTags.flag(flag),
+                    onCheckedChange = { onAction(ScenarioAction.FlagChanged(flag, it)) }
+                )
+            }
             Text(
                 text = stringResource(R.string.scenario_endpoints),
                 style = MaterialTheme.typography.bodySmall,
@@ -128,18 +138,27 @@ private fun FailureModeSelector(selected: FailureMode, onAction: (ScenarioAction
 
 @Composable
 private fun BackendDownSwitch(checked: Boolean, onAction: (ScenarioAction) -> Unit) {
+    LabeledSwitch(
+        label = stringResource(R.string.scenario_backend_down),
+        checked = checked,
+        testTag = ScenarioTestTags.BACKEND_DOWN,
+        onCheckedChange = { onAction(ScenarioAction.BackendDownChanged(it)) }
+    )
+}
+
+@Composable
+private fun LabeledSwitch(label: String, checked: Boolean, testTag: String, onCheckedChange: (Boolean) -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = stringResource(R.string.scenario_backend_down),
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Switch(
-            checked = checked,
-            onCheckedChange = { onAction(ScenarioAction.BackendDownChanged(it)) },
-            modifier = Modifier.testTag(ScenarioTestTags.BACKEND_DOWN)
-        )
+        Text(text = label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+        Switch(checked = checked, onCheckedChange = onCheckedChange, modifier = Modifier.testTag(testTag))
     }
+}
+
+@StringRes
+private fun FeatureFlag.labelRes(): Int = when (this) {
+    FeatureFlag.MOVEMENTS_FULL_PAGE -> R.string.scenario_movements_full_page
+    FeatureFlag.ACCOUNTS_EAGER_REFRESH -> R.string.scenario_accounts_eager_refresh
+    FeatureFlag.BREAKDOWN_RICH_TRANSITION -> R.string.scenario_breakdown_rich_transition
 }
 
 @Composable

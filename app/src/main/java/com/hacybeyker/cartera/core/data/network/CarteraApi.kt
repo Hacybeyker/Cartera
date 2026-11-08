@@ -11,6 +11,7 @@ import com.hacybeyker.cartera.core.data.network.dto.MovementDetailDto
 import com.hacybeyker.cartera.core.data.network.dto.MovementPageDto
 import com.hacybeyker.cartera.core.data.network.dto.TransferRequestDto
 import com.hacybeyker.cartera.core.data.network.dto.TransferResponseDto
+import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -40,6 +41,14 @@ interface CarteraApi {
         @Query("cursor") cursor: String?,
         @Query("limit") limit: Int?
     ): MovementPageDto
+
+    /** Los movimientos como cuerpo crudo, sin pasar por el converter: quien llama decide dónde decodificarlos. */
+    @GET("movements")
+    suspend fun movementsBody(
+        @Query("accountId") accountId: String?,
+        @Query("cursor") cursor: String?,
+        @Query("limit") limit: Int?
+    ): ResponseBody
 
     @GET("movements/{movementId}")
     suspend fun movement(@Path("movementId") movementId: String): MovementDetailDto

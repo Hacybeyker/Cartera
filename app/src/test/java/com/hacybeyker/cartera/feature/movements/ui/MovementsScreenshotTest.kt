@@ -80,8 +80,22 @@ class MovementsScreenshotTest {
 
     @Test
     fun breakdown() = compose.captureLightAndDark("desglose_contenido") {
-        MovementBreakdownContent(uiState = LoadUiState(isLoading = false, content = TestBreakdown), onAction = {
-        }, onBack = {})
+        MovementBreakdownContent(
+            uiState = LoadUiState(isLoading = false, content = TestBreakdown),
+            richTransition = false,
+            onAction = {},
+            onBack = {}
+        )
+    }
+
+    @Test
+    fun breakdownRichTransition() = compose.captureLightAndDark("desglose_transicion_enriquecida") {
+        MovementBreakdownContent(
+            uiState = LoadUiState(isLoading = false, content = TestBreakdown),
+            richTransition = true,
+            onAction = {},
+            onBack = {}
+        )
     }
 
     @Test
@@ -91,6 +105,7 @@ class MovementsScreenshotTest {
                 isLoading = false,
                 content = TestBreakdown.copy(merchant = null, exchangeRate = "3.7520".toBigDecimal())
             ),
+            richTransition = false,
             onAction = {},
             onBack = {}
         )
@@ -100,6 +115,7 @@ class MovementsScreenshotTest {
     fun breakdownNotFound() = compose.captureLightAndDark("desglose_no_encontrado") {
         MovementBreakdownContent(
             uiState = LoadUiState<Breakdown>(isLoading = false, error = AppError.NotFound),
+            richTransition = false,
             onAction = {},
             onBack = {}
         )

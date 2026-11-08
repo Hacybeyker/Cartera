@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.core.ui.movement
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -49,6 +50,14 @@ fun CategoryIllustration(category: MovementCategory, size: Dp, modifier: Modifie
             tint = MaterialTheme.colorScheme.onSecondaryContainer
         )
     }
+}
+
+@DrawableRes
+fun MovementCategory.fullIllustrationRes(): Int = when (this) {
+    MovementCategory.GROCERIES, MovementCategory.SHOPPING -> R.drawable.ill_category_groceries
+    MovementCategory.TRANSFER, MovementCategory.SALARY -> R.drawable.ill_category_transfer
+    MovementCategory.HEALTH -> R.drawable.ill_category_health
+    else -> R.drawable.ill_category_generic
 }
 
 @StringRes

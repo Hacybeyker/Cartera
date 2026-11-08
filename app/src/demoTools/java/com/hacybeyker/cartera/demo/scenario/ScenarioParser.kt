@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.demo.scenario
 
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.demo.backend.Endpoint
 import com.hacybeyker.cartera.demo.backend.FailureMode
 
@@ -20,7 +21,7 @@ object ScenarioParser {
         ScenarioKeys.SESSION_TTL,
         ScenarioKeys.BACKEND_DOWN,
         ScenarioKeys.DEFAULTS
-    )
+    ) + FeatureFlag.entries.map { it.key }
     private val ENDPOINT_IDS = Endpoint.entries.filter { it != Endpoint.DEMO_RESET }.map { it.id }.toSet()
     private const val DEFAULT_ID = "default"
     private const val MAX_RATE = 100
@@ -48,7 +49,8 @@ object ScenarioParser {
             sessionTtlSeconds = field(ScenarioKeys.SESSION_TTL, base.sessionTtlSeconds) { raw ->
                 raw.toString().trim().toLongOrNull()?.takeIf { it > 0 }
             },
-            backendDown = field(ScenarioKeys.BACKEND_DOWN, base.backendDown, ::bool)
+            backendDown = field(ScenarioKeys.BACKEND_DOWN, base.backendDown, ::bool),
+            flags = FeatureFlag.entries.filter { flag -> field(flag.key, flag in base.flags, ::bool) }.toSet()
         )
         return ScenarioUpdate(scenario, rejected, values.keys - KNOWN_KEYS)
     }

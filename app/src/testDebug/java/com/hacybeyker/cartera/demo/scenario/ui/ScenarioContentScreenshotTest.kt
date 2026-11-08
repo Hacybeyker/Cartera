@@ -3,6 +3,7 @@ package com.hacybeyker.cartera.demo.scenario.ui
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.core.testing.captureLightAndDark
 import com.hacybeyker.cartera.demo.backend.FailureMode
 import org.junit.Rule
@@ -36,6 +37,7 @@ class ScenarioContentScreenshotTest {
                 failureMode = FailureMode.TIMEOUT,
                 sessionTtl = "60",
                 backendDown = true,
+                flags = setOf(FeatureFlag.MOVEMENTS_FULL_PAGE),
                 message = ScenarioMessage.Rejected(listOf("session_ttl=0"))
             ),
             onAction = {},

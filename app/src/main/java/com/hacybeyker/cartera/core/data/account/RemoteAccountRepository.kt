@@ -36,10 +36,13 @@ class RemoteAccountRepository @Inject constructor(
         val revision = changes.revision
         val token = tokens.accessToken()
         cached?.takeIf { it.revision == revision && it.token == token }?.let { return Outcome.Success(it.accounts) }
-        call { api.accounts().items.map { it.toAccount() } }.toOutcome().also { outcome ->
+        fetchAccounts().also { outcome ->
             if (outcome is Outcome.Success) cached = Cached(revision, token, outcome.value)
         }
     }
+
+    override suspend fun fetchAccounts(): Outcome<List<Account>> =
+        call { api.accounts().items.map { it.toAccount() } }.toOutcome()
 
     override suspend fun account(accountId: String): Outcome<Account> =
         call { api.account(accountId).toAccount() }.toOutcome()

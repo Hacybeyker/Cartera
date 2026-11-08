@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.demo.scenario.ui
 
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
 import com.hacybeyker.cartera.demo.backend.FailureMode
 import com.hacybeyker.cartera.demo.scenario.DemoResetClient
@@ -135,5 +136,24 @@ class ScenarioViewModelTest {
         viewModel.onAction(ScenarioAction.LatencyChanged("0"))
 
         assertEquals(null, viewModel.uiState.value.message)
+    }
+
+    @Test
+    fun `client flags are saved with the rest`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.ACCOUNTS_EAGER_REFRESH, true))
+        viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.BREAKDOWN_RICH_TRANSITION, true))
+        viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.BREAKDOWN_RICH_TRANSITION, false))
+        viewModel.onAction(ScenarioAction.SaveClicked)
+        advanceUntilIdle()
+
+        assertEquals(setOf(FeatureFlag.ACCOUNTS_EAGER_REFRESH), store.load().flags)
+        assertEquals(setOf(FeatureFlag.ACCOUNTS_EAGER_REFRESH), viewModel.uiState.value.flags)
+
+        viewModel.onAction(ScenarioAction.DefaultsClicked)
+        advanceUntilIdle()
+        assertEquals(emptySet<FeatureFlag>(), viewModel.uiState.value.flags)
     }
 }

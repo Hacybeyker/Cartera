@@ -5,6 +5,10 @@
     <string name="scenario_failure_mode">Tipo de fallo</string>
     <string name="scenario_session_ttl">TTL de la sesión en s (rige desde el próximo login)</string>
     <string name="scenario_backend_down">Backend caído</string>
+    <string name="scenario_flags">Interruptores del cliente (no viajan al backend)</string>
+    <string name="scenario_movements_full_page">Página completa de movimientos (movements_full_page)</string>
+    <string name="scenario_accounts_eager_refresh">Refresco anticipado de cuentas (accounts_eager_refresh)</string>
+    <string name="scenario_breakdown_rich_transition">Transición enriquecida del desglose (breakdown_rich_transition)</string>
     <string name="scenario_endpoints">Endpoints: app_config, login, me, accounts, account, movements, movement, breakdown, transfers.</string>
     <string name="scenario_save">Guardar</string>
     <string name="scenario_defaults">Valores por defecto</string>

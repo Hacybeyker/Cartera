@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.demo.scenario
 
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.demo.backend.FailureMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -18,7 +19,8 @@ class ScenarioTest {
     @Test
     fun `defaults match the documented values`() {
         assertEquals(
-            "latency=default=400 failure_rate=default=0 failure_mode=http_500 session_ttl=900 backend_down=false",
+            "latency=default=400 failure_rate=default=0 failure_mode=http_500 session_ttl=900 backend_down=false " +
+                "movements_full_page=false accounts_eager_refresh=false breakdown_rich_transition=false",
             Scenario().describe()
         )
     }
@@ -138,5 +140,51 @@ class ScenarioTest {
         val store = ScenarioStore(FakeScenarioStorage(mapOf("latency" to "x", "failure_mode" to "timeout")))
 
         assertEquals(Scenario(failureMode = FailureMode.TIMEOUT), store.load())
+    }
+
+    @Test
+    fun `client flags are parsed from adb booleans and launch arguments text`() {
+        val scenario = ScenarioParser.apply(
+            Scenario(),
+            mapOf(
+                "movements_full_page" to true,
+                "accounts_eager_refresh" to "TRUE",
+                "breakdown_rich_transition" to "no"
+            )
+        )
+
+        assertEquals(
+            setOf(FeatureFlag.MOVEMENTS_FULL_PAGE, FeatureFlag.ACCOUNTS_EAGER_REFRESH),
+            scenario.scenario.flags
+        )
+        assertEquals(listOf("breakdown_rich_transition=no"), scenario.rejected)
+        assertTrue(scenario.ignoredKeys.isEmpty())
+    }
+
+    @Test
+    fun `flags not sent keep their value and defaults turn them off`() {
+        val current = Scenario(flags = setOf(FeatureFlag.BREAKDOWN_RICH_TRANSITION))
+
+        assertEquals(current.flags, ScenarioParser.apply(current, mapOf("latency" to "0")).scenario.flags)
+        assertEquals(emptySet<FeatureFlag>(), ScenarioParser.apply(current, mapOf("defaults" to true)).scenario.flags)
+        assertEquals(
+            emptySet<FeatureFlag>(),
+            ScenarioParser.apply(current, mapOf("breakdown_rich_transition" to false)).scenario.flags
+        )
+    }
+
+    @Test
+    fun `stored flags survive and feed the client at once`() {
+        val storage = FakeScenarioStorage()
+        val store = ScenarioStore(storage)
+        val source = ScenarioFeatureFlagSource(store)
+        assertEquals(false, source.valueOf(FeatureFlag.MOVEMENTS_FULL_PAGE))
+
+        store.update(mapOf("movements_full_page" to true))
+
+        assertEquals("true", storage.values["movements_full_page"])
+        assertEquals("false", storage.values["accounts_eager_refresh"])
+        assertEquals(true, source.valueOf(FeatureFlag.MOVEMENTS_FULL_PAGE))
+        assertEquals(setOf(FeatureFlag.MOVEMENTS_FULL_PAGE), ScenarioStore(storage).load().flags)
     }
 }

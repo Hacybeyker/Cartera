@@ -1,6 +1,9 @@
 package com.hacybeyker.cartera.feature.movements.ui
 
 import com.hacybeyker.cartera.core.domain.AppError
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.domain.flags.IsFeatureEnabledUseCase
+import com.hacybeyker.cartera.core.testing.FakeFeatureFlags
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
 import com.hacybeyker.cartera.feature.movements.FakeMovementDetailRepository
 import com.hacybeyker.cartera.feature.movements.TestBreakdown
@@ -24,6 +27,8 @@ class MovementDetailViewModelsTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val repository = FakeMovementDetailRepository()
+
+    private fun isFeatureEnabled(vararg enabled: FeatureFlag) = IsFeatureEnabledUseCase(FakeFeatureFlags(*enabled))
 
     @Test
     fun `detail loads the movement`() = runTest {
@@ -53,7 +58,7 @@ class MovementDetailViewModelsTest {
 
     @Test
     fun `breakdown loads the lines`() = runTest {
-        val viewModel = MovementBreakdownViewModel("MOV-002-0001", GetBreakdownUseCase(repository))
+        val viewModel = MovementBreakdownViewModel("MOV-002-0001", GetBreakdownUseCase(repository), isFeatureEnabled())
         advanceUntilIdle()
 
         assertEquals(TestBreakdown, viewModel.uiState.value.content)
@@ -63,7 +68,7 @@ class MovementDetailViewModelsTest {
     @Test
     fun `breakdown not found shows the error and retry loads again`() = runTest {
         repository.failures += AppError.NotFound
-        val viewModel = MovementBreakdownViewModel("MOV-999", GetBreakdownUseCase(repository))
+        val viewModel = MovementBreakdownViewModel("MOV-999", GetBreakdownUseCase(repository), isFeatureEnabled())
         advanceUntilIdle()
         assertEquals(AppError.NotFound, viewModel.uiState.value.error)
 
@@ -71,5 +76,18 @@ class MovementDetailViewModelsTest {
         advanceUntilIdle()
 
         assertEquals(TestBreakdown, viewModel.uiState.value.content)
+    }
+
+    @Test
+    fun `the rich transition is read when the breakdown opens`() = runTest {
+        val plain = MovementBreakdownViewModel("MOV-002-0001", GetBreakdownUseCase(repository), isFeatureEnabled())
+        val rich = MovementBreakdownViewModel(
+            "MOV-002-0001",
+            GetBreakdownUseCase(repository),
+            isFeatureEnabled(FeatureFlag.BREAKDOWN_RICH_TRANSITION)
+        )
+
+        assertEquals(false, plain.richTransition)
+        assertEquals(true, rich.richTransition)
     }
 }

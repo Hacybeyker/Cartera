@@ -3,6 +3,7 @@ package com.hacybeyker.cartera.demo.scenario.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hacybeyker.cartera.core.common.IoDispatcher
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.demo.scenario.DemoResetClient
 import com.hacybeyker.cartera.demo.scenario.ScenarioKeys
 import com.hacybeyker.cartera.demo.scenario.ScenarioStore
@@ -41,6 +42,10 @@ class ScenarioViewModel @Inject constructor(
             is ScenarioAction.FailureModeSelected -> state.update { it.copy(failureMode = action.mode, message = null) }
             is ScenarioAction.SessionTtlChanged -> state.update { it.copy(sessionTtl = action.value, message = null) }
             is ScenarioAction.BackendDownChanged -> state.update { it.copy(backendDown = action.value, message = null) }
+            is ScenarioAction.FlagChanged -> state.update {
+                val flags = if (action.enabled) it.flags + action.flag else it.flags - action.flag
+                it.copy(flags = flags, message = null)
+            }
             ScenarioAction.SaveClicked -> save()
             ScenarioAction.DefaultsClicked -> restoreDefaults()
             ScenarioAction.ResetDataClicked -> resetData()
@@ -55,7 +60,7 @@ class ScenarioViewModel @Inject constructor(
             ScenarioKeys.FAILURE_MODE to form.failureMode.wireName,
             ScenarioKeys.SESSION_TTL to form.sessionTtl,
             ScenarioKeys.BACKEND_DOWN to form.backendDown
-        )
+        ) + FeatureFlag.entries.associate { it.key to (it in form.flags) }
         viewModelScope.launch {
             val update = withContext(io) { store.update(values) }
             val message = when {

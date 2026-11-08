@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.demo.scenario.ui
 
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.demo.backend.FailureMode
 import com.hacybeyker.cartera.demo.scenario.Scenario
 
@@ -10,6 +11,7 @@ data class ScenarioUiState(
     val failureMode: FailureMode = FailureMode.HTTP_500,
     val sessionTtl: String = "",
     val backendDown: Boolean = false,
+    val flags: Set<FeatureFlag> = emptySet(),
     val isResettingData: Boolean = false,
     val message: ScenarioMessage? = null
 ) {
@@ -18,7 +20,8 @@ data class ScenarioUiState(
         failureRate = scenario.failureRate.encode(),
         failureMode = scenario.failureMode,
         sessionTtl = scenario.sessionTtlSeconds.toString(),
-        backendDown = scenario.backendDown
+        backendDown = scenario.backendDown,
+        flags = scenario.flags
     )
 }
 
@@ -44,6 +47,8 @@ sealed interface ScenarioAction {
     data class SessionTtlChanged(val value: String) : ScenarioAction
 
     data class BackendDownChanged(val value: Boolean) : ScenarioAction
+
+    data class FlagChanged(val flag: FeatureFlag, val enabled: Boolean) : ScenarioAction
 
     data object SaveClicked : ScenarioAction
 

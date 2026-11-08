@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.demo.scenario.ui
 
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.demo.backend.FailureMode
 import com.hacybeyker.cartera.demo.scenario.ScenarioKeys
 
@@ -17,4 +18,6 @@ object ScenarioTestTags {
     const val MESSAGE = "escenario_mensaje"
 
     fun failureMode(mode: FailureMode) = "${FAILURE_MODE}_${mode.wireName}"
+
+    fun flag(flag: FeatureFlag) = "escenario_${flag.key}"
 }

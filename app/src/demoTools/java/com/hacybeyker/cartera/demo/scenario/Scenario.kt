@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.demo.scenario
 
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.demo.backend.FailureMode
 
 data class EndpointValues<T>(val default: T, val overrides: Map<String, T> = emptyMap()) {
@@ -16,7 +17,9 @@ data class Scenario(
     val failureRate: EndpointValues<Int> = EndpointValues(0),
     val failureMode: FailureMode = FailureMode.HTTP_500,
     val sessionTtlSeconds: Long = DEFAULT_SESSION_TTL_SECONDS,
-    val backendDown: Boolean = false
+    val backendDown: Boolean = false,
+    /** Interruptores del cliente encendidos; no viajan al backend. */
+    val flags: Set<FeatureFlag> = emptySet()
 ) {
     fun toValues(): Map<String, String> = mapOf(
         ScenarioKeys.LATENCY to latencyMs.encode(),
@@ -24,7 +27,7 @@ data class Scenario(
         ScenarioKeys.FAILURE_MODE to failureMode.wireName,
         ScenarioKeys.SESSION_TTL to sessionTtlSeconds.toString(),
         ScenarioKeys.BACKEND_DOWN to backendDown.toString()
-    )
+    ) + FeatureFlag.entries.associate { it.key to (it in flags).toString() }
 
     fun describe(): String = toValues().entries.joinToString(" ") { (key, value) -> "$key=$value" }
 

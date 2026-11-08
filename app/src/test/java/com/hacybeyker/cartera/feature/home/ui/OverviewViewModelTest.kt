@@ -2,9 +2,11 @@ package com.hacybeyker.cartera.feature.home.ui
 
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.account.GetAccountsRevisionUseCase
-import com.hacybeyker.cartera.core.domain.account.GetAccountsUseCase
+import com.hacybeyker.cartera.core.domain.account.RefreshAccountsUseCase
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.core.testing.FakeAccountChanges
 import com.hacybeyker.cartera.core.testing.FakeAccountRepository
+import com.hacybeyker.cartera.core.testing.FakeFeatureFlags
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
 import com.hacybeyker.cartera.core.testing.TestAccounts
 import com.hacybeyker.cartera.core.testing.pen
@@ -29,10 +31,11 @@ class OverviewViewModelTest {
     private val accounts = FakeAccountRepository()
 
     private val changes = FakeAccountChanges()
+    private val flags = FakeFeatureFlags()
 
     private fun viewModel() = OverviewViewModel(
         loadOverview = LoadOverviewUseCase(profile, accounts),
-        getAccounts = GetAccountsUseCase(accounts),
+        refreshAccounts = RefreshAccountsUseCase(accounts, flags),
         getAccountsRevision = GetAccountsRevisionUseCase(changes)
     )
 
@@ -126,5 +129,21 @@ class OverviewViewModelTest {
         viewModel.onAction(OverviewAction.TabSelected(OverviewTab.MOVEMENTS))
 
         assertEquals(OverviewTab.MOVEMENTS, viewModel.uiState.value.selectedTab)
+    }
+
+    @Test
+    fun `with the eager refresh, coming back after a transfer asks the server twice, skipping the cache`() = runTest {
+        flags.enabled += FeatureFlag.ACCOUNTS_EAGER_REFRESH
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        changes.notifyChanged()
+        viewModel.onAction(OverviewAction.Shown)
+        advanceUntilIdle()
+
+        assertEquals(1, accounts.accountsCalls)
+        assertEquals(2, accounts.fetchCalls)
+        assertEquals(1, profile.calls)
+        assertEquals(2, viewModel.uiState.value.contentKey)
     }
 }

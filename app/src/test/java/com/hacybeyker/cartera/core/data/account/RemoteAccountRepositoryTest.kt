@@ -114,6 +114,20 @@ class RemoteAccountRepositoryTest {
     }
 
     @Test
+    fun `fetching always asks the server and leaves the cache alone`() = runTest {
+        server.enqueueJson(200, """{"items":[$ACCOUNT]}""")
+        server.enqueueJson(200, """{"items":[$ACCOUNT]}""")
+        server.enqueueJson(200, """{"items":[$ACCOUNT]}""")
+
+        repository.accounts()
+        repository.fetchAccounts()
+        repository.fetchAccounts()
+        repository.accounts()
+
+        assertEquals(3, server.requestCount)
+    }
+
+    @Test
     fun `account changes count each transfer`() {
         assertEquals(0, changes.revision)
         changes.notifyChanged()

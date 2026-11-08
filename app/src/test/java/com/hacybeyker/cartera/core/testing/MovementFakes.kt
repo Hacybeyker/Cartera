@@ -7,6 +7,8 @@ import com.hacybeyker.cartera.core.domain.Page
 import com.hacybeyker.cartera.core.domain.account.Account
 import com.hacybeyker.cartera.core.domain.account.AccountChanges
 import com.hacybeyker.cartera.core.domain.account.AccountRepository
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlags
 import com.hacybeyker.cartera.core.domain.movement.Movement
 import com.hacybeyker.cartera.core.domain.movement.MovementCategory
 import com.hacybeyker.cartera.core.domain.movement.MovementRepository
@@ -32,8 +34,15 @@ class FakeAccountRepository(var accounts: List<Account> = TestAccounts, var erro
     AccountRepository {
     var accountsCalls = 0
 
+    var fetchCalls = 0
+
     override suspend fun accounts(): Outcome<List<Account>> {
         accountsCalls++
+        return error?.let { Outcome.Failure(it) } ?: Outcome.Success(accounts)
+    }
+
+    override suspend fun fetchAccounts(): Outcome<List<Account>> {
+        fetchCalls++
         return error?.let { Outcome.Failure(it) } ?: Outcome.Success(accounts)
     }
 
@@ -65,6 +74,12 @@ class FakeMovementRepository(var movements: List<Movement> = (1..45).map { testM
     private companion object {
         const val PAGE_SIZE = 20
     }
+}
+
+class FakeFeatureFlags(vararg enabled: FeatureFlag) : FeatureFlags {
+    val enabled = enabled.toMutableSet()
+
+    override fun isEnabled(flag: FeatureFlag): Boolean = flag in enabled
 }
 
 class FakeAccountChanges(override var revision: Int = 0) : AccountChanges {

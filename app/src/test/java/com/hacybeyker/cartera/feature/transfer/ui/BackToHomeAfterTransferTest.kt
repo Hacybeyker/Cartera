@@ -6,6 +6,9 @@ import com.hacybeyker.cartera.core.data.network.ApiCaller
 import com.hacybeyker.cartera.core.data.network.CarteraHttpClient
 import com.hacybeyker.cartera.core.domain.account.GetAccountsRevisionUseCase
 import com.hacybeyker.cartera.core.domain.account.GetAccountsUseCase
+import com.hacybeyker.cartera.core.domain.account.RefreshAccountsUseCase
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.testing.FakeFeatureFlags
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
 import com.hacybeyker.cartera.core.testing.carteraApi
 import com.hacybeyker.cartera.core.testing.pen
@@ -69,6 +72,23 @@ class BackToHomeAfterTransferTest {
 
     @Test
     fun `back to home after the reference transfer asks for the accounts once and never for me`() = runTest {
+        transferAndComeBack(FakeFeatureFlags())
+
+        // Una al abrir Inicio y una al volver; el formulario usó la caché.
+        assertEquals(2, count("accounts"))
+        assertEquals(1, count("me"))
+        assertEquals(1, count("transfers"))
+    }
+
+    @Test
+    fun `with the eager refresh, back to home asks for the accounts twice more`() = runTest {
+        transferAndComeBack(FakeFeatureFlags(FeatureFlag.ACCOUNTS_EAGER_REFRESH))
+
+        assertEquals(3, count("accounts"))
+        assertEquals(1, count("me"))
+    }
+
+    private suspend fun transferAndComeBack(flags: FakeFeatureFlags) {
         val api = server.carteraApi()
         val call = ApiCaller(CarteraHttpClient.json) {}
         val changes = InMemoryAccountChanges()
@@ -76,7 +96,7 @@ class BackToHomeAfterTransferTest {
         val revision = GetAccountsRevisionUseCase(changes)
         val overview = OverviewViewModel(
             LoadOverviewUseCase(RemoteProfileRepository(api, call), accounts),
-            GetAccountsUseCase(accounts),
+            RefreshAccountsUseCase(accounts, flags),
             revision
         )
         overview.uiState.first { it.contentKey == 1 }
@@ -101,11 +121,7 @@ class BackToHomeAfterTransferTest {
         overview.onAction(OverviewAction.Shown)
         overview.onAction(OverviewAction.Shown)
         val refreshed = overview.uiState.first { it.contentKey == 2 }
-
         assertEquals(pen("2150.00"), refreshed.accounts.single().availableBalance)
-        assertEquals(2, count("accounts"))
-        assertEquals(1, count("me"))
-        assertEquals(1, count("transfers"))
     }
 
     private fun json(code: Int, body: String) =

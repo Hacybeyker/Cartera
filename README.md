@@ -204,11 +204,18 @@ devuelve a los valores por defecto. Release no tiene nada de esto.
 | Tipo de fallo | `--es failure_mode timeout` | `http_500` · `timeout` · `disconnect` | `http_500` |
 | TTL de la sesión | `--ei session_ttl 60` | segundos; rige desde el próximo login | 900 |
 | Backend caído | `--ez backend_down true` | 503 en todos los endpoints | `false` |
+| Página completa de movimientos | `--ez movements_full_page true` | los movimientos de una cuenta llegan en una sola página completa | `false` |
+| Refresco anticipado de cuentas | `--ez accounts_eager_refresh true` | al volver al inicio tras una transferencia, las cuentas se refrescan de forma anticipada | `false` |
+| Transición enriquecida del desglose | `--ez breakdown_rich_transition true` | el desglose entra con una transición enriquecida y su ilustración a tamaño completo | `false` |
 | Valores por defecto | `--ez defaults true` | restablece el escenario antes de aplicar el resto | — |
 
 Ids de endpoint: `app_config`, `login`, `me`, `accounts`, `account`, `movements`, `movement`,
 `breakdown`, `transfers`.
 
+- Los tres últimos son interruptores del cliente: no viajan al backend y tienen el mismo nombre en
+  BuildConfig (`MOVEMENTS_FULL_PAGE`, `ACCOUNTS_EAGER_REFRESH`, `BREAKDOWN_RICH_TRANSITION`), donde
+  valen `false`. Rigen desde la próxima vez que se usan, sin reiniciar la app. Release no los puede
+  encender.
 - Lo que no se envía no cambia. Un valor por endpoint sin `default=` usa el valor de fábrica como global.
 - Un valor inválido no se aplica: el escenario efectivo y lo rechazado se imprimen en logcat con la
   etiqueta `CarteraDemo`.
