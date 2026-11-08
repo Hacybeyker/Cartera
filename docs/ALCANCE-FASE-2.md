@@ -99,6 +99,7 @@ Menú lateral ──► Mi portafolio · Cambio · Seguridad · Ayuda (próximam
 - Cambio: monto en la moneda de origen por la tasa de la cotización (compra si el banco compra dólares, venta si los vende). Debita y acredita, con un movimiento en cada cuenta. Responde `QUOTE_EXPIRED` si la cotización venció.
 - Idempotencia igual que en las transferencias. Sin comisiones ni impuestos.
 - El estado vive en memoria, como en la fase 1. `POST /_demo/reset` también devuelve tenencias y precios a su valor inicial.
+- Excepción: el registro de dispositivos biométricos del backend embebido persiste entre arranques, solo en `demoTools`, porque E5 exige ingresar con huella tras un arranque en frío.
 
 ---
 
