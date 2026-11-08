@@ -13,6 +13,7 @@ import com.hacybeyker.cartera.core.ui.preview.previewAccounts
 import com.hacybeyker.cartera.core.ui.preview.previewMovements
 import com.hacybeyker.cartera.feature.home.ui.more.MoreContent
 import com.hacybeyker.cartera.feature.home.ui.more.MoreUiState
+import com.hacybeyker.cartera.feature.home.ui.overview.AccountsTabActions
 import com.hacybeyker.cartera.feature.home.ui.overview.AllMovementsContent
 import com.hacybeyker.cartera.feature.home.ui.overview.OverviewContent
 import com.hacybeyker.cartera.feature.home.ui.overview.OverviewTab
@@ -30,6 +31,7 @@ class HomeScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
+    private val noActions = AccountsTabActions(onAccountClick = {}, onTransferClick = {})
     private val loadedOverview = OverviewUiState(isLoading = false, firstName = "Ana", accounts = previewAccounts)
 
     @Test
@@ -39,24 +41,30 @@ class HomeScreenshotTest {
 
     @Test
     fun overviewAccounts() = compose.captureLightAndDark("inicio_cuentas") {
-        OverviewContent(uiState = loadedOverview, onAction = {}, onAccountClick = {}) {}
+        OverviewContent(uiState = loadedOverview, onAction = {}, accountsActions = noActions) {}
     }
 
     @Test
     fun overviewLoading() = compose.captureLightAndDark("inicio_cargando") {
-        OverviewContent(uiState = OverviewUiState(), onAction = {}, onAccountClick = {}) {}
+        OverviewContent(uiState = OverviewUiState(), onAction = {}, accountsActions = noActions) {}
     }
 
     @Test
     fun overviewError() = compose.captureLightAndDark("inicio_error") {
-        OverviewContent(uiState = OverviewUiState(isLoading = false, error = AppError.Network), onAction = {
-        }, onAccountClick = {}) {}
+        OverviewContent(
+            uiState = OverviewUiState(isLoading = false, error = AppError.Network),
+            onAction = {},
+            accountsActions = noActions
+        ) {}
     }
 
     @Test
     fun overviewMovementsTab() = compose.captureLightAndDark("inicio_movimientos") {
-        OverviewContent(uiState = loadedOverview.copy(selectedTab = OverviewTab.MOVEMENTS), onAction = {
-        }, onAccountClick = {}) {
+        OverviewContent(
+            uiState = loadedOverview.copy(selectedTab = OverviewTab.MOVEMENTS),
+            onAction = {},
+            accountsActions = noActions
+        ) {
             AllMovementsContent(uiState = movements(PagedList(previewMovements)), onAction = {}, onMovementClick = {})
         }
     }

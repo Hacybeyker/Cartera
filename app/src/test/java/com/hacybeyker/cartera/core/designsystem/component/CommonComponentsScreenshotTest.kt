@@ -64,6 +64,17 @@ class CommonComponentsScreenshotTest {
     }
 
     @Test
+    fun noticeDialog() = compose.captureLightAndDark("comun_modal_aviso", withWindows = true) {
+        NoticeDialog(
+            testTag = "modal_muestra",
+            title = "Saldo insuficiente",
+            message = "El monto supera el saldo disponible.",
+            confirmLabel = "Corregir datos",
+            onConfirm = {}
+        )
+    }
+
+    @Test
     fun sessionExpiredDialog() = compose.captureLightAndDark("comun_modal_sesion_expirada", withWindows = true) {
         SessionExpiredDialog(onConfirm = {})
     }

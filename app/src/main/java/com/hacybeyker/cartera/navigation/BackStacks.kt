@@ -8,3 +8,9 @@ fun NavBackStack<NavKey>.resetTo(key: NavKey) {
     add(key)
     while (size > 1) removeAt(0)
 }
+
+/** Vuelve hasta [key], que queda arriba; si no está en la pila, la deja solo con [key]. */
+fun NavBackStack<NavKey>.popTo(key: NavKey) {
+    if (key !in this) return resetTo(key)
+    while (last() != key) removeAt(lastIndex)
+}

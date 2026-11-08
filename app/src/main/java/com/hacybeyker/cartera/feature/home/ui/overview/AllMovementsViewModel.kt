@@ -3,6 +3,7 @@ package com.hacybeyker.cartera.feature.home.ui.overview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hacybeyker.cartera.core.domain.Outcome
+import com.hacybeyker.cartera.core.domain.account.GetAccountsRevisionUseCase
 import com.hacybeyker.cartera.core.domain.movement.GetMovementsPageUseCase
 import com.hacybeyker.cartera.core.ui.movement.MovementListUiState
 import com.hacybeyker.cartera.core.ui.paging.NextPageLoader
@@ -21,12 +22,17 @@ sealed interface AllMovementsAction {
     data object LoadMore : AllMovementsAction
 
     data object RetryLoadMoreClicked : AllMovementsAction
+
+    /** El tab volvió a verse: si una transferencia agregó un movimiento, se recarga la primera página. */
+    data object Shown : AllMovementsAction
 }
 
 /** Inicio · Movimientos: se crea, y carga, la primera vez que se abre el tab. */
 @HiltViewModel
-class AllMovementsViewModel @Inject constructor(private val getMovementsPage: GetMovementsPageUseCase) :
-    ViewModel() {
+class AllMovementsViewModel @Inject constructor(
+    private val getMovementsPage: GetMovementsPageUseCase,
+    private val getAccountsRevision: GetAccountsRevisionUseCase
+) : ViewModel() {
 
     private val state = MutableStateFlow(MovementListUiState())
     val uiState: StateFlow<MovementListUiState> = state.asStateFlow()
@@ -38,6 +44,8 @@ class AllMovementsViewModel @Inject constructor(private val getMovementsPage: Ge
         fetch = { cursor -> getMovementsPage(cursor = cursor) }
     )
 
+    private var shownRevision = getAccountsRevision()
+
     init {
         load()
     }
@@ -47,10 +55,12 @@ class AllMovementsViewModel @Inject constructor(private val getMovementsPage: Ge
             AllMovementsAction.RetryClicked -> load()
             AllMovementsAction.LoadMore -> nextPages.loadMore()
             AllMovementsAction.RetryLoadMoreClicked -> nextPages.retry()
+            AllMovementsAction.Shown -> if (!state.value.isLoading && getAccountsRevision() != shownRevision) load()
         }
     }
 
     private fun load() {
+        shownRevision = getAccountsRevision()
         state.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             val outcome = getMovementsPage()

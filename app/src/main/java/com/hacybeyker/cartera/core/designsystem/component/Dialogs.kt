@@ -104,3 +104,19 @@ fun SessionExpiredDialog(onConfirm: () -> Unit) {
         }
     )
 }
+
+/** Aviso con un solo botón (`<testTag>` y `<testTag>_aceptar`), para lo que no se arregla reintentando. */
+@Composable
+fun NoticeDialog(testTag: String, title: String, message: String, confirmLabel: String, onConfirm: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onConfirm,
+        modifier = Modifier.windowRootTestTag(testTag),
+        title = { Text(text = title) },
+        text = { Text(text = message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm, modifier = Modifier.testTag("${testTag}_aceptar")) {
+                Text(text = confirmLabel)
+            }
+        }
+    )
+}

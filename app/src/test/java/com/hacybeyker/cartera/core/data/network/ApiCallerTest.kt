@@ -114,6 +114,24 @@ class ApiCallerTest {
     }
 
     @Test
+    fun `a programming error inside the call is not hidden as a service error`() = runTest {
+        val bug = try {
+            caller<Unit> { throw IllegalArgumentException("bug") }
+            null
+        } catch (expected: IllegalArgumentException) {
+            expected
+        }
+
+        assertEquals("bug", bug?.message)
+    }
+
+    @Test
+    fun `malformed numbers and dates while mapping are an invalid response`() = runTest {
+        assertEquals(ApiResult.Failure(ApiError.InvalidResponse), caller { "dos".toBigDecimal() })
+        assertEquals(ApiResult.Failure(ApiError.InvalidResponse), caller { java.time.OffsetDateTime.parse("ayer") })
+    }
+
+    @Test
     fun `malformed success body is an invalid response`() = runTest {
         enqueue(200, """{"items":"nope"}""")
 

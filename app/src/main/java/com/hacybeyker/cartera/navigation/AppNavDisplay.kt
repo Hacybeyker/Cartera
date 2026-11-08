@@ -25,6 +25,8 @@ import com.hacybeyker.cartera.feature.onboarding.ui.onboardingEntry
 import com.hacybeyker.cartera.feature.splash.ui.splashEntry
 import com.hacybeyker.cartera.feature.terms.ui.TermsNavKey
 import com.hacybeyker.cartera.feature.terms.ui.termsEntry
+import com.hacybeyker.cartera.feature.transfer.ui.TransferFormNavKey
+import com.hacybeyker.cartera.feature.transfer.ui.transferEntries
 
 @Composable
 fun AppNavDisplay(
@@ -53,6 +55,7 @@ fun AppNavDisplay(
             homeEntry(
                 actions = HomeActions(
                     onAccountClick = { backStack.add(AccountMovementsNavKey(it)) },
+                    onTransferClick = { backStack.add(TransferFormNavKey) },
                     onMovementClick = { backStack.add(MovementDetailNavKey(it)) },
                     onLegacyClick = { backStack.add(LegacyNavKey) },
                     onLoggedOut = { backStack.resetTo(LoginNavKey) },
@@ -66,6 +69,13 @@ fun AppNavDisplay(
                 onBreakdownClick = { backStack.add(MovementBreakdownNavKey(it)) }
             )
             legacyEntry(onBack = back)
+            // Volver al inicio reutiliza la entrada de Home (con su estado) en vez de crear otra: Inicio refresca
+            // solo las cuentas, una vez, porque la transferencia las cambió.
+            transferEntries(
+                onBack = back,
+                onNavigate = { backStack.add(it) },
+                onBackToHome = { backStack.popTo(HomeNavKey) }
+            )
             extraEntries.forEach { installer -> with(installer) { install(onBack = back) } }
         }
     )

@@ -98,6 +98,7 @@ tras el nuevo login, no se repiten Términos ni Onboarding.
 Home  [barra inferior: Inicio · Mercado · Cambio · Más]
 ├─ Inicio  [tabs: Cuentas · Movimientos]
 │   ├─ Cuentas ──► Movimientos de cuenta ──► Detalle ──► Desglose
+│   │     └─ Transferir ──► Confirmación ──► Resultado ──► Home (Inicio · Cuentas)
 │   └─ Movimientos ──► Detalle ──► Desglose
 ├─ Mercado · Cambio   (próximamente)
 └─ Más ──► Servicios clásicos (próximamente) · Cerrar sesión · Versión
@@ -111,7 +112,29 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
   apilan sobre Home (sin barra inferior) y vuelven con `barra_volver` o Atrás. Un id que no existe
   (`NOT_FOUND`) se muestra como error sin Reintentar.
 - **Cerrar sesión** pide confirmación y deja la pila en `[Login]`; el próximo login no repite
-  Términos ni Onboarding. El botón Transferir de Cuentas está deshabilitado por ahora.
+  Términos ni Onboarding.
+
+### Transferir
+
+- **Formulario:** cuenta de origen propia, número de destino (`999-0000001-0-01`), monto y
+  descripción opcional. Continuar valida en el cliente: monto mayor que cero, con hasta dos decimales
+  y no mayor que el saldo disponible. Atrás con datos pregunta "¿Salir sin transferir?".
+- **Confirmación:** resumen, Confirmar (con progreso bloqueante) y Cancelar (con confirmación). Atrás
+  vuelve al formulario con los datos. Un error de red o del servidor abre un modal con Reintentar,
+  que reenvía la misma `Idempotency-Key`: un reintento nunca cobra dos veces.
+- **Rechazos:** saldo insuficiente, destino inexistente y monedas distintas tienen su propio modal,
+  que vuelve al formulario. Un `VALIDATION_ERROR` se muestra bajo cada campo del resumen.
+- **Resultado:** n.º de operación y nuevo saldo. Volver al inicio (o Atrás) deja la pila en `[Home]`
+  y Inicio pide las cuentas una sola vez, sin `/me`. Las cuentas se guardan en memoria: el formulario
+  no las vuelve a pedir y solo una transferencia las invalida. El movimiento nuevo aparece en
+  Movimientos la próxima vez que se muestren.
+
+| Caso | Datos | Resultado |
+|---|---|---|
+| Referencia | ACC-002 → `999-0000001-0-01` por S/ 150.00 | ACC-002 queda en S/ 2,150.00 |
+| Saldo insuficiente | un monto mayor que el saldo (el cliente lo frena; el servidor responde `INSUFFICIENT_FUNDS`) | modal "Saldo insuficiente" |
+| Monedas distintas | ACC-001 o ACC-002 → `999-0000003-0-10` | modal "Monedas distintas" |
+| Destino inexistente | cualquier otro número con formato válido | modal "Cuenta de destino inexistente" |
 
 ---
 
@@ -138,6 +161,9 @@ en su ventana. La convención es snake_case en español, `<pantalla>_<elemento>`
 | Mercado / Cambio | `mercado_proximamente` / `cambio_proximamente` |
 | Más | `mas_pantalla`, `mas_nombre`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
 | Servicios clásicos | `legacy_proximamente` |
+| Transferir · formulario | `transferir_pantalla`, `transferir_origen`, `transferir_origen_item_<id>`, `transferir_destino`, `transferir_monto`, `transferir_descripcion`, `transferir_continuar`, `<campo>_error` y estados `transferir_*` |
+| Transferir · confirmación | `transferir_confirmacion`, `transferir_confirmar`, `transferir_cancelar`, `<campo>_error`, `modal_fondos_insuficientes`, `modal_destino_inexistente`, `modal_moneda_distinta` (cada uno con `_aceptar`) |
+| Transferir · resultado | `transferir_resultado`, `transferir_resultado_operacion`, `transferir_resultado_saldo`, `transferir_resultado_error`, `transferir_volver_inicio` |
 | Escenario (debug y demo) | `escenario_pantalla`, `escenario_<clave>` (las claves de adb), `escenario_failure_mode_<valor>`, `escenario_guardar`, `escenario_valores_defecto`, `escenario_restablecer_datos`, `escenario_mensaje` |
 
 Términos y Onboarding no llevan testTags a propósito: imitan pantallas de terceros y se seleccionan
@@ -147,7 +173,9 @@ por texto.
 con contenido real: una vez por cada carga o refresco, nunca por el estado de carga ni por cargar más
 páginas. Rotar o volver a una pantalla sin datos nuevos no repite la marca. Marcas: `login`,
 `terminos`, `onboarding`, `inicio_cuentas`, `inicio_movimientos`, `cuenta_movimientos`,
-`movimiento_detalle`, `movimiento_desglose`, `mercado`, `cambio` y `mas`. Por defecto nadie escucha. Para
+`movimiento_detalle`, `movimiento_desglose`, `mercado`, `cambio`, `mas`, `transferir_formulario`,
+`transferir_confirmacion` y `transferir_resultado`. Tras una transferencia, `inicio_cuentas` se
+dispara otra vez cuando llegan las cuentas refrescadas. Por defecto nadie escucha. Para
 recibirlas, agrega un `VisibleContentMarker` al conjunto desde un módulo de Hilt propio, sin tocar las
 pantallas:
 

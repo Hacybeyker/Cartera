@@ -31,6 +31,9 @@ private fun ProblemCode.toAppError(problem: ApiError.Problem): AppError = when (
     ProblemCode.SESSION_EXPIRED, ProblemCode.UNAUTHORIZED -> AppError.SessionExpired
     ProblemCode.NOT_FOUND -> AppError.NotFound
     ProblemCode.VALIDATION_ERROR -> AppError.Validation(problem.fieldErrors.associate { it.field to it.code })
+    ProblemCode.INSUFFICIENT_FUNDS -> AppError.InsufficientFunds
+    ProblemCode.DESTINATION_NOT_FOUND -> AppError.DestinationNotFound
+    ProblemCode.CURRENCY_MISMATCH -> AppError.CurrencyMismatch
     else -> AppError.Server
 }
 

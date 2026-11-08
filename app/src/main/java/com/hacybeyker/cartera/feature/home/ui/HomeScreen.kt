@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import com.hacybeyker.cartera.core.designsystem.component.ComingSoonState
 import com.hacybeyker.cartera.core.ui.marks.ReportContentVisible
 import com.hacybeyker.cartera.feature.home.ui.more.MoreScreen
+import com.hacybeyker.cartera.feature.home.ui.overview.AccountsTabActions
 import com.hacybeyker.cartera.feature.home.ui.overview.OverviewScreen
 
 @Composable
@@ -21,7 +22,10 @@ fun HomeScreen(actions: HomeActions, modifier: Modifier = Modifier) {
         tabStates.SaveableStateProvider(key = tab.name) {
             when (tab) {
                 HomeTab.START -> OverviewScreen(
-                    onAccountClick = actions.onAccountClick,
+                    accountsActions = AccountsTabActions(
+                        onAccountClick = actions.onAccountClick,
+                        onTransferClick = actions.onTransferClick
+                    ),
                     onMovementClick = actions.onMovementClick
                 )
                 HomeTab.MARKET -> ComingSoonTab(screen = HomeTestTags.MARKET)

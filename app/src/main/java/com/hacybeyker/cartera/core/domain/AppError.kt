@@ -15,4 +15,13 @@ sealed interface AppError {
     data object NotFound : AppError
 
     data class Validation(val fieldCodes: Map<String, String>) : AppError
+
+    /** El monto supera el saldo disponible del origen. */
+    data object InsufficientFunds : AppError
+
+    /** No hay una cuenta de terceros con ese número. */
+    data object DestinationNotFound : AppError
+
+    /** El origen y el destino usan monedas distintas. */
+    data object CurrencyMismatch : AppError
 }

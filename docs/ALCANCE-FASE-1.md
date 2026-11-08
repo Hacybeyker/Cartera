@@ -236,7 +236,7 @@ Con los fixtures fijos, la latencia sin jitter y la variante demo (R8, profileab
 | 999-0000003-0-10 | María Quispe | USD |
 
 - **Transferencia de referencia:** ACC-002 → 999-0000001-0-01 por S/ 150.00 deja ACC-002 en S/ 2,150.00 y agrega el movimiento nuevo al inicio.
-- **Casos negativos:** un monto mayor al saldo da `INSUFFICIENT_FUNDS`; enviar de PEN a 999-0000003-0-10 da `CURRENCY_MISMATCH`; cualquier otro número da `DESTINATION_NOT_FOUND`.
+- **Casos negativos:** un monto mayor al saldo lo frena el formulario ("El monto supera el saldo disponible"): valida contra un saldo siempre fresco, así que el modal `INSUFFICIENT_FUNDS` del servidor solo se cubre con tests; enviar de PEN a 999-0000003-0-10 da `CURRENCY_MISMATCH`; cualquier otro número da `DESTINATION_NOT_FOUND`.
 
 ---
 

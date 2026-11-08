@@ -32,10 +32,20 @@
 - Paginación con fila de Reintentar cuando falla la carga de más, sin perder lo ya cargado.
 - Más: nombre, Servicios clásicos (próximamente), Cerrar sesión con confirmación y Versión.
 - Pantalla Escenario en debug y demo, oculta tras 7 toques en Versión, con Guardar, Valores por defecto y Restablecer datos.
+- Transferencia: formulario con validación en el cliente, confirmación con progreso bloqueante y resultado con el n.º de operación y el nuevo saldo.
+- Reintentar una transferencia reenvía la misma `Idempotency-Key`, así nunca se cobra dos veces.
+- Modales propios para saldo insuficiente, destino inexistente y monedas distintas, y errores de validación por campo.
+- Confirmaciones para salir del formulario con datos y para cancelar en la confirmación.
+- Caché de cuentas en memoria: el formulario la reutiliza y una transferencia la invalida, así al volver al inicio se piden las cuentas una sola vez.
 
 ### Changed
+- Inicio y Movimientos vuelven a pedir sus datos al mostrarse solo si una transferencia los cambió; Inicio refresca solo las cuentas.
+- `ApiCaller` ya no trata cualquier `IllegalArgumentException` como respuesta inválida, solo los errores de lectura de la respuesta.
 - Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.
 - `hilt-lifecycle-viewmodel-compose` se declara en el catálogo en vez de llegar transitiva.
+
+### Removed
+- `hilt-navigation-compose`, que ningún import usaba.
 
 ### Fixed
 - Un 401 sin cuerpo RFC 9457 también abre el modal de sesión expirada.

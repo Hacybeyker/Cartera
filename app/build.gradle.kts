@@ -122,7 +122,6 @@ dependencies {
     debugImplementation(libs.okhttp.mockwebserver3)
     "demoImplementation"(libs.okhttp.mockwebserver3)
     implementation(libs.hilt.android)
-    implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     ksp(libs.hilt.compiler)
     annotationProcessor(libs.kotlin.metadata.jvm)

@@ -6,6 +6,7 @@ import java.io.InterruptedIOException
 import java.time.DateTimeException
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
@@ -27,9 +28,11 @@ class ApiCaller @Inject constructor(private val json: Json, private val sessionE
         ApiResult.Failure(ApiError.Timeout)
     } catch (_: IOException) {
         ApiResult.Failure(ApiError.Network)
-    } catch (_: IllegalArgumentException) {
-        // SerializationException es una IllegalArgumentException; también llegan aquí un monto o una fecha mal
-        // formados al mapear el DTO dentro de la llamada.
+    } catch (_: SerializationException) {
+        ApiResult.Failure(ApiError.InvalidResponse)
+    } catch (_: NumberFormatException) {
+        // Un monto mal formado al mapear el DTO dentro de la llamada. Cualquier otra IllegalArgumentException es un
+        // error de programación y no se disfraza de error del servicio.
         ApiResult.Failure(ApiError.InvalidResponse)
     } catch (_: DateTimeException) {
         ApiResult.Failure(ApiError.InvalidResponse)

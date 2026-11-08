@@ -5,6 +5,7 @@ import com.hacybeyker.cartera.core.domain.Money
 import com.hacybeyker.cartera.core.domain.Outcome
 import com.hacybeyker.cartera.core.domain.Page
 import com.hacybeyker.cartera.core.domain.account.Account
+import com.hacybeyker.cartera.core.domain.account.AccountChanges
 import com.hacybeyker.cartera.core.domain.account.AccountRepository
 import com.hacybeyker.cartera.core.domain.movement.Movement
 import com.hacybeyker.cartera.core.domain.movement.MovementCategory
@@ -63,5 +64,11 @@ class FakeMovementRepository(var movements: List<Movement> = (1..45).map { testM
 
     private companion object {
         const val PAGE_SIZE = 20
+    }
+}
+
+class FakeAccountChanges(override var revision: Int = 0) : AccountChanges {
+    override fun notifyChanged() {
+        revision++
     }
 }

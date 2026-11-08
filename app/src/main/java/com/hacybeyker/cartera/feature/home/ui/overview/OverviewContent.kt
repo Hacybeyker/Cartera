@@ -40,7 +40,7 @@ import com.hacybeyker.cartera.core.ui.preview.previewAccounts
 fun OverviewContent(
     uiState: OverviewUiState,
     onAction: (OverviewAction) -> Unit,
-    onAccountClick: (String) -> Unit,
+    accountsActions: AccountsTabActions,
     modifier: Modifier = Modifier,
     movementsTab: @Composable () -> Unit
 ) {
@@ -66,7 +66,7 @@ fun OverviewContent(
         Box(modifier = Modifier.weight(1f)) {
             tabStates.SaveableStateProvider(key = uiState.selectedTab.name) {
                 when (uiState.selectedTab) {
-                    OverviewTab.ACCOUNTS -> AccountsTab(uiState, onAction, onAccountClick)
+                    OverviewTab.ACCOUNTS -> AccountsTab(uiState, onAction, accountsActions)
                     OverviewTab.MOVEMENTS -> movementsTab()
                 }
             }
@@ -87,11 +87,7 @@ private val OverviewTab.testTag: String
     }
 
 @Composable
-private fun AccountsTab(
-    uiState: OverviewUiState,
-    onAction: (OverviewAction) -> Unit,
-    onAccountClick: (String) -> Unit
-) {
+private fun AccountsTab(uiState: OverviewUiState, onAction: (OverviewAction) -> Unit, actions: AccountsTabActions) {
     val error = uiState.error
     when {
         uiState.isLoading -> LoadingState(screen = OverviewTestTags.ACCOUNTS)
@@ -104,22 +100,20 @@ private fun AccountsTab(
             screen = OverviewTestTags.ACCOUNTS,
             message = stringResource(R.string.overview_accounts_empty)
         )
-        else -> AccountList(accounts = uiState.accounts, onAccountClick = onAccountClick)
+        else -> AccountList(accounts = uiState.accounts, actions = actions)
     }
 }
 
 @Composable
-private fun AccountList(accounts: List<Account>, onAccountClick: (String) -> Unit) {
+private fun AccountList(accounts: List<Account>, actions: AccountsTabActions) {
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(OverviewTestTags.ACCOUNTS_LIST)) {
         items(items = accounts, key = { it.id }) { account ->
-            AccountRow(account = account, onClick = { onAccountClick(account.id) })
+            AccountRow(account = account, onClick = { actions.onAccountClick(account.id) })
             HorizontalDivider()
         }
         item {
-            // Se habilita con el flujo de transferencia; hoy solo ocupa su lugar.
             Button(
-                onClick = {},
-                enabled = false,
+                onClick = actions.onTransferClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(MaterialTheme.spacing.screen)
@@ -168,7 +162,7 @@ private fun OverviewContentPreview() {
         OverviewContent(
             uiState = OverviewUiState(isLoading = false, firstName = "Ana", accounts = previewAccounts),
             onAction = {},
-            onAccountClick = {}
+            accountsActions = AccountsTabActions(onAccountClick = {}, onTransferClick = {})
         ) {}
     }
 }

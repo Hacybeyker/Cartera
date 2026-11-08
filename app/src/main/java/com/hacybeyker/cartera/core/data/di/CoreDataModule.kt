@@ -2,12 +2,14 @@ package com.hacybeyker.cartera.core.data.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.hacybeyker.cartera.core.data.account.InMemoryAccountChanges
 import com.hacybeyker.cartera.core.data.account.RemoteAccountRepository
 import com.hacybeyker.cartera.core.data.config.RemoteAppConfigRepository
 import com.hacybeyker.cartera.core.data.firstrun.SharedPreferencesFirstRunRepository
 import com.hacybeyker.cartera.core.data.movement.RemoteMovementRepository
 import com.hacybeyker.cartera.core.data.network.SessionExpiryListener
 import com.hacybeyker.cartera.core.data.session.InMemorySessionRepository
+import com.hacybeyker.cartera.core.domain.account.AccountChanges
 import com.hacybeyker.cartera.core.domain.account.AccountRepository
 import com.hacybeyker.cartera.core.domain.config.AppConfigRepository
 import com.hacybeyker.cartera.core.domain.firstrun.FirstRunRepository
@@ -35,6 +37,9 @@ abstract class CoreDataModule {
 
     @Binds
     abstract fun bindAccountRepository(repository: RemoteAccountRepository): AccountRepository
+
+    @Binds
+    abstract fun bindAccountChanges(changes: InMemoryAccountChanges): AccountChanges
 
     @Binds
     abstract fun bindMovementRepository(repository: RemoteMovementRepository): MovementRepository

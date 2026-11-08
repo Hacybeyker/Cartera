@@ -20,7 +20,8 @@ sealed interface OverviewAction {
 
     data object RetryClicked : OverviewAction
 
-    data object Refresh : OverviewAction
+    /** Inicio volvió a verse: si una transferencia cambió las cuentas, se piden de nuevo (solo las cuentas). */
+    data object Shown : OverviewAction
 }
 
 enum class OverviewTab {

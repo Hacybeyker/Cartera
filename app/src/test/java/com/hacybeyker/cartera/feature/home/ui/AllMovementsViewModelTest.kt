@@ -1,9 +1,12 @@
 package com.hacybeyker.cartera.feature.home.ui
 
 import com.hacybeyker.cartera.core.domain.AppError
+import com.hacybeyker.cartera.core.domain.account.GetAccountsRevisionUseCase
 import com.hacybeyker.cartera.core.domain.movement.GetMovementsPageUseCase
+import com.hacybeyker.cartera.core.testing.FakeAccountChanges
 import com.hacybeyker.cartera.core.testing.FakeMovementRepository
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
+import com.hacybeyker.cartera.core.testing.testMovement
 import com.hacybeyker.cartera.feature.home.ui.overview.AllMovementsAction
 import com.hacybeyker.cartera.feature.home.ui.overview.AllMovementsViewModel
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -21,7 +24,10 @@ class AllMovementsViewModelTest {
 
     private val movements = FakeMovementRepository()
 
-    private fun viewModel() = AllMovementsViewModel(GetMovementsPageUseCase(movements))
+    private val changes = FakeAccountChanges()
+
+    private fun viewModel() =
+        AllMovementsViewModel(GetMovementsPageUseCase(movements), GetAccountsRevisionUseCase(changes))
 
     @Test
     fun `loads the first page of every account when created`() = runTest {
@@ -118,5 +124,28 @@ class AllMovementsViewModelTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.isEmpty)
+    }
+
+    @Test
+    fun `showing the tab again reloads the first page only after a transfer`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onAction(AllMovementsAction.LoadMore)
+        advanceUntilIdle()
+
+        viewModel.onAction(AllMovementsAction.Shown)
+        advanceUntilIdle()
+        assertEquals(2, movements.requestedCursors.size)
+
+        changes.notifyChanged()
+        movements.movements = listOf(testMovement(0)) + movements.movements
+        viewModel.onAction(AllMovementsAction.Shown)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(listOf(null, "MOV-002-0020", null), movements.requestedCursors)
+        assertEquals("MOV-002-0000", state.movements.items.first().id)
+        assertEquals(20, state.movements.items.size)
+        assertEquals(2, state.contentKey)
     }
 }
