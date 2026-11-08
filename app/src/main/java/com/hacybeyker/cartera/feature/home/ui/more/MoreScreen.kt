@@ -13,6 +13,7 @@ import com.hacybeyker.cartera.core.ui.marks.ReportContentVisible
 @Composable
 fun MoreScreen(
     onLegacyClick: () -> Unit,
+    onSecurityClick: () -> Unit,
     onLoggedOut: () -> Unit,
     onHiddenScreenRequested: () -> Unit,
     modifier: Modifier = Modifier,
@@ -35,6 +36,7 @@ fun MoreScreen(
         version = BuildConfig.VERSION_NAME,
         onAction = viewModel::onAction,
         onLegacyClick = onLegacyClick,
+        onSecurityClick = onSecurityClick,
         modifier = modifier
     )
 }

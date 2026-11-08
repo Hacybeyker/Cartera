@@ -12,4 +12,14 @@ data class LoginRequestDto(val username: String, val password: String)
 data class LoginResponseDto(val accessToken: String, val tokenType: String, val expiresIn: Long)
 
 @Serializable
+data class BiometricEnrollResponseDto(val deviceToken: String) {
+    override fun toString(): String = "BiometricEnrollResponseDto(deviceToken=***)"
+}
+
+@Serializable
+data class BiometricLoginRequestDto(val deviceToken: String) {
+    override fun toString(): String = "BiometricLoginRequestDto(deviceToken=***)"
+}
+
+@Serializable
 data class MeDto(val id: String, val fullName: String, val documentMasked: String, val email: String)

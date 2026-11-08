@@ -24,8 +24,11 @@ class FakeAppConfigRepository(var config: AppConfig = TestAppConfig, var error: 
     override suspend fun config(): Outcome<AppConfig> = error?.let { Outcome.Failure(it) } ?: Outcome.Success(config)
 }
 
-class FakeFirstRunRepository(var acceptedTermsVersion: String? = null, var onboardingSeen: Boolean = false) :
-    FirstRunRepository {
+class FakeFirstRunRepository(
+    var acceptedTermsVersion: String? = null,
+    var onboardingSeen: Boolean = false,
+    var biometricOfferResolved: Boolean = false
+) : FirstRunRepository {
     override suspend fun acceptedTermsVersion(): String? = acceptedTermsVersion
 
     override suspend fun acceptTerms(version: String) {
@@ -36,6 +39,12 @@ class FakeFirstRunRepository(var acceptedTermsVersion: String? = null, var onboa
 
     override suspend fun markOnboardingSeen() {
         onboardingSeen = true
+    }
+
+    override suspend fun isBiometricOfferResolved(): Boolean = biometricOfferResolved
+
+    override suspend fun markBiometricOfferResolved() {
+        biometricOfferResolved = true
     }
 }
 

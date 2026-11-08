@@ -36,6 +36,7 @@ fun MoreContent(
     version: String,
     onAction: (MoreAction) -> Unit,
     onLegacyClick: () -> Unit,
+    onSecurityClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -46,6 +47,11 @@ fun MoreContent(
     ) {
         ProfileHeader(uiState = uiState, onRetry = { onAction(MoreAction.RetryClicked) })
         HorizontalDivider()
+        MenuItem(
+            title = stringResource(R.string.more_security),
+            testTag = MoreTestTags.SECURITY,
+            onClick = onSecurityClick
+        )
         MenuItem(
             title = stringResource(R.string.more_legacy),
             testTag = MoreTestTags.LEGACY,
@@ -137,7 +143,8 @@ private fun MoreContentPreview() {
             uiState = MoreUiState(isLoading = false, fullName = "Ana Torres"),
             version = "0.1.0",
             onAction = {},
-            onLegacyClick = {}
+            onLegacyClick = {},
+            onSecurityClick = {}
         )
     }
 }

@@ -43,6 +43,7 @@ fun HomeScreen(actions: HomeActions, modifier: Modifier = Modifier, tabRequest: 
                 HomeTab.EXCHANGE -> ExchangeScreen(onContinue = actions.onExchangeContinue)
                 HomeTab.MORE -> MoreScreen(
                     onLegacyClick = actions.onLegacyClick,
+                    onSecurityClick = actions.onSecurityClick,
                     onLoggedOut = actions.onLoggedOut,
                     onHiddenScreenRequested = actions.onHiddenScreenRequested
                 )

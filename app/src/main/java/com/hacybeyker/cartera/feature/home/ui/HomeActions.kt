@@ -11,6 +11,7 @@ class HomeActions(
     val onPortfolioClick: () -> Unit,
     val onExchangeContinue: (ExchangeOrder) -> Unit,
     val onLegacyClick: () -> Unit,
+    val onSecurityClick: () -> Unit,
     val onLoggedOut: () -> Unit,
     val onHiddenScreenRequested: () -> Unit
 )

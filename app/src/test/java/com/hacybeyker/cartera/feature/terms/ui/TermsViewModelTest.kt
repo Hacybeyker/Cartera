@@ -2,11 +2,11 @@ package com.hacybeyker.cartera.feature.terms.ui
 
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.entry.EntryStep
-import com.hacybeyker.cartera.core.domain.entry.ResolveEntryStepUseCase
 import com.hacybeyker.cartera.core.testing.FakeAppConfigRepository
 import com.hacybeyker.cartera.core.testing.FakeFirstRunRepository
 import com.hacybeyker.cartera.core.testing.FakeSessionRepository
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
+import com.hacybeyker.cartera.core.testing.resolveEntryStep
 import com.hacybeyker.cartera.feature.terms.domain.usecase.AcceptTermsUseCase
 import com.hacybeyker.cartera.feature.terms.domain.usecase.RejectTermsUseCase
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -26,7 +26,7 @@ class TermsViewModelTest {
     private val firstRun = FakeFirstRunRepository()
     private val session = FakeSessionRepository().apply { start("jwt") }
     private val viewModel = TermsViewModel(
-        acceptTerms = AcceptTermsUseCase(appConfig, firstRun, ResolveEntryStepUseCase(appConfig, firstRun)),
+        acceptTerms = AcceptTermsUseCase(appConfig, firstRun, resolveEntryStep(appConfig, firstRun)),
         rejectTerms = RejectTermsUseCase(session)
     )
 

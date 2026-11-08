@@ -10,6 +10,9 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.hacybeyker.cartera.core.domain.entry.EntryStep
+import com.hacybeyker.cartera.feature.biometric.ui.BiometricOfferNavKey
+import com.hacybeyker.cartera.feature.biometric.ui.SecurityNavKey
+import com.hacybeyker.cartera.feature.biometric.ui.biometricEntries
 import com.hacybeyker.cartera.feature.exchange.ui.FxConfirmNavKey
 import com.hacybeyker.cartera.feature.exchange.ui.exchangeEntries
 import com.hacybeyker.cartera.feature.exchange.ui.toArgs
@@ -63,7 +66,8 @@ fun AppNavDisplay(
                 onAccepted = { step -> backStack.resetTo(step.navKey()) },
                 onRejected = { backStack.resetTo(LoginNavKey) }
             )
-            onboardingEntry(onFinished = { backStack.resetTo(HomeNavKey) })
+            onboardingEntry(onFinished = { step -> backStack.resetTo(step.navKey()) })
+            biometricEntries(onOfferResolved = { backStack.resetTo(HomeNavKey) }, onBack = back)
             homeEntry(actions = backStack.homeActions(hiddenScreens), tabRequest = homeTabRequest)
             movementsEntries(
                 onBack = back,
@@ -117,6 +121,7 @@ private fun NavBackStack<NavKey>.homeActions(hiddenScreens: Set<HiddenScreen>) =
     onPortfolioClick = { add(PortfolioNavKey) },
     onExchangeContinue = { add(FxConfirmNavKey(it.toArgs())) },
     onLegacyClick = { add(LegacyNavKey) },
+    onSecurityClick = { add(SecurityNavKey) },
     onLoggedOut = { resetTo(LoginNavKey) },
     // Sin pantalla oculta (release), los 7 toques no hacen nada.
     onHiddenScreenRequested = { hiddenScreens.firstOrNull()?.let { add(it.navKey()) } }
@@ -125,5 +130,6 @@ private fun NavBackStack<NavKey>.homeActions(hiddenScreens: Set<HiddenScreen>) =
 private fun EntryStep.navKey(): NavKey = when (this) {
     EntryStep.TERMS -> TermsNavKey
     EntryStep.ONBOARDING -> OnboardingNavKey
+    EntryStep.BIOMETRIC_OFFER -> BiometricOfferNavKey
     EntryStep.HOME -> HomeNavKey
 }

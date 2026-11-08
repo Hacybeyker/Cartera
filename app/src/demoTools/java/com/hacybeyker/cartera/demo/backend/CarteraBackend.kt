@@ -28,9 +28,10 @@ data class Handled(val outcome: Outcome, val latencyMs: Long)
 class CarteraBackend(
     fixtures: FixtureSource,
     clock: Clock = Clock.systemDefaultZone(),
+    devices: DeviceRegistry = InMemoryDeviceRegistry(),
     private val log: (String) -> Unit = {}
 ) : Closeable {
-    private val state = BackendState(FixtureCatalog(fixtures), clock)
+    private val state = BackendState(FixtureCatalog(fixtures), clock, devices)
     private val failures = FailureInjector()
     private val desks = BackendDesks.create(state, JwtSigner(clock), clock)
     private val requestCounter = AtomicLong()

@@ -11,6 +11,9 @@ sealed interface AppError {
 
     data object InvalidCredentials : AppError
 
+    /** El `deviceToken` del ingreso con huella no existe o fue revocado. */
+    data object InvalidDevice : AppError
+
     /** Token vencido o ausente en una llamada autenticada. */
     data object SessionExpired : AppError
 

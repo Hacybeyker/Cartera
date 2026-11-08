@@ -2,15 +2,19 @@ package com.hacybeyker.cartera.feature.login.ui
 
 import androidx.lifecycle.SavedStateHandle
 import com.hacybeyker.cartera.core.domain.AppError
+import com.hacybeyker.cartera.core.domain.biometric.VaultResult
 import com.hacybeyker.cartera.core.domain.entry.EntryStep
-import com.hacybeyker.cartera.core.domain.entry.ResolveEntryStepUseCase
-import com.hacybeyker.cartera.core.testing.FakeAppConfigRepository
-import com.hacybeyker.cartera.core.testing.FakeFirstRunRepository
+import com.hacybeyker.cartera.core.testing.FakeBiometricAvailability
+import com.hacybeyker.cartera.core.testing.FakeDeviceTokenVault
 import com.hacybeyker.cartera.core.testing.FakeSessionRepository
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
+import com.hacybeyker.cartera.core.testing.biometricStatus
+import com.hacybeyker.cartera.core.testing.resolveEntryStep
 import com.hacybeyker.cartera.feature.login.FakeAuthRepository
 import com.hacybeyker.cartera.feature.login.domain.model.Credentials
 import com.hacybeyker.cartera.feature.login.domain.usecase.LogInUseCase
+import com.hacybeyker.cartera.feature.login.domain.usecase.LogInWithBiometricsUseCase
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -25,8 +29,11 @@ class LoginViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val auth = FakeAuthRepository()
+    private val session = FakeSessionRepository()
+    private val availability = FakeBiometricAvailability()
+    private val vault = FakeDeviceTokenVault()
     private val savedState = SavedStateHandle()
-    private val viewModel = viewModel(savedState)
+    private val viewModel by lazy { viewModel(savedState) }
 
     @Test
     fun `submit is enabled only with both fields`() {
@@ -131,17 +138,130 @@ class LoginViewModelTest {
         assertEquals("ana.torres", auth.attempts.single().username)
     }
 
+    @Test
+    fun `without a registered device the biometric button stays hidden and the mark waits for the check`() = runTest {
+        assertFalse(viewModel.uiState.value.isBiometricChecked)
+        loaded()
+
+        assertTrue(viewModel.uiState.value.isBiometricChecked)
+        assertFalse(viewModel.uiState.value.isBiometricVisible)
+    }
+
+    @Test
+    fun `a registered device logs in with the fingerprint and follows the entry`() = runTest {
+        vault.token = "dvc_1"
+        loaded()
+        assertTrue(viewModel.uiState.value.isBiometricVisible)
+
+        viewModel.onAction(LoginAction.BiometricClicked)
+        assertTrue(viewModel.uiState.value.isSubmitting)
+        advanceUntilIdle()
+
+        assertEquals(EntryStep.TERMS, viewModel.uiState.value.nextStep)
+        assertEquals(listOf("dvc_1"), auth.deviceTokens)
+        assertEquals("jwt-device-1", session.accessToken)
+        assertTrue(auth.attempts.isEmpty())
+    }
+
+    @Test
+    fun `without a fingerprint on the device the button stays hidden even with a token`() = runTest {
+        vault.token = "dvc_1"
+        availability.available = false
+        loaded()
+
+        assertFalse(viewModel.uiState.value.isBiometricVisible)
+        viewModel.onAction(LoginAction.BiometricClicked)
+        advanceUntilIdle()
+        assertEquals(0, vault.prompts)
+    }
+
+    @Test
+    fun `cancelling the dialog does nothing`() = runTest {
+        vault.token = "dvc_1"
+        vault.promptFailure = VaultResult.Cancelled
+        loaded()
+
+        viewModel.onAction(LoginAction.BiometricClicked)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isSubmitting)
+        assertTrue(state.isBiometricVisible)
+        assertNull(state.formError)
+        assertNull(state.dialogError)
+        assertNull(state.nextStep)
+        assertEquals("dvc_1", vault.token)
+    }
+
+    @Test
+    fun `a revoked device hides the button and explains it under the form`() = runTest {
+        vault.token = "dvc_1"
+        auth.error = AppError.InvalidDevice
+        loaded()
+
+        viewModel.onAction(LoginAction.BiometricClicked)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isBiometricVisible)
+        assertEquals(LoginFormError.DEVICE_REVOKED, state.formError)
+        assertNull(state.dialogError)
+        assertNull(vault.token)
+    }
+
+    @Test
+    fun `a key invalidated by a new fingerprint hides the button with its message`() = runTest {
+        vault.token = "dvc_1"
+        loaded()
+        vault.keyInvalidated = true
+
+        viewModel.onAction(LoginAction.BiometricClicked)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isBiometricVisible)
+        assertEquals(LoginFormError.BIOMETRIC_CHANGED, viewModel.uiState.value.formError)
+        assertTrue(auth.deviceTokens.isEmpty())
+    }
+
+    @Test
+    fun `a key already invalidated when the screen opens shows the message and no button`() = runTest {
+        vault.token = "dvc_1"
+        vault.keyInvalidated = true
+        loaded()
+
+        assertFalse(viewModel.uiState.value.isBiometricVisible)
+        assertEquals(LoginFormError.BIOMETRIC_CHANGED, viewModel.uiState.value.formError)
+    }
+
+    @Test
+    fun `a network error with the fingerprint retries with the fingerprint`() = runTest {
+        vault.token = "dvc_1"
+        auth.error = AppError.Network
+        loaded()
+        viewModel.onAction(LoginAction.BiometricClicked)
+        advanceUntilIdle()
+        assertEquals(AppError.Network, viewModel.uiState.value.dialogError)
+
+        auth.error = null
+        viewModel.onAction(LoginAction.RetryClicked)
+        advanceUntilIdle()
+
+        assertEquals(2, vault.prompts)
+        assertEquals(EntryStep.TERMS, viewModel.uiState.value.nextStep)
+        assertTrue(auth.attempts.isEmpty())
+    }
+
     private fun fill() {
         viewModel.onAction(LoginAction.UsernameChanged("ana.torres"))
         viewModel.onAction(LoginAction.PasswordChanged("Cartera2026"))
     }
 
+    private fun TestScope.loaded(): LoginViewModel = viewModel.also { advanceUntilIdle() }
+
     private fun viewModel(savedStateHandle: SavedStateHandle) = LoginViewModel(
-        logIn = LogInUseCase(
-            auth = auth,
-            session = FakeSessionRepository(),
-            resolveEntryStep = ResolveEntryStepUseCase(FakeAppConfigRepository(), FakeFirstRunRepository())
-        ),
+        logIn = LogInUseCase(auth = auth, session = session, resolveEntryStep = resolveEntryStep()),
+        logInWithBiometrics = LogInWithBiometricsUseCase(vault, auth, session, resolveEntryStep()),
+        getBiometricStatus = biometricStatus(availability, vault),
         savedStateHandle = savedStateHandle
     )
 }

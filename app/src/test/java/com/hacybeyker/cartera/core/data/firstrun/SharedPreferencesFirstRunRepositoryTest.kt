@@ -23,6 +23,7 @@ class SharedPreferencesFirstRunRepositoryTest {
 
         assertNull(repository.acceptedTermsVersion())
         assertFalse(repository.isOnboardingSeen())
+        assertFalse(repository.isBiometricOfferResolved())
     }
 
     @Test
@@ -31,11 +32,13 @@ class SharedPreferencesFirstRunRepositoryTest {
         SharedPreferencesFirstRunRepository(preferences, io).apply {
             acceptTerms("2026-11-01")
             markOnboardingSeen()
+            markBiometricOfferResolved()
         }
 
         val reopened = SharedPreferencesFirstRunRepository(preferences, io)
 
         assertEquals("2026-11-01", reopened.acceptedTermsVersion())
         assertTrue(reopened.isOnboardingSeen())
+        assertTrue(reopened.isBiometricOfferResolved())
     }
 }

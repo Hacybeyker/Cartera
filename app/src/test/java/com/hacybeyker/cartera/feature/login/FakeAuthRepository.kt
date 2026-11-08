@@ -8,9 +8,16 @@ import com.hacybeyker.cartera.feature.login.domain.repository.AuthRepository
 
 class FakeAuthRepository(var error: AppError? = null) : AuthRepository {
     val attempts = mutableListOf<Credentials>()
+    val deviceTokens = mutableListOf<String>()
 
     override suspend fun logIn(credentials: Credentials): Outcome<AuthSession> {
         attempts += credentials
         return error?.let { Outcome.Failure(it) } ?: Outcome.Success(AuthSession("jwt-${attempts.size}", 900))
+    }
+
+    override suspend fun logInWithDevice(deviceToken: String): Outcome<AuthSession> {
+        deviceTokens += deviceToken
+        return error?.let { Outcome.Failure(it) }
+            ?: Outcome.Success(AuthSession("jwt-device-${deviceTokens.size}", 900))
     }
 }

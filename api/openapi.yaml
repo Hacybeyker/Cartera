@@ -52,8 +52,10 @@ info:
 
     Las de latencia y fallos aplican igual a todos los endpoints, incluido el handshake del canal.
     `POST /_demo/reset` no aplica ninguna. El estado (saldos, movimientos, tenencias, precios vigentes,
-    cotizaciones, dispositivos registrados e idempotencia) vive en memoria y vuelve a los fixtures al
-    reiniciar el proceso o con ese endpoint.
+    cotizaciones e idempotencia) vive en memoria y vuelve a los fixtures al reiniciar el proceso o con
+    ese endpoint. La excepción son los dispositivos registrados para ingresar con huella: sobreviven al
+    reinicio del proceso (el ingreso con huella sirve en los arranques siguientes) y solo los borran
+    `POST /_demo/reset`, `DELETE /auth/biometric` o borrar los datos de la app.
 
     **Idempotencia.** `POST /transfers`, `POST /orders` y `POST /fx/exchanges` exigen
     `Idempotency-Key`. La clave vale por usuario y por operación: repetirla devuelve la misma
@@ -502,8 +504,8 @@ paths:
       operationId: enrollBiometric
       summary: Registra el dispositivo para ingresar con huella.
       description: |
-        Devuelve un `deviceToken` opaco que el servidor recuerda para la persona. Cada registro crea
-        uno nuevo; los anteriores siguen vigentes hasta `DELETE /auth/biometric`.
+        Devuelve un `deviceToken` opaco que el servidor recuerda para la persona, también tras reiniciarse.
+        Cada registro crea uno nuevo; los anteriores siguen vigentes hasta `DELETE /auth/biometric`.
       responses:
         "201":
           description: Dispositivo registrado.

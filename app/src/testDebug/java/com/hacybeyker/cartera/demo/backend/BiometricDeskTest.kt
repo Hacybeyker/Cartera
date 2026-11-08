@@ -86,7 +86,7 @@ class BiometricDeskTest {
 
     @Test
     fun `device token of a user that no longer exists is invalid`() {
-        harness.state.deviceTokens["dvc_orphan"] = "USR-404"
+        harness.state.devices.register("dvc_orphan", "USR-404")
 
         assertEquals("INVALID_DEVICE", biometricLogin("dvc_orphan").problemCode())
     }
@@ -96,7 +96,7 @@ class BiometricDeskTest {
         val desk = BiometricDesk(harness.state, harness.desks.sessions) { "dvc_fixed" }
 
         assertEquals("""{"deviceToken":"dvc_fixed"}""", desk.enroll("USR-001").body)
-        assertEquals("USR-001", harness.state.deviceTokens["dvc_fixed"])
+        assertEquals("USR-001", harness.state.devices.userOf("dvc_fixed"))
     }
 
     private fun enroll(): String =

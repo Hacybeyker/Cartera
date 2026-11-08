@@ -12,14 +12,23 @@ data class LoginUiState(
     val formError: LoginFormError? = null,
     /** Se muestra en un modal con Reintentar y Cancelar. */
     val dialogError: AppError? = null,
-    val nextStep: EntryStep? = null
+    val nextStep: EntryStep? = null,
+    /** Ya se revisó si hay un ingreso con huella guardado; hasta entonces no se avisa la marca. */
+    val isBiometricChecked: Boolean = false,
+    val isBiometricVisible: Boolean = false
 ) {
     val canSubmit: Boolean get() = username.isNotBlank() && password.isNotBlank() && !isSubmitting
 }
 
 enum class LoginFormError {
     INVALID_CREDENTIALS,
-    INVALID_INPUT
+    INVALID_INPUT,
+
+    /** El servidor ya no reconoce el dispositivo para ingresar con huella. */
+    DEVICE_REVOKED,
+
+    /** Se registró una huella nueva y la clave del ingreso con huella quedó invalidada. */
+    BIOMETRIC_CHANGED
 }
 
 sealed interface LoginAction {
@@ -30,6 +39,8 @@ sealed interface LoginAction {
     data object PasswordVisibilityToggled : LoginAction
 
     data object SubmitClicked : LoginAction
+
+    data object BiometricClicked : LoginAction
 
     data object RetryClicked : LoginAction
 

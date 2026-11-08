@@ -9,6 +9,7 @@ fun AppError.messageRes(): Int = when (this) {
     AppError.Network -> R.string.error_network
     AppError.Server -> R.string.error_server
     AppError.InvalidCredentials -> R.string.login_invalid_credentials
+    AppError.InvalidDevice -> R.string.login_biometric_device_revoked
     AppError.SessionExpired -> R.string.session_expired_message
     AppError.NotFound -> R.string.error_not_found
     is AppError.Validation -> R.string.error_validation

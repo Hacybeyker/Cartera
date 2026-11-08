@@ -29,6 +29,7 @@ class AppErrorsTest {
     @Test
     fun `problem codes map to what the app does with them`() {
         assertEquals(AppError.InvalidCredentials, problem(ProblemCode.INVALID_CREDENTIALS).toAppError())
+        assertEquals(AppError.InvalidDevice, problem(ProblemCode.INVALID_DEVICE).toAppError())
         assertEquals(AppError.SessionExpired, problem(ProblemCode.SESSION_EXPIRED).toAppError())
         assertEquals(AppError.SessionExpired, problem(ProblemCode.UNAUTHORIZED).toAppError())
         assertEquals(AppError.NotFound, problem(ProblemCode.NOT_FOUND).toAppError())
@@ -81,6 +82,7 @@ class AppErrorsTest {
     @Test
     fun `invalid credentials and other errors do not count as session expiry`() {
         assertFalse(problem(ProblemCode.INVALID_CREDENTIALS).isSessionExpiry)
+        assertFalse(problem(ProblemCode.INVALID_DEVICE).isSessionExpiry)
         assertFalse(ApiError.Http(403).isSessionExpiry)
         assertFalse(ApiError.Http(500).isSessionExpiry)
         assertFalse(ApiError.Network.isSessionExpiry)

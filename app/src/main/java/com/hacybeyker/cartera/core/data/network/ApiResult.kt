@@ -30,6 +30,7 @@ sealed interface ApiError {
 
 enum class ProblemCode {
     INVALID_CREDENTIALS,
+    INVALID_DEVICE,
     SESSION_EXPIRED,
     UNAUTHORIZED,
     NOT_FOUND,

@@ -59,6 +59,11 @@
 - Confirmación del cambio con la cotización pedida al continuar y su cuenta regresiva; al vencer (por el reloj o por un `QUOTE_EXPIRED` del servidor) ofrece la cotización nueva en un modal, y usarla reinicia la cuenta regresiva con otra `Idempotency-Key`.
 - Resultado del cambio con monto debitado, monto acreditado, tipo de cambio y los nuevos saldos de las dos cuentas, y Volver a Cambio; "No pudimos confirmar el cambio" si terminó sin respuesta.
 - Validación del cambio en el cliente (monto, saldo, un centavo como mínimo y cuentas de las monedas del sentido), `Idempotency-Key` reutilizada en cada Reintentar y modales propios para saldo insuficiente y monedas que no corresponden.
+- Ingreso con huella (`androidx.biometric` 1.1.0): oferta "Ingresa con tu huella" con Activar y Omitir tras el onboarding, una vez por instalación y solo si el dispositivo tiene una huella registrada y no está registrado.
+- Registro del dispositivo: el diálogo de huella del sistema autoriza una clave AES del Android Keystore que exige la huella en cada uso y se invalida con una huella nueva; se guarda solo el `deviceToken` cifrado. Cancelar el diálogo no llama al servidor ni guarda nada.
+- "Ingresar con huella" en Login cuando el dispositivo está registrado: la misma sesión en memoria que el login con clave, con Términos y Onboarding si corresponden. Si el servidor ya no reconoce el dispositivo (`INVALID_DEVICE`) o se registró una huella nueva, se borra lo guardado, se oculta el botón y se explica bajo el formulario.
+- El backend embebido guarda los dispositivos registrados para ingresar con huella en el dispositivo, así el ingreso con huella funciona tras un arranque en frío; RESET_DATA y `DELETE /auth/biometric` también los borran.
+- Pantalla Seguridad, desde Más, con el interruptor "Ingresar con huella": activarlo registra el dispositivo y desactivarlo lo revoca (`DELETE /auth/biometric`) y borra el token y la clave; sin huella en el dispositivo queda deshabilitado con su explicación.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -69,6 +74,9 @@
 - Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.
 - `hilt-lifecycle-viewmodel-compose` se declara en el catálogo en vez de llegar transitiva.
 - Gradle 9.9.0, AGP 9.5.1 y Navigation 3 1.2.1.
+- Login avisa su marca `login` cuando ya sabe si muestra "Ingresar con huella".
+- Tras el onboarding (o tras el login, si ya se vio) puede seguir la oferta de ingreso con huella en vez de Home.
+- `MainActivity` pasa a ser una `FragmentActivity`, que `BiometricPrompt` exige.
 - `POST /_demo/reset` también devuelve tenencias, precios, cotizaciones y dispositivos registrados a su estado inicial; con el canal en vivo abierto, no lo cierra y le envía los valores iniciales de lo suscrito.
 - La `Idempotency-Key` vale por usuario y por operación: la misma clave en una transferencia y en una orden no se cruza.
 - Una orden confirmada, o que terminó sin respuesta o con un error del servidor, invalida las cuentas y el portafolio: Mercado, Mi portafolio y el Detalle de acción vuelven a pedir solo el portafolio al mostrarse, e Inicio solo las cuentas.
@@ -87,6 +95,7 @@
 
 ### Security
 - Configuración de seguridad de red: sin tráfico en claro, salvo hacia `127.0.0.1` en debug y demo.
+- El `deviceToken` cifrado del ingreso con huella queda fuera de los backups y de la transferencia entre dispositivos; el token de sesión sigue solo en memoria y cerrar sesión no borra el `deviceToken`.
 
 ---
 

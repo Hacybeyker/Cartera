@@ -32,6 +32,9 @@
     <string name="login_submit">Entrar</string>
     <string name="login_invalid_credentials">Usuario o contraseña incorrectos.</string>
     <string name="login_error_title">No pudimos ingresar</string>
+    <string name="login_biometric">Ingresar con huella</string>
+    <string name="login_biometric_device_revoked">Este dispositivo ya no está registrado para ingresar con huella. Ingresa con tu clave y vuelve a activarlo en Seguridad.</string>
+    <string name="login_biometric_changed">Se registró una huella nueva en el dispositivo. Ingresa con tu clave y vuelve a activar el ingreso con huella en Seguridad.</string>
 
     <string name="terms_title">Términos y condiciones</string>
     <string name="terms_checkbox">He leído y acepto los términos y condiciones</string>
@@ -148,6 +151,7 @@
     <string name="channel_branch">Agencia</string>
     <string name="status_completed">Completado</string>
 
+    <string name="more_security">Seguridad</string>
     <string name="more_legacy">Servicios clásicos</string>
     <string name="more_log_out">Cerrar sesión</string>
     <string name="more_log_out_title">¿Cerrar sesión?</string>
@@ -330,4 +334,19 @@
     <string name="exchange_failure_title">No pudimos confirmar el cambio</string>
     <string name="exchange_failure_message">Revisa tus cuentas y tus movimientos antes de intentarlo de nuevo: si la conexión se cortó, pudo haberse hecho.</string>
     <string name="exchange_back_to_exchange">Volver a Cambio</string>
+
+    <string name="biometric_offer_title">Ingresa con tu huella</string>
+    <string name="biometric_offer_body">Entra a Cartera sin escribir tu clave. Puedes cambiarlo cuando quieras en Seguridad.</string>
+    <string name="biometric_offer_activate">Activar</string>
+    <string name="biometric_offer_skip">Omitir</string>
+    <string name="biometric_unavailable">Este dispositivo no tiene una huella registrada. Regístrala en los ajustes del sistema para ingresar con huella.</string>
+    <string name="biometric_enable_error_title">No pudimos activar el ingreso con huella</string>
+    <string name="biometric_disable_error_title">No pudimos desactivar el ingreso con huella</string>
+    <string name="biometric_prompt_enroll_title">Activar el ingreso con huella</string>
+    <string name="biometric_prompt_login_title">Ingresar con huella</string>
+    <string name="biometric_prompt_subtitle">Pon tu dedo en el sensor</string>
+
+    <string name="security_title">Seguridad</string>
+    <string name="security_biometric">Ingresar con huella</string>
+    <string name="security_biometric_body">Entra con tu huella en lugar de tu clave.</string>
 </resources>

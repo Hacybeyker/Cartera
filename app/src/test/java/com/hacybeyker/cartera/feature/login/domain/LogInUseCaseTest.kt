@@ -3,11 +3,10 @@ package com.hacybeyker.cartera.feature.login.domain
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.Outcome
 import com.hacybeyker.cartera.core.domain.entry.EntryStep
-import com.hacybeyker.cartera.core.domain.entry.ResolveEntryStepUseCase
-import com.hacybeyker.cartera.core.testing.FakeAppConfigRepository
 import com.hacybeyker.cartera.core.testing.FakeFirstRunRepository
 import com.hacybeyker.cartera.core.testing.FakeSessionRepository
 import com.hacybeyker.cartera.core.testing.TestAppConfig
+import com.hacybeyker.cartera.core.testing.resolveEntryStep
 import com.hacybeyker.cartera.feature.login.FakeAuthRepository
 import com.hacybeyker.cartera.feature.login.domain.model.AuthSession
 import com.hacybeyker.cartera.feature.login.domain.model.Credentials
@@ -22,7 +21,7 @@ class LogInUseCaseTest {
     private val auth = FakeAuthRepository()
     private val session = FakeSessionRepository()
     private val firstRun = FakeFirstRunRepository()
-    private val logIn = LogInUseCase(auth, session, ResolveEntryStepUseCase(FakeAppConfigRepository(), firstRun))
+    private val logIn = LogInUseCase(auth, session, resolveEntryStep(firstRun = firstRun))
     private val credentials = Credentials("ana.torres", "Cartera2026")
 
     @Test

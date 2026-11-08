@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.core.testing
 
+import com.hacybeyker.cartera.core.data.network.BiometricApi
 import com.hacybeyker.cartera.core.data.network.CarteraApi
 import com.hacybeyker.cartera.core.data.network.CarteraHttpClient
 import com.hacybeyker.cartera.core.data.network.MarketApi
@@ -10,6 +11,8 @@ import retrofit2.Retrofit
 fun MockWebServer.carteraApi(): CarteraApi = retrofit().create(CarteraApi::class.java)
 
 fun MockWebServer.marketApi(): MarketApi = retrofit().create(MarketApi::class.java)
+
+fun MockWebServer.biometricApi(): BiometricApi = retrofit().create(BiometricApi::class.java)
 
 private fun MockWebServer.retrofit(): Retrofit {
     val client = CarteraHttpClient.okHttpClient(timeoutSeconds = 1, interceptors = emptyList())

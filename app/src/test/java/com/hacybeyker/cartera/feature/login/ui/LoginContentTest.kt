@@ -72,6 +72,23 @@ class LoginContentTest {
         assertEquals(listOf(LoginAction.RetryClicked, LoginAction.ErrorDismissed), actions)
     }
 
+    @Test
+    fun `the biometric button shows only when enabled and emits its action`() {
+        show(LoginUiState(isBiometricChecked = true, isBiometricVisible = true))
+
+        compose.onNodeWithTag(LoginTestTags.BIOMETRIC).assertIsEnabled().performClick()
+
+        assertEquals(listOf<LoginAction>(LoginAction.BiometricClicked), actions)
+    }
+
+    @Test
+    fun `no biometric button without a registered device`() {
+        show(LoginUiState(isBiometricChecked = true, formError = LoginFormError.DEVICE_REVOKED))
+
+        compose.onNodeWithTag(LoginTestTags.BIOMETRIC).assertDoesNotExist()
+        compose.onNodeWithTag(LoginTestTags.ERROR).assertExists()
+    }
+
     // Los campos son controlados: el host aplica lo escrito como lo haría el ViewModel.
     private fun show(initial: LoginUiState) {
         compose.setContent {

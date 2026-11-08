@@ -25,8 +25,7 @@ class OnboardingViewModel @Inject constructor(private val completeOnboarding: Co
 
     private fun finish() {
         viewModelScope.launch {
-            completeOnboarding()
-            state.value = OnboardingUiState(isFinished = true)
+            state.value = OnboardingUiState(next = completeOnboarding())
         }
     }
 }

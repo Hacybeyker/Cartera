@@ -139,7 +139,7 @@ class HomeScreenshotTest {
     @Test
     fun more() = compose.captureLightAndDark("mas_contenido") {
         MoreContent(uiState = MoreUiState(isLoading = false, fullName = "Ana Torres"), version = "0.1.0", onAction = {
-        }, onLegacyClick = {})
+        }, onLegacyClick = {}, onSecurityClick = {})
     }
 
     @Test
@@ -148,7 +148,8 @@ class HomeScreenshotTest {
             uiState = MoreUiState(isLoading = false, error = AppError.Server),
             version = "0.1.0",
             onAction = {},
-            onLegacyClick = {}
+            onLegacyClick = {},
+            onSecurityClick = {}
         )
     }
 
@@ -158,7 +159,8 @@ class HomeScreenshotTest {
             uiState = MoreUiState(isLoading = false, fullName = "Ana Torres", isLogoutConfirmationVisible = true),
             version = "0.1.0",
             onAction = {},
-            onLegacyClick = {}
+            onLegacyClick = {},
+            onSecurityClick = {}
         )
     }
 

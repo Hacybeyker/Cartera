@@ -26,7 +26,8 @@
 │   │                      # configuración, primer uso, cuentas y movimientos, mercado y portafolio,
 │   │                      # cliente del canal en vivo, paginación, cliente HTTP y marcas de contenido visible
 │   ├── navigation/        # CarteraApp (raíz), AppNavDisplay (Navigation 3) y la pila de entrada
-│   └── feature/<name>/    # splash, login, terms, onboarding, home, movements, transfer, market y legacy
+│   └── feature/<name>/    # splash, login, terms, onboarding, biometric, home, movements, transfer,
+│                          # market, order, exchange y legacy
 │                          # (domain / data / ui / di)
 ├── app/src/demoTools/     # Backend embebido y escenarios (solo debug y demo)
 ├── AGENTS.md              # Reglas del proyecto para agentes de IA (CLAUDE.md lo importa)
@@ -57,7 +58,8 @@ datos de `api/fixtures/` según el contrato de `api/openapi.yaml`, y el canal en
 | `ana.torres` | `Cartera2026` | Ana Torres |
 
 Sin OTP. Son datos de demo, públicos a propósito: solo existen en `api/fixtures/` y en el backend
-embebido. La sesión vive en memoria, así que cada arranque en frío pide login.
+embebido. La sesión vive en memoria, así que cada arranque en frío pide login (con clave o, si se
+activó, con huella).
 
 | Cuenta | Alias | Moneda | Saldo disponible | Movimientos |
 |---|---|---|---|---|
@@ -150,17 +152,22 @@ adb logcat -d -s CarteraBackend | grep -E 'WS#[0-9]+ cerrado code=4401'
 ## 🚪 Recorrido de entrada
 
 ```
-Splash ──► Login ──► Términos* ──► Onboarding* ──► Home
+Splash ──► Login [Ingresar con huella*] ──► Términos* ──► Onboarding* ──► Oferta de huella* ──► Home
 ```
 
 - **Splash** pide `GET /app/config`. Si falla o el backend está caído, muestra el error y Reintentar
   en la misma pantalla.
 - **Login**: usuario y contraseña incorrectos se avisan bajo el formulario; un error de red o del
   servidor, en un modal con Reintentar y Cancelar. Mientras ingresa, un progreso bloquea la pantalla.
+  Si el dispositivo está registrado para ingresar con huella, muestra además "Ingresar con huella"
+  (ver [Ingreso con huella](#ingreso-con-huella)).
 - **Términos** (\*) aparece si la versión aceptada en el dispositivo difiere de `termsVersion`.
   Aceptar se activa al marcar la casilla; Rechazar (o Atrás) descarta la sesión y vuelve a Login.
 - **Onboarding** (\*) aparece una vez por instalación: tres páginas con Siguiente, Omitir en todas y
   Empezar en la última.
+- **Oferta de huella** (\*) aparece después del onboarding (o del login, si el onboarding ya se vio)
+  solo si el dispositivo tiene una huella registrada y todavía no está registrado para ingresar con
+  ella. Se resuelve una vez por instalación, con Activar u Omitir.
 - Al terminar, la pila queda en `[Home]` y Atrás sale de la app.
 
 Los términos aceptados y el onboarding visto se guardan en SharedPreferences: `pm clear` (o
@@ -168,6 +175,38 @@ Los términos aceptados y el onboarding visto se guardan en SharedPreferences: `
 autenticada responde `SESSION_EXPIRED` o `UNAUTHORIZED` (por ejemplo, con `session_ttl` corto o tras
 la muerte del proceso), aparece el modal "Tu sesión expiró"; Ingresar deja la pila en `[Login]` y,
 tras el nuevo login, no se repiten Términos ni Onboarding.
+
+### Ingreso con huella
+
+- **Activar** (en la oferta o en Más → Seguridad) abre el diálogo de huella del sistema. Con una huella
+  válida, la app registra el dispositivo (`POST /auth/biometric/enroll`) y guarda solo el `deviceToken`
+  cifrado con una clave AES del Android Keystore que exige la huella en cada uso y se invalida si se
+  registra una huella nueva. Cancelar el diálogo no llama al servidor ni guarda nada.
+- **Ingresar con huella** abre el diálogo, descifra el `deviceToken` y lo cambia por una sesión
+  (`POST /auth/biometric/login`), igual que el login con clave y con el mismo `session_ttl`; después
+  siguen Términos u Onboarding si corresponden. La sesión sigue solo en memoria.
+- Si el servidor ya no reconoce el dispositivo (`INVALID_DEVICE`, por ejemplo tras `RESET_DATA`) o se
+  registró una huella nueva, la app borra lo guardado, oculta el botón y lo explica bajo el formulario.
+- **Más → Seguridad**: el interruptor "Ingresar con huella" activa el registro o lo desactiva
+  (`DELETE /auth/biometric` y se borran el token y la clave). Sin huella en el dispositivo queda
+  deshabilitado. Cerrar sesión no borra el `deviceToken`.
+- El `deviceToken` cifrado queda fuera de los backups. `pm clear` (o `clearState`) lo borra y vuelve a
+  mostrar la oferta.
+- El backend embebido recuerda los dispositivos registrados aunque se cierre la app (es lo único de su
+  estado que sobrevive al proceso); RESET_DATA, desactivar en Seguridad o `pm clear` los olvidan.
+
+**En el emulador.** El diálogo de huella es del sistema y no tiene testTags: se resuelve por adb.
+
+```bash
+# 1. Un PIN de bloqueo (la huella lo exige)
+adb shell locksettings set-pin 1111
+# 2. Abrir el registro de huella, ingresar el PIN y, cada vez que pida el dedo, tocar y soltar
+#    (unas 15 veces, hasta "Fingerprint added")
+adb shell am start -a android.settings.FINGERPRINT_ENROLL
+adb -e emu finger touch 1 && adb -e emu finger remove 1
+# 3. Con el diálogo de la app abierto, resolverlo con la misma huella (otro id, p. ej. 2, falla)
+adb -e emu finger touch 1
+```
 
 ---
 
@@ -182,7 +221,7 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
 ├─ Mercado ──► Detalle de acción ──► [Operar: Comprar · Vender] ──► Orden ──► Confirmación ──► Resultado ──► Home (Mercado)
 │     └─ Mi portafolio ──► Detalle de acción
 ├─ Cambio ──► Confirmación ──► Resultado ──► Home (Cambio)
-└─ Más ──► Servicios clásicos (próximamente) · Cerrar sesión · Versión
+└─ Más ──► Seguridad · Servicios clásicos (próximamente) · Cerrar sesión · Versión
 ```
 
 - Cada tab de Home conserva su estado (scroll y tab superior) mientras se usa otro.
@@ -347,9 +386,10 @@ en su ventana (también los bottom sheets). La convención es snake_case en espa
 |---|---|
 | Comunes | `barra_volver`, `progreso_bloqueante`, `modal_sesion_expirada` (`_aceptar`), `modal_error` (`_reintentar`, `_cancelar`), `modal_confirmacion` (`_aceptar`, `_cancelar`) |
 | Splash | `splash_pantalla`, `splash_cargando`, `splash_error`, `splash_reintentar` |
-| Login | `login_pantalla`, `login_usuario`, `login_contrasena`, `login_mostrar_contrasena`, `login_entrar`, `login_error` |
+| Login | `login_pantalla`, `login_usuario`, `login_contrasena`, `login_mostrar_contrasena`, `login_entrar`, `login_huella`, `login_error` |
 | Términos | sin testTags: "Términos y condiciones", "He leído y acepto…", "Aceptar", "Rechazar" |
 | Onboarding | sin testTags: "Siguiente", "Omitir", "Empezar" |
+| Oferta de huella | `biometria_oferta`, `biometria_activar`, `biometria_omitir` (el diálogo del sistema no tiene testTags) |
 | Home | `home_pantalla`, `home_tab_inicio`, `home_tab_mercado`, `home_tab_cambio`, `home_tab_mas` |
 | Inicio | `inicio_pantalla`, `inicio_saludo`, `inicio_tab_cuentas`, `inicio_tab_movimientos` |
 | Inicio · Cuentas | `cuentas_lista`, `cuentas_item_<id>`, `cuentas_transferir` y estados `cuentas_*` |
@@ -369,7 +409,8 @@ en su ventana (también los bottom sheets). La convención es snake_case en espa
 | Orden · confirmación | `orden_confirmacion`, `orden_confirmar`, `orden_cancelar`, `<campo>_error` (`orden_accion`, `orden_lado`, `orden_cantidad`, `orden_cuenta`), `modal_fondos_insuficientes`, `modal_tenencia_insuficiente` (cada uno con `_aceptar`) |
 | Orden · resultado | `orden_resultado`, `orden_resultado_operacion`, `orden_resultado_precio`, `orden_resultado_total`, `orden_resultado_saldo`, `orden_resultado_tenencia`, `orden_resultado_error`, `orden_volver_mercado` |
 | Mi portafolio | `portafolio_lista`, `portafolio_item_<symbol>`, `portafolio_reconectando` y estados `portafolio_*` (con `portafolio_vacio`) |
-| Más | `mas_pantalla`, `mas_nombre`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
+| Más | `mas_pantalla`, `mas_nombre`, `mas_seguridad`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
+| Seguridad | `seguridad_pantalla`, `seguridad_huella` (interruptor) |
 | Servicios clásicos | `legacy_proximamente` |
 | Transferir · formulario | `transferir_pantalla`, `transferir_origen`, `transferir_origen_item_<id>`, `transferir_destino`, `transferir_monto`, `transferir_descripcion`, `transferir_continuar`, `<campo>_error` y estados `transferir_*` |
 | Transferir · confirmación | `transferir_confirmacion`, `transferir_confirmar`, `transferir_cancelar`, `<campo>_error`, `modal_fondos_insuficientes`, `modal_destino_inexistente`, `modal_moneda_distinta` (cada uno con `_aceptar`) |
@@ -382,10 +423,11 @@ por texto.
 **Marcas de contenido visible.** Cada pantalla avisa con el nombre de su marca tras el primer frame
 con contenido real: una vez por cada carga o refresco, nunca por el estado de carga ni por cargar más
 páginas. Rotar o volver a una pantalla sin datos nuevos no repite la marca. Marcas: `login`,
-`terminos`, `onboarding`, `inicio_cuentas`, `inicio_movimientos`, `cuenta_movimientos`,
+`terminos`, `onboarding`, `biometria_oferta`, `seguridad`, `inicio_cuentas`, `inicio_movimientos`, `cuenta_movimientos`,
 `movimiento_detalle`, `movimiento_desglose`, `mercado`, `accion_detalle`, `portafolio`, `cambio`, `mas`,
 `transferir_formulario`, `transferir_confirmacion`, `transferir_resultado`, `orden_formulario`,
-`orden_confirmacion`, `orden_resultado`, `cambio_confirmacion` y `cambio_resultado`. Tras una transferencia,
+`orden_confirmacion`, `orden_resultado`, `cambio_confirmacion` y `cambio_resultado`. `login` se avisa
+cuando la pantalla ya sabe si muestra "Ingresar con huella". Tras una transferencia,
 `inicio_cuentas` se dispara otra vez cuando llegan las cuentas refrescadas. `accion_detalle` se repite
 con cada rango cargado. Los precios en vivo no repiten `mercado`, `portafolio` ni `accion_detalle`: solo
 la carga y el refresco del portafolio. Las cotizaciones en vivo tampoco repiten `cambio`: solo la carga
@@ -454,7 +496,8 @@ adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
 adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
   -a com.hacybeyker.cartera.demo.SET_SCENARIO --ei tick_ms 0 --ei quote_ttl_s 5
 
-# Volver a los fixtures (saldos, movimientos, tenencias, precios, cotizaciones, huella e idempotencia)
+# Volver a los fixtures (saldos, movimientos, tenencias, precios, cotizaciones, huella e idempotencia;
+# los dispositivos registrados para la huella son lo único que sobrevive a cerrar la app)
 adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
   -a com.hacybeyker.cartera.demo.RESET_DATA
 

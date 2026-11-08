@@ -4,6 +4,7 @@ import com.hacybeyker.cartera.BuildConfig
 import com.hacybeyker.cartera.core.data.network.AccessTokenProvider
 import com.hacybeyker.cartera.core.data.network.AccessTokenUpdates
 import com.hacybeyker.cartera.core.data.network.BearerInterceptor
+import com.hacybeyker.cartera.core.data.network.BiometricApi
 import com.hacybeyker.cartera.core.data.network.CarteraApi
 import com.hacybeyker.cartera.core.data.network.CarteraHttpClient
 import com.hacybeyker.cartera.core.data.network.ExtraInterceptors
@@ -48,6 +49,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideMarketApi(retrofit: Retrofit): MarketApi = retrofit.create(MarketApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideBiometricApi(retrofit: Retrofit): BiometricApi = retrofit.create(BiometricApi::class.java)
 }
 
 @Module

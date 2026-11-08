@@ -14,7 +14,7 @@ class BiometricDesk(
 
     fun enroll(userId: String): BackendResponse {
         val token = newToken()
-        state.deviceTokens[token] = userId
+        state.devices.register(token, userId)
         return json(CREATED, buildJsonObject { put("deviceToken", token) })
     }
 
@@ -27,7 +27,7 @@ class BiometricDesk(
                 errors = listOf(FieldError("deviceToken", "REQUIRED", "El campo es obligatorio."))
             )
         }
-        val userId = state.deviceTokens[token]?.takeIf { state.user(it) != null }
+        val userId = state.devices.userOf(token)?.takeIf { state.user(it) != null }
             ?: throw ProblemException(
                 ProblemCode.INVALID_DEVICE,
                 "El dispositivo no está registrado. Ingresa con tu clave."
@@ -36,7 +36,7 @@ class BiometricDesk(
     }
 
     fun revoke(userId: String): BackendResponse {
-        state.deviceTokens.values.removeAll { it == userId }
+        state.devices.revokeAll(userId)
         return BackendResponse(status = NO_CONTENT)
     }
 

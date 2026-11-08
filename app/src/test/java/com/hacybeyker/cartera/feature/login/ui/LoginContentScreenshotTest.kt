@@ -36,6 +36,27 @@ class LoginContentScreenshotTest {
     }
 
     @Test
+    fun biometric() = compose.captureLightAndDark("login_huella") {
+        LoginContent(uiState = LoginUiState(isBiometricChecked = true, isBiometricVisible = true), onAction = {})
+    }
+
+    @Test
+    fun deviceRevoked() = compose.captureLightAndDark("login_dispositivo_invalido") {
+        LoginContent(
+            uiState = LoginUiState(isBiometricChecked = true, formError = LoginFormError.DEVICE_REVOKED),
+            onAction = {}
+        )
+    }
+
+    @Test
+    fun biometricChanged() = compose.captureLightAndDark("login_huella_cambiada") {
+        LoginContent(
+            uiState = LoginUiState(isBiometricChecked = true, formError = LoginFormError.BIOMETRIC_CHANGED),
+            onAction = {}
+        )
+    }
+
+    @Test
     fun submitting() = compose.captureLightAndDark("login_progreso", withWindows = true) {
         LoginContent(uiState = filled.copy(isSubmitting = true), onAction = {})
     }

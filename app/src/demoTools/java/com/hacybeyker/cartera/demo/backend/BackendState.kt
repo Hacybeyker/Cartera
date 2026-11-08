@@ -13,7 +13,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 
-class BackendState(private val catalog: FixtureCatalog, clock: Clock = Clock.systemDefaultZone()) {
+class BackendState(
+    private val catalog: FixtureCatalog,
+    clock: Clock = Clock.systemDefaultZone(),
+    val devices: DeviceRegistry = InMemoryDeviceRegistry()
+) {
     private val balances = mutableMapOf<String, BigDecimal>()
     private val createdMovements = mutableMapOf<String, MutableList<MovementRecord>>()
     private val sequences = mutableMapOf<String, Int>()
@@ -21,9 +25,6 @@ class BackendState(private val catalog: FixtureCatalog, clock: Clock = Clock.sys
     val market = MarketState(catalog, clock)
     val holdings = HoldingsBook(catalog)
     val fxQuotes = mutableMapOf<String, FxQuote>()
-
-    /** `deviceToken` → id del usuario que lo registró. */
-    val deviceTokens = mutableMapOf<String, String>()
 
     val appConfig: JsonObject get() = catalog.appConfig
 
@@ -66,7 +67,7 @@ class BackendState(private val catalog: FixtureCatalog, clock: Clock = Clock.sys
         market.reset()
         holdings.reset()
         fxQuotes.clear()
-        deviceTokens.clear()
+        devices.clear()
     }
 
     private fun withCurrentBalance(account: JsonObject): JsonObject {

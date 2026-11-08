@@ -6,6 +6,7 @@ object LoginTestTags {
     const val PASSWORD = "login_contrasena"
     const val SHOW_PASSWORD = "login_mostrar_contrasena"
     const val SUBMIT = "login_entrar"
+    const val BIOMETRIC = "login_huella"
     const val ERROR = "login_error"
     const val MARK = "login"
 }

@@ -23,8 +23,8 @@ val fixturesDir: File = File(requireNotNull(System.getProperty("cartera.fixtures
 
 val fileFixtures = FixtureSource { path -> File(fixturesDir, path).readText() }
 
-class RouterHarness(val clock: MutableClock = MutableClock()) {
-    val state = BackendState(FixtureCatalog(fileFixtures), clock)
+class RouterHarness(val clock: MutableClock = MutableClock(), devices: DeviceRegistry = InMemoryDeviceRegistry()) {
+    val state = BackendState(FixtureCatalog(fileFixtures), clock, devices)
     val jwt = JwtSigner(clock)
     val desks = BackendDesks.create(state, jwt, clock)
     var resets = 0

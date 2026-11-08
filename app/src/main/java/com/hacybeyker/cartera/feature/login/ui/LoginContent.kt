@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,6 +72,17 @@ fun LoginContent(uiState: LoginUiState, onAction: (LoginAction) -> Unit, modifie
         ) {
             Text(text = stringResource(R.string.login_submit))
         }
+        if (uiState.isBiometricVisible) {
+            OutlinedButton(
+                onClick = { onAction(LoginAction.BiometricClicked) },
+                enabled = !uiState.isSubmitting,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(LoginTestTags.BIOMETRIC)
+            ) {
+                Text(text = stringResource(R.string.login_biometric))
+            }
+        }
     }
     LoginDialogs(uiState = uiState, onAction = onAction)
 }
@@ -125,6 +137,8 @@ private fun LoginDialogs(uiState: LoginUiState, onAction: (LoginAction) -> Unit)
 private fun LoginFormError.messageRes(): Int = when (this) {
     LoginFormError.INVALID_CREDENTIALS -> R.string.login_invalid_credentials
     LoginFormError.INVALID_INPUT -> R.string.error_validation
+    LoginFormError.DEVICE_REVOKED -> R.string.login_biometric_device_revoked
+    LoginFormError.BIOMETRIC_CHANGED -> R.string.login_biometric_changed
 }
 
 @PreviewLightDark
@@ -132,6 +146,14 @@ private fun LoginFormError.messageRes(): Int = when (this) {
 private fun LoginEmptyPreview() {
     CarteraTheme {
         LoginContent(uiState = LoginUiState(), onAction = {})
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun LoginBiometricPreview() {
+    CarteraTheme {
+        LoginContent(uiState = LoginUiState(isBiometricChecked = true, isBiometricVisible = true), onAction = {})
     }
 }
 

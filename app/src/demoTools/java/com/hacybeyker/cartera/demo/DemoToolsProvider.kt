@@ -18,6 +18,7 @@ class DemoToolsProvider : ContentProvider() {
         val context = requireNotNull(context)
         val backend = CarteraBackend(
             fixtures = { path -> context.assets.open(path).bufferedReader().use { it.readText() } },
+            devices = context.deviceRegistry(),
             log = { message -> Log.i(BACKEND_TAG, message) }
         )
         // El socket se abre fuera del hilo principal, pero se espera: la splash llama apenas se abre la app.
