@@ -11,6 +11,7 @@
 - Proyecto inicializado a partir de [ScaffoldingAndroidCompose](https://github.com/hacybeyker/ScaffoldingAndroidCompose)
 - Documento de alcance de la fase 1 (`docs/ALCANCE-FASE-1.md`).
 - Documento de alcance de la fase 2 (`docs/ALCANCE-FASE-2.md`).
+- Documento de alcance de la fase 3 (`docs/ALCANCE-FASE-3.md`).
 - Licencia MIT.
 - Contrato de la API en OpenAPI 3.1 (`api/openapi.yaml`), con errores RFC 9457 y la regla de transferencia.
 - Fixtures de la usuaria de prueba, sus tres cuentas y sus movimientos, con un generador de semilla fija (`api/tools/`).
