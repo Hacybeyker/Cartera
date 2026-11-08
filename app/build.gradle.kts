@@ -50,9 +50,9 @@ android {
     sourceSets {
         listOf("debug", "demo").forEach { buildType ->
             getByName(buildType) {
-                kotlin.srcDir("src/demoTools/java")
-                res.srcDir("src/demoTools/res")
-                assets.srcDir("$rootDir/api/fixtures")
+                kotlin.directories.add("src/demoTools/java")
+                res.directories.add("src/demoTools/res")
+                assets.directories.add("$rootDir/api/fixtures")
                 manifest.srcFile("src/demoTools/AndroidManifest.xml")
             }
         }
@@ -94,9 +94,6 @@ android {
         checkDependencies = true
         checkReleaseBuilds = true
         lintConfig = file("$rootDir/lint.xml")
-        htmlReport = true
-        sarifReport = true
-        textReport = true
     }
 }
 

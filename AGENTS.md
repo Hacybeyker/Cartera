@@ -14,13 +14,13 @@ Lo que el proyecto tiene hoy, literal y con versiones. Los agentes trabajan con 
 - Presentación: MVVM con UDF según el perfil (`lifecycle-viewmodel-compose` 2.11.0, `lifecycle-runtime-compose`). Features con ViewModel: `splash`, `login`, `terms`, `onboarding`, `home` (Inicio, sus movimientos y Más), `movements` (cuenta, detalle y desglose) y `transfer` (formulario, confirmación y resultado); `legacy` solo reserva su pantalla.
 - Asincronía: corrutinas y Flow (llegan con AndroidX lifecycle; no hay `kotlinx-coroutines-core` declarado).
 - DI: Hilt 2.60.1 con KSP 2.3.13; `hilt-lifecycle-viewmodel-compose` 1.4.0 (`hiltViewModel`, también con fábrica asistida para los datos de las NavKey).
-- Navegación: Navigation 3 1.2.0 (`navigation3-runtime`, `navigation3-ui`) y `lifecycle-viewmodel-navigation3`; NavKey serializables con `kotlinx-serialization-core` 1.12.0.
+- Navegación: Navigation 3 1.2.1 (`navigation3-runtime`, `navigation3-ui`) y `lifecycle-viewmodel-navigation3`; NavKey serializables con `kotlinx-serialization-core` 1.12.0.
 - Red: Retrofit 3.0.0 (con `converter-kotlinx-serialization`), OkHttp 5.5.1 y `kotlinx-serialization-json` 1.12.0; `BASE_URL` y `HTTP_TIMEOUT_SECONDS` en BuildConfig.
 - Backend de demo: `mockwebserver3` 5.5.1, solo en debug y demo (ver Arquitectura).
 - Persistencia: `SharedPreferences` de la plataforma (términos aceptados, onboarding visto y, en debug y demo, el escenario). Imágenes: ninguna.
 - Tests (solo JVM): JUnit 4.13.2, Robolectric 4.17 (emula la API 37), Compose UI Test (`ui-test-junit4`), Roborazzi 1.77.0, `kotlinx-coroutines-test` 1.11.0, Turbine 1.2.1, `androidx.test.ext:junit` 1.3.0, `espresso-core` 3.7.0 (ver Arquitectura).
 - Calidad: ktlint (plugin 14.2.0), detekt 2.0.0-alpha.6, Android Lint (`abortOnError`); gate de cobertura con Kover 0.9.11 (90 %); goldens de UI con Roborazzi; SonarCloud (plugin 7.5.0.8588) en CI, opcional según `SONAR_TOKEN`.
-- Build: AGP 9.5.0, Kotlin 2.4.21, Gradle 9.8.2, KSP; compileSdk y targetSdk 37, minSdk 26, Java 11; buildTypes `debug`, `release` (R8) y `demo` (hereda de release, `profileable`, firmado con la clave debug, mismo applicationId); JDK 21 en CI.
+- Build: AGP 9.5.1, Kotlin 2.4.21, Gradle 9.9.0, KSP; compileSdk y targetSdk 37, minSdk 26, Java 11; buildTypes `debug`, `release` (R8) y `demo` (hereda de release, `profileable`, firmado con la clave debug, mismo applicationId); JDK 21 en CI.
 
 ## Comandos
 

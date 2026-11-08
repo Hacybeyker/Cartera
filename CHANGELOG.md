@@ -47,9 +47,11 @@
 - `ApiCaller` ya no trata cualquier `IllegalArgumentException` como respuesta inválida, solo los errores de lectura de la respuesta.
 - Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.
 - `hilt-lifecycle-viewmodel-compose` se declara en el catálogo en vez de llegar transitiva.
+- Gradle 9.9.0, AGP 9.5.1 y Navigation 3 1.2.1.
 
 ### Removed
 - `hilt-navigation-compose`, que ningún import usaba.
+- Los íconos `.webp` del launcher por densidad (`mipmap-*dpi`): con minSdk 26 se usa siempre el ícono adaptativo.
 
 ### Fixed
 - Tras un error del servidor al confirmar una transferencia, volver al inicio vuelve a pedir las cuentas: el cobro no está descartado.
