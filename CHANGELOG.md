@@ -44,6 +44,7 @@
 - Fixtures de mercado con un generador de semilla fija (`api/tools/generate_market.py`): ocho acciones, sus ticks e historiales (1D, 1W, 1M y 1Y), el portafolio de Ana y el tipo de cambio USD/PEN con sus ticks.
 - Backend embebido: acciones con precio vigente, detalle e historial; portafolio valorizado; órdenes de compra y venta a mercado en la cuenta en dólares con `Idempotency-Key`; cotizaciones que vencen y cambio entre cuentas propias; registro, ingreso y revocación de huella.
 - Escenario: intervalo de ticks (`tick_ms`), corte del canal (`stream_drop_s`) y vigencia de la cotización (`quote_ttl_s`) por adb, launchApp y la pantalla Escenario.
+- Canal en vivo `WS /market/stream` en el backend embebido, con su contrato en `api/asyncapi.yaml` (AsyncAPI 3.0): suscripción por símbolo y por par con el valor actual al suscribirse, `quote` y `fx` en cada tick de un reloj de mercado global, cierre 4401 al vencer la sesión, corte de demo con `stream_drop_s` y logs de apertura, suscripción, ticks, corte y cierre en `CarteraBackend`.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -52,7 +53,7 @@
 - Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.
 - `hilt-lifecycle-viewmodel-compose` se declara en el catálogo en vez de llegar transitiva.
 - Gradle 9.9.0, AGP 9.5.1 y Navigation 3 1.2.1.
-- `POST /_demo/reset` también devuelve tenencias, precios, cotizaciones y dispositivos registrados a su estado inicial.
+- `POST /_demo/reset` también devuelve tenencias, precios, cotizaciones y dispositivos registrados a su estado inicial; con el canal en vivo abierto, no lo cierra y le envía los valores iniciales de lo suscrito.
 - La `Idempotency-Key` vale por usuario y por operación: la misma clave en una transferencia y en una orden no se cruza.
 
 ### Removed

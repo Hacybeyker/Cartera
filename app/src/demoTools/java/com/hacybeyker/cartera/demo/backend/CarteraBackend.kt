@@ -4,8 +4,9 @@ import java.io.Closeable
 import java.net.InetAddress
 import java.time.Clock
 import java.util.concurrent.Callable
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import mockwebserver3.Dispatcher
@@ -19,6 +20,7 @@ sealed interface Outcome {
     data class Respond(val response: BackendResponse) : Outcome
     data object Stall : Outcome
     data object Disconnect : Outcome
+    data class Upgrade(val handshake: StreamHandshake) : Outcome
 }
 
 data class Handled(val outcome: Outcome, val latencyMs: Long)
@@ -30,18 +32,33 @@ class CarteraBackend(
 ) : Closeable {
     private val state = BackendState(FixtureCatalog(fixtures), clock)
     private val failures = FailureInjector()
-    private val router = BackendRouter(
-        state = state,
-        desks = BackendDesks.create(state, JwtSigner(clock), clock),
-        onReset = failures::reset
-    )
+    private val desks = BackendDesks.create(state, JwtSigner(clock), clock)
     private val requestCounter = AtomicLong()
     private val server = MockWebServer()
 
     // Un solo hilo: el estado no necesita locks y el trabajo del backend aparece con nombre propio en las trazas.
-    private val worker: ExecutorService = Executors.newSingleThreadExecutor { task ->
+    // Los ticks y temporizadores del canal en vivo corren en ese mismo hilo.
+    private val worker: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { task ->
         Thread(task, WORKER_THREAD).apply { isDaemon = true }
     }
+    private val stream = MarketStream(
+        state = state,
+        desks = desks,
+        clock = clock,
+        scheduler = { delayMs, task ->
+            val future = worker.schedule(Runnable(task), delayMs, TimeUnit.MILLISECONDS)
+            Cancellable { future.cancel(false) }
+        },
+        log = log
+    )
+    private val router = BackendRouter(
+        state = state,
+        desks = desks,
+        onReset = {
+            failures.reset()
+            stream.reset()
+        }
+    )
 
     val baseUrl: HttpUrl get() = server.url(Endpoint.BASE_PATH)
 
@@ -66,9 +83,18 @@ class CarteraBackend(
                 )
             )
             failures.shouldFail(scenario.failureRate) -> injectedFailure(scenario.failureMode, request.requestId)
-            else -> Outcome.Respond(router.route(request))
+            else -> routed(request)
         }
         return Handled(outcome, scenario.latencyMs)
+    }
+
+    private fun routed(request: BackendRequest): Outcome {
+        val response = router.route(request)
+        return if (response.status == BackendRouter.SWITCHING_PROTOCOLS) {
+            Outcome.Upgrade(stream.handshake(request))
+        } else {
+            Outcome.Respond(response)
+        }
     }
 
     override fun close() {
@@ -103,6 +129,10 @@ class CarteraBackend(
                     builder.onResponseStart(SocketEffect.CloseSocket())
                     "disconnect"
                 }
+                is Outcome.Upgrade -> {
+                    builder.webSocketUpgrade(StreamListener(outcome.handshake, stream, ::post))
+                    "101 WS#${outcome.handshake.id}"
+                }
             }
             val elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt) + handled.latencyMs
             log(
@@ -110,6 +140,14 @@ class CarteraBackend(
                     "latency=${handled.latencyMs}ms $REQUEST_ID_HEADER=${backendRequest.requestId}"
             )
             return builder.build()
+        }
+    }
+
+    private fun post(action: () -> Unit) {
+        try {
+            worker.execute(Runnable(action))
+        } catch (_: RejectedExecutionException) {
+            // El backend se está cerrando: los eventos de los sockets que se cierran con él ya no importan.
         }
     }
 

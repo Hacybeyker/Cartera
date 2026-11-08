@@ -34,7 +34,10 @@ class BackendRouterTest {
         assertEquals(200, response.status)
         assertEquals("Bearer", response.json().string("tokenType"))
         assertEquals(900L, response.json().getValue("expiresIn").jsonPrimitive.long)
-        assertEquals(TokenCheck.Valid("USR-001"), harness.jwt.check(response.json().string("accessToken")))
+        assertEquals(
+            TokenCheck.Valid("USR-001", expiresAt = harness.clock.now.plusSeconds(900)),
+            harness.jwt.check(response.json().string("accessToken"))
+        )
     }
 
     @Test

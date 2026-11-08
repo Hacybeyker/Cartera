@@ -1,8 +1,12 @@
 package com.hacybeyker.cartera.demo.backend
 
+import java.time.Instant
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+
+/** Sesión del token Bearer de una llamada: el canal en vivo la cierra con 4401 al llegar a [expiresAt]. */
+data class Session(val userId: String, val expiresAt: Instant)
 
 class SessionDesk(private val state: BackendState, private val jwt: JwtSigner) {
 
@@ -40,10 +44,12 @@ class SessionDesk(private val state: BackendState, private val jwt: JwtSigner) {
         )
     }
 
-    fun authenticate(request: BackendRequest): String {
+    fun authenticate(request: BackendRequest): String = session(request).userId
+
+    fun session(request: BackendRequest): Session {
         val token = request.header("Authorization")?.removePrefix("Bearer ")?.trim().orEmpty()
         return when (val check = jwt.check(token)) {
-            is TokenCheck.Valid -> check.subject.takeIf { state.user(it) != null }
+            is TokenCheck.Valid -> Session(check.subject, check.expiresAt).takeIf { state.user(it.userId) != null }
             TokenCheck.Expired ->
                 throw ProblemException(ProblemCode.SESSION_EXPIRED, "La sesión expiró. Vuelve a ingresar.")
             TokenCheck.Invalid -> null

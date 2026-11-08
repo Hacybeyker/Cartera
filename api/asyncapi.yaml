@@ -1,0 +1,248 @@
+asyncapi: 3.0.0
+info:
+  title: Cartera · canal en vivo
+  version: 1.0.0
+  description: |
+    Canal en vivo de precios de Cartera (`WS /market/stream`). Complementa a `openapi.yaml`, que
+    fija las convenciones comunes: autenticación, fechas, precios como texto decimal, errores RFC 9457
+    y cabeceras `X-Demo-*`. Este documento describe el **servidor**: `receive` es lo que envía el
+    cliente y `send`, lo que publica el servidor.
+
+    **Handshake.** `GET /api/v1/market/stream` con upgrade a WebSocket y `Authorization: Bearer <JWT>`.
+    Es el endpoint `market_stream` del escenario y responde como cualquier endpoint antes del upgrade:
+
+    | Caso | Respuesta del handshake |
+    |---|---|
+    | Sin token o token inválido | 401 `UNAUTHORIZED` (RFC 9457) |
+    | Token vencido | 401 `SESSION_EXPIRED` (RFC 9457) |
+    | Sin cabeceras de upgrade | 422 `VALIDATION_ERROR` en el campo `Upgrade` |
+    | `X-Demo-Backend-Down: true` | 503 `SERVICE_UNAVAILABLE` con `Retry-After: 30` |
+    | Fallo inyectado `http_500` | 500 `INTERNAL_ERROR` |
+    | Fallo inyectado `timeout` | El servidor no responde: vence el timeout del cliente |
+    | Fallo inyectado `disconnect` | El servidor cierra el socket sin responder |
+    | Correcto | 101 Switching Protocols, tras `X-Demo-Latency-Ms` |
+
+    **Protocolo.** Mensajes de texto con un objeto JSON y un campo `type`. El cliente se suscribe y
+    desuscribe por símbolo (`symbols`) y por par (`pairs`, solo `USD/PEN`); una lista ausente equivale a
+    vacía. Cada `subscribe` se responde enseguida con el valor actual de lo que nombra (un `quote` por
+    símbolo y un `fx` por par), así el cliente tiene precio sin esperar el próximo tick. Suscribirse
+    otra vez a lo mismo vuelve a enviar el valor actual. `unsubscribe` no tiene respuesta. Un mensaje
+    que no es un objeto JSON, con otro `type` o con listas mal formadas, un mensaje binario y los
+    símbolos o pares desconocidos se ignoran: el servidor no responde ni cierra, solo lo registra en
+    su log.
+
+    **Reloj de mercado.** Hay uno solo en el servidor, compartido por todas las conexiones. Corre
+    mientras haya al menos una conexión abierta, al intervalo de `X-Demo-Tick-Ms` del último handshake
+    (con 0 se detiene y los precios quedan congelados). En cada tick avanzan todas las acciones y el
+    tipo de cambio, así `GET /market/stocks`, `POST /orders`, `GET /portfolio` y `GET /fx/rates` ven el
+    mismo precio que el canal, y cada conexión recibe un `quote` por símbolo suscrito y un `fx` por par
+    suscrito. Dos conexiones no aceleran los precios. Cada `fx` es una cotización nueva, recordada por
+    el servidor y válida en `POST /fx/exchanges` hasta `expiresAt` (`X-Demo-Quote-Ttl-S` del handshake).
+
+    **Cierres.**
+    - El servidor cierra con **4401** ("La sesión expiró.") cuando vence el token del handshake
+      (`exp`; con `X-Demo-Session-Ttl` en el login). El cliente debe contestar el cierre; si no lo hace
+      en 5 s, el servidor corta el socket. Un 4401 equivale a un 401: la sesión terminó.
+    - Si el cliente cierra, el servidor contesta con 1000.
+    - **Corte de demo** (`X-Demo-Stream-Drop-S` > 0): a esos segundos desde la conexión, el servidor
+      corta el socket TCP **sin trama de cierre**, como una caída de red. El cliente lo ve como un fallo
+      de la conexión (en OkHttp, `onFailure` sin `Response`), no como un cierre. Cada conexión nueva
+      vuelve a contar desde 0.
+
+    **`POST /_demo/reset`** no cierra las conexiones: vuelve los precios al primer tick y cada conexión
+    recibe enseguida el valor actual de lo que tiene suscrito, con cotizaciones `fx` nuevas (el reset
+    borra las anteriores).
+defaultContentType: application/json
+servers:
+  embebido:
+    host: 127.0.0.1:8765
+    protocol: ws
+    pathname: /api/v1
+    description: Backend embebido (debug y demo). Release no tiene canal.
+    security:
+      - $ref: "#/components/securitySchemes/bearer"
+channels:
+  marketStream:
+    address: /market/stream
+    title: Precios en vivo
+    description: Una conexión por cliente, con suscripciones por símbolo y por par.
+    servers:
+      - $ref: "#/servers/embebido"
+    messages:
+      subscribe:
+        $ref: "#/components/messages/subscribe"
+      unsubscribe:
+        $ref: "#/components/messages/unsubscribe"
+      quote:
+        $ref: "#/components/messages/quote"
+      fx:
+        $ref: "#/components/messages/fx"
+    bindings:
+      ws:
+        method: GET
+        headers:
+          type: object
+          required: [Authorization]
+          properties:
+            Authorization:
+              type: string
+              description: "`Bearer <JWT>`, el mismo token de la API REST."
+            X-Demo-Tick-Ms:
+              type: integer
+              minimum: 0
+              default: 2000
+              description: Milisegundos entre ticks del reloj global; 0 congela los precios. Rige el último handshake.
+            X-Demo-Stream-Drop-S:
+              type: integer
+              minimum: 0
+              default: 0
+              description: Segundos desde la conexión hasta el corte de demo; 0 = nunca.
+            X-Demo-Quote-Ttl-S:
+              type: integer
+              minimum: 1
+              default: 30
+              description: Vigencia en segundos de cada cotización `fx` de esta conexión.
+            X-Demo-Latency-Ms:
+              type: integer
+              minimum: 0
+              description: Retrasa la respuesta del handshake.
+            X-Demo-Failure-Rate:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: Porcentaje de handshakes que fallan, con semilla fija.
+            X-Demo-Failure-Mode:
+              type: string
+              enum: [http_500, timeout, disconnect]
+              description: Cómo falla el handshake (ver la tabla de la descripción).
+            X-Demo-Backend-Down:
+              type: string
+              enum: ["true"]
+              description: El handshake responde 503.
+        bindingVersion: 0.1.0
+operations:
+  subscribe:
+    action: receive
+    title: Suscribirse
+    summary: El cliente se suscribe a símbolos y pares; el servidor contesta con su valor actual.
+    channel:
+      $ref: "#/channels/marketStream"
+    messages:
+      - $ref: "#/channels/marketStream/messages/subscribe"
+  unsubscribe:
+    action: receive
+    title: Desuscribirse
+    channel:
+      $ref: "#/channels/marketStream"
+    messages:
+      - $ref: "#/channels/marketStream/messages/unsubscribe"
+  publishQuote:
+    action: send
+    title: Precio de una acción
+    summary: Al suscribirse y en cada tick, por cada símbolo suscrito.
+    channel:
+      $ref: "#/channels/marketStream"
+    messages:
+      - $ref: "#/channels/marketStream/messages/quote"
+  publishFx:
+    action: send
+    title: Cotización USD/PEN
+    summary: Al suscribirse y en cada tick, si el par está suscrito.
+    channel:
+      $ref: "#/channels/marketStream"
+    messages:
+      - $ref: "#/channels/marketStream/messages/fx"
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: El token de `POST /auth/login`. Al vencer, el servidor cierra con 4401.
+  messages:
+    subscribe:
+      name: subscribe
+      title: Suscripción
+      payload:
+        $ref: "#/components/schemas/Subscription"
+      examples:
+        - name: acciones-y-cambio
+          payload: { type: subscribe, symbols: [ANDM, QORI], pairs: [USD/PEN] }
+    unsubscribe:
+      name: unsubscribe
+      title: Desuscripción
+      payload:
+        $ref: "#/components/schemas/Subscription"
+      examples:
+        - name: una-accion
+          payload: { type: unsubscribe, symbols: [ANDM] }
+    quote:
+      name: quote
+      title: Precio de una acción
+      payload:
+        $ref: "#/components/schemas/Quote"
+      examples:
+        - name: andm
+          payload:
+            type: quote
+            symbol: ANDM
+            name: Andina Minerals
+            currency: USD
+            last: "42.08"
+            change: "0.32"
+            changePct: "0.77"
+            ts: "2026-11-07T10:00:02-05:00"
+    fx:
+      name: fx
+      title: Cotización USD/PEN
+      payload:
+        $ref: "#/components/schemas/Fx"
+      examples:
+        - name: usd-pen
+          payload:
+            type: fx
+            pair: USD/PEN
+            buy: "3.742"
+            sell: "3.768"
+            quoteId: QTE-000012
+            expiresAt: "2026-11-07T10:00:32-05:00"
+            ts: "2026-11-07T10:00:02-05:00"
+  schemas:
+    Subscription:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string, enum: [subscribe, unsubscribe] }
+        symbols:
+          type: array
+          description: Símbolos de `GET /market/stocks`. Los desconocidos se ignoran.
+          items: { type: string, enum: [ANDM, CUSC, INKA, LIMA, MOCH, NAZC, PCFC, QORI] }
+        pairs:
+          type: array
+          description: Pares de divisas. Solo existe `USD/PEN`.
+          items: { type: string, enum: [USD/PEN] }
+    Quote:
+      type: object
+      description: La misma forma que cada elemento de `GET /market/stocks`, con `type`.
+      required: [type, symbol, name, currency, last, change, changePct, ts]
+      properties:
+        type: { type: string, const: quote }
+        symbol: { type: string }
+        name: { type: string }
+        currency: { type: string, description: ISO 4217 }
+        last: { type: string, description: Último precio, texto decimal en `currency`. }
+        change: { type: string, description: "`last` menos el cierre anterior." }
+        changePct: { type: string, description: Variación sobre el cierre anterior, con 2 decimales. }
+        ts: { type: string, format: date-time, description: Hora del tick que fijó el precio. }
+    Fx:
+      type: object
+      description: La misma forma que `GET /fx/rates`, con `type`.
+      required: [type, pair, buy, sell, quoteId, expiresAt, ts]
+      properties:
+        type: { type: string, const: fx }
+        pair: { type: string, const: USD/PEN }
+        buy: { type: string, description: El banco compra dólares a esta tasa. }
+        sell: { type: string, description: El banco vende dólares a esta tasa. }
+        quoteId: { type: string, description: "Para `POST /fx/exchanges`." }
+        expiresAt: { type: string, format: date-time }
+        ts: { type: string, format: date-time, description: Hora de emisión. }

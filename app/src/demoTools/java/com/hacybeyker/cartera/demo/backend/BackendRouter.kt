@@ -58,9 +58,7 @@ class BackendRouter(
         Endpoint.MARKET_STOCKS to { _ -> desks.market.stocks() },
         Endpoint.MARKET_STOCK to { call -> desks.market.stock(call.id) },
         Endpoint.MARKET_HISTORY to { call -> desks.market.history(call.id, call.request.query) },
-        Endpoint.MARKET_STREAM to { _ ->
-            throw ProblemException(ProblemCode.NOT_FOUND, "El canal en vivo no está disponible.")
-        },
+        Endpoint.MARKET_STREAM to { call -> streamHandshake(call.request) },
         Endpoint.PORTFOLIO to { call -> desks.market.portfolio(call.userId) },
         Endpoint.ORDERS to { call -> desks.orders.order(call.userId, call.idempotencyKey, call.request.jsonBody()) },
         Endpoint.FX_RATES to { call -> desks.fx.rates(call.userId, call.request) },
@@ -101,6 +99,16 @@ class BackendRouter(
         return state.movements(ownAccounts).firstOrNull { it.id == movementId } ?: notFound("el movimiento $movementId")
     }
 
+    // El 101 solo marca que el handshake pasó la sesión: CarteraBackend hace el upgrade y MarketStream lo atiende.
+    private fun streamHandshake(request: BackendRequest): BackendResponse {
+        val upgrade = request.header("Connection").equals("Upgrade", ignoreCase = true) &&
+            request.header("Upgrade").equals("websocket", ignoreCase = true)
+        if (!upgrade) {
+            throw validationProblem("Upgrade", "REQUIRED", "El canal en vivo se abre con un handshake WebSocket.")
+        }
+        return BackendResponse(status = SWITCHING_PROTOCOLS)
+    }
+
     private fun reset(): BackendResponse {
         state.reset()
         onReset()
@@ -109,8 +117,9 @@ class BackendRouter(
 
     private fun notFound(what: String): Nothing = throw ProblemException(ProblemCode.NOT_FOUND, "No se encontró $what.")
 
-    private companion object {
-        const val OK = 200
-        const val NO_CONTENT = 204
+    companion object {
+        const val SWITCHING_PROTOCOLS = 101
+        private const val OK = 200
+        private const val NO_CONTENT = 204
     }
 }

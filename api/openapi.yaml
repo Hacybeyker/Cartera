@@ -23,7 +23,7 @@ info:
     cambio USD/PEN avanzan por una secuencia de ticks pregenerados con semilla (`fixtures/market/ticks/`
     y `fixtures/fx/rates.json`): el primero es el precio inicial y, al agotarse, se vuelve a empezar
     desde el primero. Los endpoints REST devuelven siempre el tick vigente del servidor; el canal en
-    vivo (`/market/stream`, WebSocket, fuera de este documento) lo hace avanzar al intervalo de
+    vivo (`/market/stream`, WebSocket, descrito en `asyncapi.yaml`) lo hace avanzar al intervalo de
     `X-Demo-Tick-Ms`, y con 0 los precios quedan congelados. Los precios de mercado viajan como texto
     decimal en la moneda de `currency` (`"42.10"`); los porcentajes, con 2 decimales (`"1.25"` = 1,25 %).
     Las órdenes, el portafolio y el cambio usan `Money`. Los montos calculados se redondean a 2

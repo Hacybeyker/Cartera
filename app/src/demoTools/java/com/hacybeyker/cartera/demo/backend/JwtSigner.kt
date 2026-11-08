@@ -2,6 +2,7 @@ package com.hacybeyker.cartera.demo.backend
 
 import java.security.MessageDigest
 import java.time.Clock
+import java.time.Instant
 import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -14,7 +15,7 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 
 sealed interface TokenCheck {
-    data class Valid(val subject: String) : TokenCheck
+    data class Valid(val subject: String, val expiresAt: Instant) : TokenCheck
     data object Expired : TokenCheck
     data object Invalid : TokenCheck
 }
@@ -41,7 +42,7 @@ class JwtSigner(private val clock: Clock, key: String = DEMO_KEY) {
         return when {
             claims == null -> TokenCheck.Invalid
             clock.instant().epochSecond >= claims.expiresAt -> TokenCheck.Expired
-            else -> TokenCheck.Valid(claims.subject)
+            else -> TokenCheck.Valid(claims.subject, Instant.ofEpochSecond(claims.expiresAt))
         }
     }
 

@@ -14,10 +14,11 @@ class JwtSignerTest {
     @Test
     fun `issued token is valid until its ttl`() {
         val token = signer.issue("USR-001", ttlSeconds = 60)
+        val valid = TokenCheck.Valid("USR-001", expiresAt = clock.now.plusSeconds(60))
 
-        assertEquals(TokenCheck.Valid("USR-001"), signer.check(token))
+        assertEquals(valid, signer.check(token))
         clock.now = clock.now.plusSeconds(59)
-        assertEquals(TokenCheck.Valid("USR-001"), signer.check(token))
+        assertEquals(valid, signer.check(token))
     }
 
     @Test

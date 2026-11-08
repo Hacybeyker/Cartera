@@ -100,8 +100,18 @@ class MarketDeskTest {
     }
 
     @Test
-    fun `stream handshake is not served yet`() {
-        assertProblem(harness.get("market/stream", token), 404, "NOT_FOUND")
+    fun `stream handshake needs a websocket upgrade`() {
+        val plain = harness.get("market/stream", token)
+        val upgrade = harness.call(
+            method = "GET",
+            path = "market/stream",
+            token = token,
+            headers = mapOf("Connection" to "Upgrade", "Upgrade" to "websocket")
+        )
+
+        assertProblem(plain, 422, "VALIDATION_ERROR")
+        assertEquals(listOf("Upgrade"), plain.errorFields())
+        assertEquals(BackendResponse(status = 101), upgrade)
     }
 
     @Test

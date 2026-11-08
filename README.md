@@ -18,6 +18,7 @@
 .
 ├── api/
 │   ├── openapi.yaml       # Contrato de la API (OpenAPI 3.1)
+│   ├── asyncapi.yaml      # Contrato del canal en vivo /market/stream (AsyncAPI 3.0)
 │   ├── fixtures/          # Datos del backend embebido
 │   └── tools/             # Generadores de movimientos y de mercado (semilla fija)
 ├── app/src/main/java/com/hacybeyker/cartera/
@@ -42,7 +43,8 @@
 ```
 
 Debug y demo traen un backend embebido que escucha en `http://127.0.0.1:8765/api/v1/` y sirve los
-datos de `api/fixtures/` según el contrato de `api/openapi.yaml`. Release apunta a
+datos de `api/fixtures/` según el contrato de `api/openapi.yaml`, y el canal en vivo
+`ws://127.0.0.1:8765/api/v1/market/stream` según `api/asyncapi.yaml`. Release apunta a
 `https://cartera.invalid/api/v1/`, un marcador que no resuelve.
 
 ---
@@ -99,6 +101,48 @@ vuelven a empezar. Con `tick_ms 0` quedan congelados en estos valores:
   una sesión en `POST /auth/biometric/login`; `DELETE /auth/biometric` lo revoca.
 - Si cambia `api/tools/generate_market.py`, los fixtures se regeneran con
   `python3 -I api/tools/generate_market.py`.
+
+### Canal en vivo
+
+`WS /market/stream` (contrato en `api/asyncapi.yaml`) abre con el mismo Bearer de la API: sin token
+o vencido responde 401, y la latencia, los fallos y `backend_down` del endpoint `market_stream` le
+aplican como a cualquier otro. El cliente envía `{"type":"subscribe","symbols":["ANDM"],"pairs":["USD/PEN"]}`
+(o `unsubscribe`) y recibe enseguida el valor actual de lo que nombró; después, en cada tick, un
+`quote` por símbolo suscrito y un `fx` por par suscrito.
+
+- Un solo reloj de mercado para todas las conexiones, al `tick_ms` del último handshake: dos
+  conexiones no aceleran los precios, y lo que muestra el canal es el precio con el que se ejecutan
+  las órdenes. Con `tick_ms 0` los precios no se mueven.
+- Al vencer la sesión del token (`session_ttl`), el servidor cierra con 4401.
+- Con `stream_drop_s 15`, a los 15 s de cada conexión el servidor corta el socket sin cierre, como una
+  caída de red.
+- `RESET_DATA` no cierra el canal: devuelve los precios al inicio y envía a cada conexión el valor
+  actual de lo suscrito.
+
+**Logs del canal** (etiqueta `CarteraBackend`), una línea por evento y con el id de la conexión:
+
+```text
+GET /api/v1/market/stream 101 WS#1 3ms latency=0ms X-Request-Id=req-000014
+WS#1 abierto user=USR-001 tick_ms=2000 stream_drop_s=0 quote_ttl_s=30 abiertas=1
+WS reloj cada 2000 ms
+WS#1 subscribe → ANDM 42.10 QORI 115.20 USD/PEN 3.742/3.768
+WS#1 tick 12 → ANDM 42.15 QORI 115.30 USD/PEN 3.744/3.770
+WS#1 unsubscribe → QORI
+WS#1 mensaje ignorado: type debe ser subscribe o unsubscribe
+WS#1 corte a los 15 s
+WS#1 cerrado code=1006 por=servidor abiertas=0 motivo=corte de demo
+WS reloj detenido
+```
+
+Cada conexión escribe exactamente una línea `abierto` y una `cerrado`, con `code=1000` (u otro) y
+`por=cliente` si cerró la app, `code=4401 por=servidor` si venció la sesión, `code=1006 por=servidor`
+en un corte de demo y `code=1006 por=red` si se cayó el socket. Para contar aperturas y cierres:
+
+```bash
+adb logcat -d -s CarteraBackend | grep -cE 'WS#[0-9]+ abierto '
+adb logcat -d -s CarteraBackend | grep -cE 'WS#[0-9]+ cerrado '
+adb logcat -d -s CarteraBackend | grep -E 'WS#[0-9]+ cerrado code=4401'
+```
 
 ---
 

@@ -29,7 +29,10 @@ class BiometricDeskTest {
         assertEquals(200, response.status)
         assertEquals("Bearer", body.string("tokenType"))
         assertEquals(900L, body.getValue("expiresIn").jsonPrimitive.long)
-        assertEquals(TokenCheck.Valid("USR-001"), harness.jwt.check(body.string("accessToken")))
+        assertEquals(
+            TokenCheck.Valid("USR-001", expiresAt = harness.clock.now.plusSeconds(900)),
+            harness.jwt.check(body.string("accessToken"))
+        )
     }
 
     @Test
