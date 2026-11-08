@@ -10,13 +10,13 @@ import com.hacybeyker.cartera.core.domain.account.RefreshAccountsUseCase
 import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
 import com.hacybeyker.cartera.core.testing.FakeFeatureFlags
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
+import com.hacybeyker.cartera.core.testing.SequentialKeys
 import com.hacybeyker.cartera.core.testing.carteraApi
 import com.hacybeyker.cartera.core.testing.pen
 import com.hacybeyker.cartera.feature.home.data.repository.RemoteProfileRepository
 import com.hacybeyker.cartera.feature.home.domain.usecase.LoadOverviewUseCase
 import com.hacybeyker.cartera.feature.home.ui.overview.OverviewAction
 import com.hacybeyker.cartera.feature.home.ui.overview.OverviewViewModel
-import com.hacybeyker.cartera.feature.transfer.SequentialKeys
 import com.hacybeyker.cartera.feature.transfer.data.repository.RemoteTransferRepository
 import com.hacybeyker.cartera.feature.transfer.domain.usecase.ConfirmTransferUseCase
 import com.hacybeyker.cartera.feature.transfer.domain.usecase.ValidateTransferUseCase

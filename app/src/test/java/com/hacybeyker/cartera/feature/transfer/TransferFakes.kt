@@ -5,7 +5,6 @@ import com.hacybeyker.cartera.core.domain.Outcome
 import com.hacybeyker.cartera.core.testing.pen
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferOrder
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferReceipt
-import com.hacybeyker.cartera.feature.transfer.domain.repository.IdempotencyKeyFactory
 import com.hacybeyker.cartera.feature.transfer.domain.repository.TransferRepository
 
 /** La transferencia de referencia: ACC-002 → 999-0000001-0-01 por S/ 150.00. */
@@ -36,10 +35,4 @@ class FakeTransferRepository : TransferRepository {
         sent += order
         return failures.removeFirstOrNull()?.let { Outcome.Failure(it) } ?: Outcome.Success(ReferenceReceipt)
     }
-}
-
-class SequentialKeys : IdempotencyKeyFactory {
-    private var next = 1
-
-    override fun newKey(): String = "key-${next++}"
 }

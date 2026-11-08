@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -25,6 +26,7 @@ import com.hacybeyker.cartera.core.designsystem.component.ErrorState
 import com.hacybeyker.cartera.core.designsystem.component.LoadingState
 import com.hacybeyker.cartera.core.designsystem.spacing
 import com.hacybeyker.cartera.core.domain.market.HistoryRange
+import com.hacybeyker.cartera.core.domain.market.OrderSide
 import com.hacybeyker.cartera.core.ui.format.formatted
 import com.hacybeyker.cartera.core.ui.format.formattedChange
 import com.hacybeyker.cartera.core.ui.format.formattedPercent
@@ -35,14 +37,18 @@ import com.hacybeyker.cartera.core.ui.messageRes
 import com.hacybeyker.cartera.core.ui.preview.previewPortfolio
 import com.hacybeyker.cartera.core.ui.preview.previewQuotes
 
-/** Detalle de acción: precio en vivo, gráfico con rangos, datos del día y la tenencia propia si la hay. */
+/**
+ * Detalle de acción: precio en vivo, gráfico con rangos, datos del día y la tenencia propia si la hay. Operar abre el
+ * sheet Comprar/Vender y lo elegido sale por [onTrade].
+ */
 @Composable
 fun StockDetailContent(
     symbol: String,
     uiState: StockDetailUiState,
     onAction: (StockDetailAction) -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onTrade: (OrderSide) -> Unit = {}
 ) {
     Column(modifier = modifier.fillMaxSize().testTag(StockDetailTestTags.SCREEN)) {
         BackTopBar(title = symbol, onBack = onBack)
@@ -57,6 +63,17 @@ fun StockDetailContent(
             else -> uiState.price?.let { DetailBody(uiState = uiState, price = it, onAction = onAction) }
         }
     }
+    if (uiState.isTradeSheetVisible) {
+        TradeSheet(
+            symbol = symbol,
+            canSell = uiState.canSell,
+            onChoose = { side ->
+                onAction(StockDetailAction.TradeSheetDismissed)
+                onTrade(side)
+            },
+            onDismiss = { onAction(StockDetailAction.TradeSheetDismissed) }
+        )
+    }
 }
 
 @Composable
@@ -65,7 +82,8 @@ private fun DetailBody(uiState: StockDetailUiState, price: LivePrice, onAction: 
         if (uiState.isReconnecting) ReconnectingBanner(testTag = StockDetailTestTags.RECONNECTING)
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = MaterialTheme.spacing.md),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
@@ -82,6 +100,16 @@ private fun DetailBody(uiState: StockDetailUiState, price: LivePrice, onAction: 
             )
             uiState.day?.let { DaySection(day = it) }
             uiState.holding?.let { HoldingSection(holding = it) }
+        }
+        // Fijo abajo, fuera del scroll: siempre a mano, aunque la tenencia quede más abajo.
+        Button(
+            onClick = { onAction(StockDetailAction.TradeClicked) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.screen)
+                .testTag(StockDetailTestTags.TRADE)
+        ) {
+            Text(text = stringResource(R.string.stock_trade))
         }
     }
 }

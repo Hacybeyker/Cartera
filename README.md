@@ -179,7 +179,7 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
 │   ├─ Cuentas ──► Movimientos de cuenta ──► Detalle ──► Desglose
 │   │     └─ Transferir ──► Confirmación ──► Resultado ──► Home (Inicio · Cuentas)
 │   └─ Movimientos ──► Detalle ──► Desglose
-├─ Mercado ──► Detalle de acción
+├─ Mercado ──► Detalle de acción ──► [Operar: Comprar · Vender] ──► Orden ──► Confirmación ──► Resultado ──► Home (Mercado)
 │     └─ Mi portafolio ──► Detalle de acción
 ├─ Cambio   (próximamente)
 └─ Más ──► Servicios clásicos (próximamente) · Cerrar sesión · Versión
@@ -241,6 +241,38 @@ code=1006 por=servidor` seguido de un `WS#n+1 abierto` alrededor de 1 s después
 - Usa el portafolio en memoria de Mercado y vuelve a pedir `GET /portfolio` al mostrarse solo si
   cambiaron las tenencias. Sin tenencias, muestra el estado vacío y no abre el canal.
 
+### Comprar y vender
+
+- **Operar**, fijo al pie del Detalle de acción, abre un bottom sheet con **Comprar** y **Vender**.
+  Vender queda deshabilitado, con un texto que lo explica, si no hay acciones de ese símbolo.
+- **Formulario:** cantidad entera, cuenta (un bottom sheet con las cuentas en dólares, la única
+  preseleccionada) y el **total estimado** = cantidad × precio en vivo del canal. Las cuentas y la
+  tenencia salen de las cachés, sin llamadas nuevas. Continuar valida en el cliente: cantidad mayor
+  que cero, el total no mayor que el saldo disponible (compra) y no más acciones de las que se tienen
+  (venta). Mientras no llega el precio, Continuar queda deshabilitado. Atrás con datos pregunta
+  "¿Salir sin comprar?" o "¿Salir sin vender?".
+- **Confirmación:** acción, operación, cantidad, precio de referencia, total estimado y cuenta, con
+  "El precio final puede variar". Confirmar envía `POST /orders` con progreso bloqueante y la
+  `Idempotency-Key` creada al tocar Continuar; Reintentar (en el modal de error de red o del servidor)
+  reenvía la misma. Saldo y acciones insuficientes tienen su propio modal, que vuelve al formulario,
+  y un `VALIDATION_ERROR` se muestra bajo cada fila del resumen. Cancelar pide confirmación y vuelve
+  al Detalle.
+- **Resultado:** n.º de operación, precio ejecutado, total, nuevo saldo de la cuenta y nueva
+  tenencia. **Volver a Mercado** (o Atrás) vuelve a la entrada de Home que ya existe, con el tab
+  Mercado elegido. Si la orden terminó sin respuesta, el resultado dice "No pudimos confirmar la
+  orden".
+- Una orden confirmada, o que terminó sin respuesta o con un error del servidor, invalida las cuentas
+  y el portafolio: Mercado, Mi portafolio y el Detalle vuelven a pedir solo `GET /portfolio` al
+  mostrarse, e Inicio solo `GET /accounts`. Los movimientos de una orden son de la categoría
+  **Inversiones** (`INVESTMENT`).
+
+| Caso (`tick_ms 0`) | Datos | Resultado |
+|---|---|---|
+| Compra de referencia | 2 ANDM desde ACC-003 | total US$ 84.20; precio US$ 42.10, saldo US$ 966.00 y tenencia 12 a US$ 40.35 |
+| Venta de referencia (después de la compra) | 1 QORI en ACC-003 | acredita US$ 115.20; saldo US$ 1,081.20 y tenencia 1 |
+| Saldo insuficiente | un total mayor que el saldo (el cliente lo frena; el servidor responde `INSUFFICIENT_FUNDS`) | "El total supera el saldo disponible." o modal "Saldo insuficiente" |
+| Acciones insuficientes | vender más de las que se tienen (el cliente lo frena; el servidor responde `INSUFFICIENT_HOLDINGS`) | "La cantidad supera las acciones que tienes." o modal "Acciones insuficientes" |
+
 ### Transferir
 
 - **Formulario:** cuenta de origen propia, número de destino (`999-0000001-0-01`), monto y
@@ -268,7 +300,7 @@ code=1006 por=servidor` seguido de un `WS#n+1 abierto` alrededor de 1 s después
 ## 🏷️ testTags y marcas
 
 La raíz expone los testTags como `resource-id` (`testTagsAsResourceId`), y cada modal hace lo mismo
-en su ventana. La convención es snake_case en español, `<pantalla>_<elemento>`, con los estados
+en su ventana (también los bottom sheets). La convención es snake_case en español, `<pantalla>_<elemento>`, con los estados
 `<pantalla>_cargando`, `<pantalla>_error`, `<pantalla>_reintentar` y `<pantalla>_vacio`.
 
 | Pantalla | testTags |
@@ -287,7 +319,12 @@ en su ventana. La convención es snake_case en español, `<pantalla>_<elemento>`
 | Desglose | `movimiento_desglose`, `desglose_ilustracion`, `desglose_linea_<n>` (desde 1) y estados `desglose_*` |
 | Mercado | `mercado_portafolio`, `mercado_lista`, `mercado_item_<symbol>`, `mercado_reconectando` y estados `mercado_*` |
 | Cambio | `cambio_proximamente` |
-| Detalle de acción | `accion_detalle`, `accion_precio`, `accion_grafico`, `accion_rango_<1D\|1S\|1M\|1A>`, `accion_tenencia`, `accion_reconectando`, estados `accion_*` y, del gráfico, `accion_grafico_cargando`, `accion_grafico_error` y `accion_grafico_reintentar` |
+| Detalle de acción | `accion_detalle`, `accion_precio`, `accion_grafico`, `accion_rango_<1D\|1S\|1M\|1A>`, `accion_tenencia`, `accion_reconectando`, `accion_operar`, estados `accion_*` y, del gráfico, `accion_grafico_cargando`, `accion_grafico_error` y `accion_grafico_reintentar` |
+| Sheet Comprar/Vender | `sheet_accion`, `sheet_accion_comprar`, `sheet_accion_vender`, `sheet_accion_vender_no_disponible` |
+| Sheet de cuentas | `sheet_cuentas`, `sheet_cuentas_item_<id>` |
+| Orden · formulario | `orden_pantalla`, `orden_precio`, `orden_cantidad`, `orden_cuenta`, `orden_total`, `orden_continuar`, `orden_reconectando`, `<campo>_error` y estados `orden_*` |
+| Orden · confirmación | `orden_confirmacion`, `orden_confirmar`, `orden_cancelar`, `<campo>_error` (`orden_accion`, `orden_lado`, `orden_cantidad`, `orden_cuenta`), `modal_fondos_insuficientes`, `modal_tenencia_insuficiente` (cada uno con `_aceptar`) |
+| Orden · resultado | `orden_resultado`, `orden_resultado_operacion`, `orden_resultado_precio`, `orden_resultado_total`, `orden_resultado_saldo`, `orden_resultado_tenencia`, `orden_resultado_error`, `orden_volver_mercado` |
 | Mi portafolio | `portafolio_lista`, `portafolio_item_<symbol>`, `portafolio_reconectando` y estados `portafolio_*` (con `portafolio_vacio`) |
 | Más | `mas_pantalla`, `mas_nombre`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
 | Servicios clásicos | `legacy_proximamente` |
@@ -304,7 +341,8 @@ con contenido real: una vez por cada carga o refresco, nunca por el estado de ca
 páginas. Rotar o volver a una pantalla sin datos nuevos no repite la marca. Marcas: `login`,
 `terminos`, `onboarding`, `inicio_cuentas`, `inicio_movimientos`, `cuenta_movimientos`,
 `movimiento_detalle`, `movimiento_desglose`, `mercado`, `accion_detalle`, `portafolio`, `cambio`, `mas`,
-`transferir_formulario`, `transferir_confirmacion` y `transferir_resultado`. Tras una transferencia,
+`transferir_formulario`, `transferir_confirmacion`, `transferir_resultado`, `orden_formulario`,
+`orden_confirmacion` y `orden_resultado`. Tras una transferencia,
 `inicio_cuentas` se dispara otra vez cuando llegan las cuentas refrescadas. `accion_detalle` se repite
 con cada rango cargado. Los precios en vivo no repiten `mercado`, `portafolio` ni `accion_detalle`: solo
 la carga y el refresco del portafolio. Por defecto nadie escucha. Para

@@ -9,6 +9,8 @@ import com.hacybeyker.cartera.core.domain.market.MarketStreamStatus
 import com.hacybeyker.cartera.core.domain.market.ObserveMarketStreamStatusUseCase
 import com.hacybeyker.cartera.core.domain.market.ObserveQuotesUseCase
 import com.hacybeyker.cartera.core.domain.market.Quote
+import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioRevisionUseCase
+import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioUseCase
 import com.hacybeyker.cartera.core.domain.portfolio.Holding
 import com.hacybeyker.cartera.feature.market.domain.model.StockOverview
 import com.hacybeyker.cartera.feature.market.domain.usecase.LoadStockDetailUseCase
@@ -35,7 +37,9 @@ class StockDetailViewModel @AssistedInject constructor(
     private val loadStockDetail: LoadStockDetailUseCase,
     private val getPriceHistory: GetPriceHistoryUseCase,
     private val observeQuotes: ObserveQuotesUseCase,
-    private val observeStreamStatus: ObserveMarketStreamStatusUseCase
+    private val observeStreamStatus: ObserveMarketStreamStatusUseCase,
+    private val getPortfolio: GetPortfolioUseCase,
+    private val getPortfolioRevision: GetPortfolioRevisionUseCase
 ) : ViewModel() {
 
     private val state = MutableStateFlow(StockDetailUiState())
@@ -43,6 +47,7 @@ class StockDetailViewModel @AssistedInject constructor(
     private var holding: Holding? = null
     private var lastQuote: Quote? = null
     private var historyJob: Job? = null
+    private var shownRevision = getPortfolioRevision()
 
     /**
      * Se suscribe al símbolo desde que la pantalla empieza a recolectar, aun antes de terminar la carga: al venir de
@@ -70,6 +75,25 @@ class StockDetailViewModel @AssistedInject constructor(
                 state.update { it.copy(range = action.range) }
                 loadHistory(action.range)
             }
+            StockDetailAction.Shown -> if (state.value.contentKey != null && getPortfolioRevision() != shownRevision) {
+                refreshHolding()
+            }
+            StockDetailAction.TradeClicked -> state.update { it.copy(isTradeSheetVisible = true) }
+            StockDetailAction.TradeSheetDismissed -> state.update { it.copy(isTradeSheetVisible = false) }
+        }
+    }
+
+    // Tras una orden solo cambia la tenencia: el precio, el gráfico y los datos del día siguen valiendo. Si falla, se
+    // queda la tenencia anterior y el próximo Shown lo vuelve a intentar.
+    private fun refreshHolding() {
+        val revision = getPortfolioRevision()
+        viewModelScope.launch {
+            val outcome = getPortfolio()
+            if (outcome !is Outcome.Success) return@launch
+            shownRevision = revision
+            val current = outcome.value.holdings.firstOrNull { it.symbol == symbol }
+            holding = lastQuote?.let { quote -> current?.withQuote(quote) } ?: current
+            state.update { it.copy(holding = holding?.let(HoldingSummary::from)) }
         }
     }
 
@@ -87,6 +111,7 @@ class StockDetailViewModel @AssistedInject constructor(
     }
 
     private fun load() {
+        shownRevision = getPortfolioRevision()
         historyJob?.cancel()
         state.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {

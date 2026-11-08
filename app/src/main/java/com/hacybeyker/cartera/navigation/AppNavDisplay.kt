@@ -1,6 +1,7 @@
 package com.hacybeyker.cartera.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
@@ -11,6 +12,8 @@ import androidx.navigation3.ui.NavDisplay
 import com.hacybeyker.cartera.core.domain.entry.EntryStep
 import com.hacybeyker.cartera.feature.home.ui.HomeActions
 import com.hacybeyker.cartera.feature.home.ui.HomeNavKey
+import com.hacybeyker.cartera.feature.home.ui.HomeTab
+import com.hacybeyker.cartera.feature.home.ui.HomeTabRequest
 import com.hacybeyker.cartera.feature.home.ui.homeEntry
 import com.hacybeyker.cartera.feature.legacy.ui.LegacyNavKey
 import com.hacybeyker.cartera.feature.legacy.ui.legacyEntry
@@ -25,6 +28,8 @@ import com.hacybeyker.cartera.feature.movements.ui.MovementDetailNavKey
 import com.hacybeyker.cartera.feature.movements.ui.movementsEntries
 import com.hacybeyker.cartera.feature.onboarding.ui.OnboardingNavKey
 import com.hacybeyker.cartera.feature.onboarding.ui.onboardingEntry
+import com.hacybeyker.cartera.feature.order.ui.OrderFormNavKey
+import com.hacybeyker.cartera.feature.order.ui.orderEntries
 import com.hacybeyker.cartera.feature.splash.ui.splashEntry
 import com.hacybeyker.cartera.feature.terms.ui.TermsNavKey
 import com.hacybeyker.cartera.feature.terms.ui.termsEntry
@@ -39,6 +44,7 @@ fun AppNavDisplay(
     hiddenScreens: Set<HiddenScreen> = emptySet()
 ) {
     val back: () -> Unit = { backStack.removeLastOrNull() }
+    val homeTabRequest = remember { HomeTabRequest() }
     NavDisplay(
         backStack = backStack,
         modifier = modifier,
@@ -55,25 +61,17 @@ fun AppNavDisplay(
                 onRejected = { backStack.resetTo(LoginNavKey) }
             )
             onboardingEntry(onFinished = { backStack.resetTo(HomeNavKey) })
-            homeEntry(
-                actions = HomeActions(
-                    onAccountClick = { backStack.add(AccountMovementsNavKey(it)) },
-                    onTransferClick = { backStack.add(TransferFormNavKey) },
-                    onMovementClick = { backStack.add(MovementDetailNavKey(it)) },
-                    onStockClick = { backStack.add(StockDetailNavKey(it)) },
-                    onPortfolioClick = { backStack.add(PortfolioNavKey) },
-                    onLegacyClick = { backStack.add(LegacyNavKey) },
-                    onLoggedOut = { backStack.resetTo(LoginNavKey) },
-                    // Sin pantalla oculta (release), los 7 toques no hacen nada.
-                    onHiddenScreenRequested = { hiddenScreens.firstOrNull()?.let { backStack.add(it.navKey()) } }
-                )
-            )
+            homeEntry(actions = backStack.homeActions(hiddenScreens), tabRequest = homeTabRequest)
             movementsEntries(
                 onBack = back,
                 onMovementClick = { backStack.add(MovementDetailNavKey(it)) },
                 onBreakdownClick = { backStack.add(MovementBreakdownNavKey(it)) }
             )
-            marketEntries(onBack = back, onStockClick = { backStack.add(StockDetailNavKey(it)) })
+            marketEntries(
+                onBack = back,
+                onStockClick = { backStack.add(StockDetailNavKey(it)) },
+                onTrade = { symbol, side -> backStack.add(OrderFormNavKey(symbol, side)) }
+            )
             legacyEntry(onBack = back)
             // Volver al inicio reutiliza la entrada de Home (con su estado) en vez de crear otra: Inicio refresca
             // solo las cuentas, una vez, porque la transferencia las cambió.
@@ -82,10 +80,33 @@ fun AppNavDisplay(
                 onNavigate = { backStack.add(it) },
                 onBackToHome = { backStack.popTo(HomeNavKey) }
             )
+            // Como la transferencia, el resultado vuelve a la entrada de Home que ya existe, ahora en Mercado: Mercado
+            // vuelve a pedir solo el portafolio porque la orden subió su revisión. Cancelar vuelve a la acción.
+            orderEntries(
+                onBack = back,
+                onNavigate = { backStack.add(it) },
+                onCancelled = { symbol -> backStack.popToOrHome(StockDetailNavKey(symbol)) },
+                onBackToMarket = {
+                    homeTabRequest.request(HomeTab.MARKET)
+                    backStack.popTo(HomeNavKey)
+                }
+            )
             extraEntries.forEach { installer -> with(installer) { install(onBack = back) } }
         }
     )
 }
+
+private fun NavBackStack<NavKey>.homeActions(hiddenScreens: Set<HiddenScreen>) = HomeActions(
+    onAccountClick = { add(AccountMovementsNavKey(it)) },
+    onTransferClick = { add(TransferFormNavKey) },
+    onMovementClick = { add(MovementDetailNavKey(it)) },
+    onStockClick = { add(StockDetailNavKey(it)) },
+    onPortfolioClick = { add(PortfolioNavKey) },
+    onLegacyClick = { add(LegacyNavKey) },
+    onLoggedOut = { resetTo(LoginNavKey) },
+    // Sin pantalla oculta (release), los 7 toques no hacen nada.
+    onHiddenScreenRequested = { hiddenScreens.firstOrNull()?.let { add(it.navKey()) } }
+)
 
 private fun EntryStep.navKey(): NavKey = when (this) {
     EntryStep.TERMS -> TermsNavKey

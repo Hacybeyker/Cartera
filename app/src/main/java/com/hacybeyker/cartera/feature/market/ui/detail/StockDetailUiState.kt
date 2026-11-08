@@ -85,8 +85,13 @@ data class StockDetailUiState(
     /** El canal en vivo se cayó y está reconectando: el precio sigue en su último valor. */
     val isReconnecting: Boolean = false,
     /** Sube con la carga y con cada rango cargado (no con los ticks): es la clave de la marca `accion_detalle`. */
-    val contentVersion: Int = 0
+    val contentVersion: Int = 0,
+    /** El sheet Comprar/Vender que abre Operar. */
+    val isTradeSheetVisible: Boolean = false
 ) {
+    /** Vender solo tiene sentido con acciones de este símbolo. */
+    val canSell: Boolean get() = holding != null
+
     val contentKey: Int? get() = contentVersion.takeIf { !isLoading && error == null && price != null }
 }
 
@@ -96,4 +101,11 @@ sealed interface StockDetailAction {
     data object ChartRetryClicked : StockDetailAction
 
     data class RangeSelected(val range: HistoryRange) : StockDetailAction
+
+    /** La pantalla volvió a verse: si una orden cambió las tenencias, se vuelve a pedir el portafolio. */
+    data object Shown : StockDetailAction
+
+    data object TradeClicked : StockDetailAction
+
+    data object TradeSheetDismissed : StockDetailAction
 }

@@ -7,10 +7,14 @@ import com.hacybeyker.cartera.core.domain.market.HistoryRange
 import com.hacybeyker.cartera.core.domain.market.MarketStreamStatus
 import com.hacybeyker.cartera.core.domain.market.ObserveMarketStreamStatusUseCase
 import com.hacybeyker.cartera.core.domain.market.ObserveQuotesUseCase
+import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioRevisionUseCase
+import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioUseCase
 import com.hacybeyker.cartera.core.testing.FakeMarketRepository
 import com.hacybeyker.cartera.core.testing.FakeMarketStream
+import com.hacybeyker.cartera.core.testing.FakePortfolioChanges
 import com.hacybeyker.cartera.core.testing.FakePortfolioRepository
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
+import com.hacybeyker.cartera.core.testing.TestPortfolio
 import com.hacybeyker.cartera.core.testing.testQuote
 import com.hacybeyker.cartera.feature.market.domain.usecase.LoadStockDetailUseCase
 import com.hacybeyker.cartera.feature.market.ui.detail.StockDetailAction
@@ -39,13 +43,16 @@ class StockDetailViewModelTest {
     }
     private val portfolio = FakePortfolioRepository()
     private val stream = FakeMarketStream()
+    private val changes = FakePortfolioChanges()
 
     private fun viewModel(symbol: String = "QORI") = StockDetailViewModel(
         symbol = symbol,
         loadStockDetail = LoadStockDetailUseCase(market, portfolio),
         getPriceHistory = GetPriceHistoryUseCase(market),
         observeQuotes = ObserveQuotesUseCase(stream),
-        observeStreamStatus = ObserveMarketStreamStatusUseCase(stream)
+        observeStreamStatus = ObserveMarketStreamStatusUseCase(stream),
+        getPortfolio = GetPortfolioUseCase(portfolio),
+        getPortfolioRevision = GetPortfolioRevisionUseCase(changes)
     )
 
     private fun usd(value: String) = Money(value.toBigDecimal(), "USD")
@@ -264,5 +271,89 @@ class StockDetailViewModelTest {
         stream.status.value = MarketStreamStatus.CONNECTED
         runCurrent()
         assertFalse(viewModel.uiState.value.isReconnecting)
+    }
+
+    @Test
+    fun `shown asks for the portfolio again only after an order changed the holdings`() = runTest {
+        val viewModel = viewModel()
+        show(viewModel)
+        advanceUntilIdle()
+        viewModel.onAction(StockDetailAction.Shown)
+        advanceUntilIdle()
+        assertEquals(1, portfolio.calls)
+
+        portfolio.portfolio = TestPortfolio.copy(
+            holdings = TestPortfolio.holdings.map { if (it.symbol == "QORI") it.copy(quantity = 1) else it }
+        )
+        changes.notifyChanged()
+        stream.prices.emit(testQuote("QORI", "116.00", "0.44"))
+        runCurrent()
+        viewModel.onAction(StockDetailAction.Shown)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, portfolio.calls)
+        assertEquals(1, state.holding?.quantity)
+        // La tenencia nueva se valoriza al último precio del canal, no al de la respuesta.
+        assertEquals(usd("116.00"), state.holding?.marketValue)
+        assertEquals(listOf("QORI", "QORI/1D"), market.requests)
+
+        viewModel.onAction(StockDetailAction.Shown)
+        advanceUntilIdle()
+        assertEquals(2, portfolio.calls)
+    }
+
+    @Test
+    fun `selling everything removes the holding and a failed refresh is tried again`() = runTest {
+        val viewModel = viewModel()
+        show(viewModel)
+        advanceUntilIdle()
+
+        changes.notifyChanged()
+        portfolio.error = AppError.Network
+        viewModel.onAction(StockDetailAction.Shown)
+        advanceUntilIdle()
+        assertEquals(2, viewModel.uiState.value.holding?.quantity)
+
+        portfolio.error = null
+        portfolio.portfolio = TestPortfolio.copy(holdings = TestPortfolio.holdings.filter { it.symbol != "QORI" })
+        viewModel.onAction(StockDetailAction.Shown)
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.holding)
+        assertFalse(viewModel.uiState.value.canSell)
+        assertEquals(3, portfolio.calls)
+    }
+
+    @Test
+    fun `shown before the detail loads does nothing`() = runTest {
+        market.stockGate = CompletableDeferred()
+        val viewModel = viewModel()
+        show(viewModel)
+        changes.notifyChanged()
+
+        viewModel.onAction(StockDetailAction.Shown)
+        runCurrent()
+
+        assertEquals(1, portfolio.calls)
+    }
+
+    @Test
+    fun `operar opens the trade sheet and sell needs a holding`() = runTest {
+        val held = viewModel()
+        val notHeld = viewModel("LIMA")
+        show(held)
+        show(notHeld)
+        advanceUntilIdle()
+
+        held.onAction(StockDetailAction.TradeClicked)
+        runCurrent()
+        assertTrue(held.uiState.value.isTradeSheetVisible)
+        assertTrue(held.uiState.value.canSell)
+        assertFalse(notHeld.uiState.value.canSell)
+
+        held.onAction(StockDetailAction.TradeSheetDismissed)
+        runCurrent()
+        assertFalse(held.uiState.value.isTradeSheetVisible)
     }
 }

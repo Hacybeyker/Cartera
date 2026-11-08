@@ -71,6 +71,7 @@ fun MovementCategory.labelRes(): Int = when (this) {
     MovementCategory.SERVICES -> R.string.category_services
     MovementCategory.SALARY -> R.string.category_salary
     MovementCategory.TRANSFER -> R.string.category_transfer
+    MovementCategory.INVESTMENT -> R.string.category_investment
     MovementCategory.OTHER -> R.string.category_other
 }
 
@@ -84,5 +85,7 @@ private fun MovementCategory.icon(): ImageVector = when (this) {
     MovementCategory.SERVICES -> Icons.Filled.Build
     MovementCategory.SALARY -> Icons.Filled.AccountBox
     MovementCategory.TRANSFER -> Icons.AutoMirrored.Filled.Send
+    // La misma estrella del tab Mercado: el movimiento viene de una orden de acciones.
+    MovementCategory.INVESTMENT -> Icons.Filled.Star
     MovementCategory.OTHER -> Icons.Filled.Info
 }

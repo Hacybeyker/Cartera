@@ -5,6 +5,7 @@ import com.hacybeyker.cartera.core.domain.Outcome
 import com.hacybeyker.cartera.core.domain.config.AppConfig
 import com.hacybeyker.cartera.core.domain.config.AppConfigRepository
 import com.hacybeyker.cartera.core.domain.firstrun.FirstRunRepository
+import com.hacybeyker.cartera.core.domain.idempotency.IdempotencyKeyFactory
 import com.hacybeyker.cartera.core.domain.session.SessionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,4 +61,11 @@ class FakeSessionRepository : SessionRepository {
         accessToken = null
         expired.value = true
     }
+}
+
+/** Claves `key-1`, `key-2`…: una por cada orden válida. */
+class SequentialKeys : IdempotencyKeyFactory {
+    private var next = 1
+
+    override fun newKey(): String = "key-${next++}"
 }

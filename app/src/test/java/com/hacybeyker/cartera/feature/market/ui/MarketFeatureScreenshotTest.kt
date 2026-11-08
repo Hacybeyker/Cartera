@@ -53,6 +53,28 @@ class MarketFeatureScreenshotTest {
     }
 
     @Test
+    fun tradeSheetWithHolding() = compose.captureLightAndDark("accion_sheet_operar", withWindows = true) {
+        StockDetailContent(
+            symbol = qori.symbol,
+            uiState = previewStockDetailState(qori, TestPortfolio.holdings.single { it.symbol == "QORI" })
+                .copy(isTradeSheetVisible = true),
+            onAction = {},
+            onBack = {}
+        )
+    }
+
+    @Test
+    fun tradeSheetWithoutHolding() =
+        compose.captureLightAndDark("accion_sheet_operar_sin_tenencia", withWindows = true) {
+            StockDetailContent(
+                symbol = qori.symbol,
+                uiState = previewStockDetailState(qori, holding = null).copy(isTradeSheetVisible = true),
+                onAction = {},
+                onBack = {}
+            )
+        }
+
+    @Test
     fun stockDetailLoading() = compose.captureLightAndDark("accion_cargando") {
         StockDetailContent(symbol = qori.symbol, uiState = StockDetailUiState(), onAction = {}, onBack = {})
     }

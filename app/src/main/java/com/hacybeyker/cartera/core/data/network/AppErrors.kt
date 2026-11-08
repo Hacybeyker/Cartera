@@ -34,6 +34,7 @@ private fun ProblemCode.toAppError(problem: ApiError.Problem): AppError = when (
     ProblemCode.INSUFFICIENT_FUNDS -> AppError.InsufficientFunds
     ProblemCode.DESTINATION_NOT_FOUND -> AppError.DestinationNotFound
     ProblemCode.CURRENCY_MISMATCH -> AppError.CurrencyMismatch
+    ProblemCode.INSUFFICIENT_HOLDINGS -> AppError.InsufficientHoldings
     else -> AppError.Server
 }
 

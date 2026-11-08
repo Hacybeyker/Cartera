@@ -34,6 +34,7 @@ class AppErrorsTest {
         assertEquals(AppError.InsufficientFunds, problem(ProblemCode.INSUFFICIENT_FUNDS).toAppError())
         assertEquals(AppError.DestinationNotFound, problem(ProblemCode.DESTINATION_NOT_FOUND).toAppError())
         assertEquals(AppError.CurrencyMismatch, problem(ProblemCode.CURRENCY_MISMATCH).toAppError())
+        assertEquals(AppError.InsufficientHoldings, problem(ProblemCode.INSUFFICIENT_HOLDINGS).toAppError())
         assertEquals(AppError.Server, problem(ProblemCode.UNKNOWN).toAppError())
     }
 

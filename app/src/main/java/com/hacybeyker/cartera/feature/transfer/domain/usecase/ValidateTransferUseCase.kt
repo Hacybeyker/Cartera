@@ -2,12 +2,12 @@ package com.hacybeyker.cartera.feature.transfer.domain.usecase
 
 import com.hacybeyker.cartera.core.domain.Money
 import com.hacybeyker.cartera.core.domain.account.Account
+import com.hacybeyker.cartera.core.domain.idempotency.IdempotencyKeyFactory
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferDraft
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferField
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferFieldError
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferOrder
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferValidation
-import com.hacybeyker.cartera.feature.transfer.domain.repository.IdempotencyKeyFactory
 import java.math.BigDecimal
 import javax.inject.Inject
 

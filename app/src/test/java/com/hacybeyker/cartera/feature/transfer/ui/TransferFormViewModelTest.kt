@@ -4,8 +4,8 @@ import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.account.GetAccountsUseCase
 import com.hacybeyker.cartera.core.testing.FakeAccountRepository
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
+import com.hacybeyker.cartera.core.testing.SequentialKeys
 import com.hacybeyker.cartera.core.testing.TestAccounts
-import com.hacybeyker.cartera.feature.transfer.SequentialKeys
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferField
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferFieldError
 import com.hacybeyker.cartera.feature.transfer.domain.usecase.ValidateTransferUseCase

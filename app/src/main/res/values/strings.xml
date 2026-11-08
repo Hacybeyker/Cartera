@@ -15,6 +15,7 @@
     <string name="error_insufficient_funds">El monto supera el saldo disponible de la cuenta de origen.</string>
     <string name="error_destination_not_found">No existe una cuenta con ese número de destino.</string>
     <string name="error_currency_mismatch">La cuenta de destino usa otra moneda que la de origen.</string>
+    <string name="error_insufficient_holdings">No tienes tantas acciones para vender.</string>
 
     <string name="session_expired_title">Tu sesión expiró</string>
     <string name="session_expired_message">Por tu seguridad, vuelve a ingresar.</string>
@@ -90,6 +91,14 @@
     <string name="stock_holding_average_price">Precio promedio</string>
     <string name="stock_holding_market_value">Valor de mercado</string>
     <string name="stock_holding_gain">Ganancia o pérdida</string>
+    <string name="stock_trade">Operar</string>
+    <string name="stock_trade_sheet_title">¿Qué quieres hacer con %1$s?</string>
+    <string name="stock_trade_buy">Comprar</string>
+    <string name="stock_trade_sell">Vender</string>
+    <string name="stock_trade_sell_unavailable">No tienes acciones de %1$s para vender.</string>
+
+    <string name="accounts_sheet_title">Elige la cuenta</string>
+    <string name="accounts_sheet_empty">No tienes cuentas disponibles para esta operación.</string>
 
     <string name="overview_greeting">Hola, %1$s</string>
     <string name="overview_tab_accounts">Cuentas</string>
@@ -129,6 +138,7 @@
     <string name="category_services">Servicios</string>
     <string name="category_salary">Sueldo</string>
     <string name="category_transfer">Transferencia</string>
+    <string name="category_investment">Inversiones</string>
     <string name="category_other">Otros</string>
 
     <string name="channel_pos">Tarjeta (POS)</string>
@@ -185,4 +195,69 @@
     <string name="transfer_failure_title">No pudimos confirmar la transferencia</string>
     <string name="transfer_failure_message">Revisa tus movimientos antes de intentarlo de nuevo: si la conexión se cortó, pudo haberse hecho.</string>
     <string name="transfer_back_to_home">Volver al inicio</string>
+
+    <string name="order_title_buy">Comprar %1$s</string>
+    <string name="order_title_sell">Vender %1$s</string>
+    <string name="order_price">Precio %1$s</string>
+    <string name="order_price_waiting">Esperando el precio…</string>
+    <plurals name="order_held">
+        <item quantity="one">Tienes %1$d acción</item>
+        <item quantity="other">Tienes %1$d acciones</item>
+    </plurals>
+    <string name="order_quantity">Cantidad de acciones</string>
+    <string name="order_account">Cuenta</string>
+    <string name="order_account_choose">Elige la cuenta</string>
+    <string name="order_account_balance">Saldo disponible %1$s</string>
+    <string name="order_total">Total estimado</string>
+    <string name="order_total_unavailable">—</string>
+    <string name="order_continue">Continuar</string>
+    <string name="order_exit_title_buy">¿Salir sin comprar?</string>
+    <string name="order_exit_title_sell">¿Salir sin vender?</string>
+    <string name="order_exit_message">Se perderán los datos que ingresaste.</string>
+    <string name="order_exit_confirm">Salir</string>
+    <string name="order_error_required">Completa este campo.</string>
+    <string name="order_error_account_required">Elige la cuenta.</string>
+    <string name="order_error_quantity_format">Usa un número entero de acciones, por ejemplo 2.</string>
+    <string name="order_error_quantity_positive">La cantidad debe ser mayor que cero.</string>
+    <string name="order_error_exceeds_balance">El total supera el saldo disponible.</string>
+    <string name="order_error_exceeds_holdings">La cantidad supera las acciones que tienes.</string>
+    <string name="order_error_account_not_owned">La cuenta no es tuya.</string>
+    <string name="order_error_account_currency">Elige una cuenta en dólares.</string>
+    <string name="order_error_unknown_symbol">No existe una acción con ese símbolo.</string>
+
+    <string name="order_confirm_title_buy">Confirma la compra</string>
+    <string name="order_confirm_title_sell">Confirma la venta</string>
+    <string name="order_summary_stock">Acción</string>
+    <string name="order_summary_side">Operación</string>
+    <string name="order_side_buy">Compra</string>
+    <string name="order_side_sell">Venta</string>
+    <string name="order_summary_quantity">Cantidad</string>
+    <string name="order_summary_price">Precio de referencia</string>
+    <string name="order_summary_total">Total estimado</string>
+    <string name="order_summary_account">Cuenta</string>
+    <string name="order_price_may_vary">El precio final puede variar: la orden se ejecuta al precio de mercado del momento.</string>
+    <string name="order_confirm">Confirmar</string>
+    <string name="order_cancel_title">¿Cancelar la orden?</string>
+    <string name="order_cancel_message">No se enviará la orden y volverás a la acción.</string>
+    <string name="order_cancel_confirm">Cancelar orden</string>
+    <string name="order_error_title">No pudimos enviar la orden</string>
+    <string name="order_rejected_funds_title">Saldo insuficiente</string>
+    <string name="order_rejected_funds_message">El total supera el saldo disponible de la cuenta.</string>
+    <string name="order_rejected_holdings_title">Acciones insuficientes</string>
+    <string name="order_back_to_form">Corregir datos</string>
+
+    <string name="order_success_title_buy">Compra realizada</string>
+    <string name="order_success_title_sell">Venta realizada</string>
+    <string name="order_success_operation">N.º de operación: %1$s</string>
+    <string name="order_success_price">Precio ejecutado: %1$s</string>
+    <string name="order_success_total">Total: %1$s</string>
+    <string name="order_success_balance">Nuevo saldo disponible: %1$s</string>
+    <plurals name="order_success_holding">
+        <item quantity="one">Tu tenencia: %1$d acción a %2$s</item>
+        <item quantity="other">Tu tenencia: %1$d acciones a %2$s</item>
+    </plurals>
+    <string name="order_success_holding_none">Ya no tienes acciones de %1$s.</string>
+    <string name="order_failure_title">No pudimos confirmar la orden</string>
+    <string name="order_failure_message">Revisa tu portafolio y tus movimientos antes de intentarlo de nuevo: si la conexión se cortó, pudo haberse hecho.</string>
+    <string name="order_back_to_market">Volver a Mercado</string>
 </resources>

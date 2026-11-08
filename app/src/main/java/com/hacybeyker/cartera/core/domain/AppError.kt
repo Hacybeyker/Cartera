@@ -24,4 +24,7 @@ sealed interface AppError {
 
     /** El origen y el destino usan monedas distintas. */
     data object CurrencyMismatch : AppError
+
+    /** Se quiere vender más acciones de las que se tienen. */
+    data object InsufficientHoldings : AppError
 }

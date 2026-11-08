@@ -50,6 +50,10 @@
 - Datos de mercado y portafolio en la app (acciones, detalle, historial por rango y portafolio), con el portafolio recalculado en el cliente con los precios en vivo.
 - Detalle de acción: precio en vivo con su variación, gráfico de línea dibujado con el Canvas de Compose y rangos 1D, 1S, 1M y 1A, mínimo y máximo de la serie, datos del día y la tenencia propia con su ganancia o pérdida en vivo. En 1D, el último punto del gráfico sigue al precio.
 - Mi portafolio: totales y cada tenencia con cantidad, precio promedio, precio actual, valor de mercado y ganancia o pérdida en vivo; tocar una tenencia abre su detalle.
+- Órdenes de compra y venta: Operar en el Detalle de acción abre un bottom sheet con Comprar y Vender (Vender solo con tenencia); formulario con cantidad, cuenta en dólares elegida en un bottom sheet y total estimado en vivo; confirmación con "El precio final puede variar" y progreso bloqueante; resultado con precio ejecutado, total, nuevo saldo y nueva tenencia, y Volver a Mercado.
+- Validación de la orden en el cliente (cantidad entera, saldo en una compra y tenencia en una venta), `Idempotency-Key` reutilizada en cada Reintentar y modales propios para saldo y acciones insuficientes.
+- Bottom sheet de cuentas reutilizable (`sheet_cuentas`), con alias, número enmascarado y saldo disponible.
+- Categoría de movimientos Inversiones (`INVESTMENT`) para los movimientos de las órdenes.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -62,6 +66,8 @@
 - Gradle 9.9.0, AGP 9.5.1 y Navigation 3 1.2.1.
 - `POST /_demo/reset` también devuelve tenencias, precios, cotizaciones y dispositivos registrados a su estado inicial; con el canal en vivo abierto, no lo cierra y le envía los valores iniciales de lo suscrito.
 - La `Idempotency-Key` vale por usuario y por operación: la misma clave en una transferencia y en una orden no se cruza.
+- Una orden confirmada, o que terminó sin respuesta o con un error del servidor, invalida las cuentas y el portafolio: Mercado, Mi portafolio y el Detalle de acción vuelven a pedir solo el portafolio al mostrarse, e Inicio solo las cuentas.
+- El generador de `Idempotency-Key` pasa a `core/` para compartirlo entre transferencias y órdenes.
 
 ### Removed
 - `hilt-navigation-compose`, que ningún import usaba.

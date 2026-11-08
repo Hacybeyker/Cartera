@@ -15,6 +15,11 @@ object StockDetailTestTags {
     const val CHART_STATES = "accion_grafico"
     const val HOLDING = "accion_tenencia"
     const val RECONNECTING = "accion_reconectando"
+    const val TRADE = "accion_operar"
+    const val TRADE_SHEET = "sheet_accion"
+    const val TRADE_BUY = "sheet_accion_comprar"
+    const val TRADE_SELL = "sheet_accion_vender"
+    const val TRADE_SELL_UNAVAILABLE = "sheet_accion_vender_no_disponible"
 
     /** `accion_rango_1D`, `…_1S`, `…_1M` y `…_1A`: la etiqueta que se ve, no el código del contrato (1W, 1Y). */
     fun range(range: HistoryRange) = "accion_rango_${range.tagSuffix}"

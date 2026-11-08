@@ -3,12 +3,12 @@ package com.hacybeyker.cartera.feature.transfer.domain
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.Outcome
 import com.hacybeyker.cartera.core.testing.FakeAccountChanges
+import com.hacybeyker.cartera.core.testing.SequentialKeys
 import com.hacybeyker.cartera.core.testing.TestAccounts
 import com.hacybeyker.cartera.core.testing.pen
 import com.hacybeyker.cartera.feature.transfer.FakeTransferRepository
 import com.hacybeyker.cartera.feature.transfer.ReferenceOrder
 import com.hacybeyker.cartera.feature.transfer.ReferenceReceipt
-import com.hacybeyker.cartera.feature.transfer.SequentialKeys
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferDraft
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferField
 import com.hacybeyker.cartera.feature.transfer.domain.model.TransferFieldError

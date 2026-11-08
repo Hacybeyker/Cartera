@@ -71,6 +71,15 @@ class RemoteMovementRepositoryTest {
     }
 
     @Test
+    fun `order movements keep their investment category`() = runTest {
+        server.enqueueJson(200, """{"items":[${movement("INVESTMENT")}],"nextCursor":null}""")
+
+        val page = (repository.page(accountId = "ACC-003", cursor = null) as Outcome.Success).value
+
+        assertEquals(MovementCategory.INVESTMENT, page.items.single().category)
+    }
+
+    @Test
     fun `a malformed date is a server error, not a crash`() = runTest {
         server.enqueueJson(200, """{"items":[${movement("GROCERIES", date = "ayer")}],"nextCursor":null}""")
 

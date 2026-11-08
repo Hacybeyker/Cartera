@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.feature.transfer.data
 
+import com.hacybeyker.cartera.core.data.idempotency.UuidIdempotencyKeyFactory
 import com.hacybeyker.cartera.core.data.network.ApiCaller
 import com.hacybeyker.cartera.core.data.network.CarteraHttpClient
 import com.hacybeyker.cartera.core.domain.AppError
@@ -10,7 +11,6 @@ import com.hacybeyker.cartera.core.testing.problemJson
 import com.hacybeyker.cartera.feature.transfer.ReferenceOrder
 import com.hacybeyker.cartera.feature.transfer.ReferenceReceipt
 import com.hacybeyker.cartera.feature.transfer.data.repository.RemoteTransferRepository
-import com.hacybeyker.cartera.feature.transfer.data.repository.UuidIdempotencyKeyFactory
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject

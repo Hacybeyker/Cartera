@@ -22,6 +22,7 @@ enum class MovementCategory {
     SERVICES,
     SALARY,
     TRANSFER,
+    INVESTMENT,
     OTHER;
 
     companion object {
