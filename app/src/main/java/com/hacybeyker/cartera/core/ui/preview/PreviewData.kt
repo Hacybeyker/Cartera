@@ -93,3 +93,10 @@ val previewPortfolio = Portfolio(
         holding("QORI", "Qori Gold", 2, "120.00")
     )
 )
+
+/** Una jornada de QORI resumida en 30 puntos, del más antiguo al más reciente; termina en su precio inicial. */
+val previewHistoryPrices = listOf(
+    "115.56", "115.70", "115.92", "115.81", "116.04", "116.33", "116.18", "115.95", "115.62", "115.40",
+    "115.47", "115.21", "114.98", "114.76", "114.90", "115.12", "115.35", "115.28", "115.04", "114.85",
+    "114.62", "114.71", "114.93", "115.10", "115.02", "115.26", "115.44", "115.31", "115.12", "115.20"
+).map { it.toBigDecimal() }

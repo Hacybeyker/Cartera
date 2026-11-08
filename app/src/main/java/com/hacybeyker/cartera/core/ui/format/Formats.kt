@@ -27,6 +27,9 @@ fun BigDecimal.formattedChange(): String = sign() + amountFormat().format(abs())
 /** Porcentaje con su signo y 2 decimales: `+0.81 %`, `-1.20 %` o `0.00 %`. */
 fun BigDecimal.formattedPercent(): String = "${formattedChange()} %"
 
+/** Cantidad entera con separador de miles: `1,250,300`. */
+fun Long.formattedCount(): String = DecimalFormat("#,##0", DecimalFormatSymbols(Locale.US)).format(this)
+
 private fun BigDecimal.sign(): String = when (signum()) {
     -1 -> "-"
     1 -> "+"

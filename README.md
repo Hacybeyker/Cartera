@@ -179,8 +179,8 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
 │   ├─ Cuentas ──► Movimientos de cuenta ──► Detalle ──► Desglose
 │   │     └─ Transferir ──► Confirmación ──► Resultado ──► Home (Inicio · Cuentas)
 │   └─ Movimientos ──► Detalle ──► Desglose
-├─ Mercado ──► Detalle de acción (próximamente)
-│     └─ Mi portafolio ──► Mi portafolio (próximamente)
+├─ Mercado ──► Detalle de acción
+│     └─ Mi portafolio ──► Detalle de acción
 ├─ Cambio   (próximamente)
 └─ Más ──► Servicios clásicos (próximamente) · Cerrar sesión · Versión
 ```
@@ -204,18 +204,42 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
   cabecera se recalcula en la app con las mismas reglas que `GET /portfolio`.
 - Si el canal se cae, aparece el aviso **"Reconectando…"** y los precios quedan en su último valor
   hasta que vuelve.
-- Tocar una acción abre su detalle y tocar Mi portafolio abre Mi portafolio (por ahora, los dos en
-  "Próximamente").
+- Tocar una acción abre su **Detalle** y tocar la cabecera abre **Mi portafolio**.
 - El portafolio se guarda en memoria hasta que cambian las tenencias; al volver a Mercado tras ese
   cambio se vuelve a pedir solo `GET /portfolio`.
 
 **El canal en la app.** Hay una sola conexión para toda la app, que se abre con la primera pantalla
-que sigue precios (hoy, Mercado) y se cierra 1 s después de que no queda ninguna: al cambiar de tab,
+que sigue precios (Mercado, Detalle de acción o Mi portafolio) y se cierra 1 s después de que no queda ninguna: al cambiar de tab,
 al abrir otra pantalla sin precios, al pasar a segundo plano o al cerrar sesión. Si se cae, reconecta
 esperando 1, 2, 4 y 8 s (y 8 s desde ahí), vuelve a suscribir todo y reinicia la espera tras conectar.
 Un 401 en el handshake o un cierre 4401 abren "Tu sesión expiró" y no reconectan. Con
 `stream_drop_s 15` se ve el aviso unos instantes cada 15 s y, en `CarteraBackend`, un `WS#n cerrado
 code=1006 por=servidor` seguido de un `WS#n+1 abierto` alrededor de 1 s después.
+
+### Detalle de acción
+
+- Pide en paralelo `GET /market/stocks/{symbol}`, su historial en 1D y `GET /portfolio`. Muestra el
+  precio en vivo con su variación del día, un gráfico de línea con los rangos **1D · 1S · 1M · 1A**
+  (en el contrato, `1D`, `1W`, `1M` y `1Y`), el mínimo y el máximo de la serie, los datos del día
+  (apertura, máximo, mínimo, cierre anterior, volumen y descripción) y, si hay tenencia, la cantidad,
+  el precio promedio, el valor de mercado y la ganancia o pérdida.
+- Cambiar de rango pide solo `GET …/history?range=`; si falla, el error y su Reintentar quedan en el
+  lugar del gráfico y el resto del detalle sigue a la vista.
+- El último punto de la serie es el precio vigente. En 1D, cada precio del canal mueve el precio, la
+  tenencia y el último punto del gráfico; en 1S, 1M y 1A el gráfico queda como se cargó y solo cambian
+  el precio y la tenencia.
+- El gráfico se dibuja con el Canvas de Compose, sin librerías: el trazado de los puntos fijos se arma
+  una vez por serie y el precio vivo solo mueve el último tramo.
+- Una acción que no existe (`NOT_FOUND`) se muestra como error sin Reintentar. Si el canal se cae,
+  aparece "Reconectando…" como en Mercado.
+
+### Mi portafolio
+
+- Cabecera con el valor de mercado, la ganancia o pérdida total y la variación del día; debajo, cada
+  tenencia con cantidad, precio promedio, precio actual, valor de mercado y ganancia o pérdida, que se
+  recalculan en vivo, fila por fila. Tocar una tenencia abre su Detalle.
+- Usa el portafolio en memoria de Mercado y vuelve a pedir `GET /portfolio` al mostrarse solo si
+  cambiaron las tenencias. Sin tenencias, muestra el estado vacío y no abre el canal.
 
 ### Transferir
 
@@ -263,7 +287,8 @@ en su ventana. La convención es snake_case en español, `<pantalla>_<elemento>`
 | Desglose | `movimiento_desglose`, `desglose_ilustracion`, `desglose_linea_<n>` (desde 1) y estados `desglose_*` |
 | Mercado | `mercado_portafolio`, `mercado_lista`, `mercado_item_<symbol>`, `mercado_reconectando` y estados `mercado_*` |
 | Cambio | `cambio_proximamente` |
-| Detalle de acción / Mi portafolio | `accion_detalle_proximamente` / `portafolio_proximamente` (por ahora) |
+| Detalle de acción | `accion_detalle`, `accion_precio`, `accion_grafico`, `accion_rango_<1D\|1S\|1M\|1A>`, `accion_tenencia`, `accion_reconectando`, estados `accion_*` y, del gráfico, `accion_grafico_cargando`, `accion_grafico_error` y `accion_grafico_reintentar` |
+| Mi portafolio | `portafolio_lista`, `portafolio_item_<symbol>`, `portafolio_reconectando` y estados `portafolio_*` (con `portafolio_vacio`) |
 | Más | `mas_pantalla`, `mas_nombre`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
 | Servicios clásicos | `legacy_proximamente` |
 | Transferir · formulario | `transferir_pantalla`, `transferir_origen`, `transferir_origen_item_<id>`, `transferir_destino`, `transferir_monto`, `transferir_descripcion`, `transferir_continuar`, `<campo>_error` y estados `transferir_*` |
@@ -278,9 +303,10 @@ por texto.
 con contenido real: una vez por cada carga o refresco, nunca por el estado de carga ni por cargar más
 páginas. Rotar o volver a una pantalla sin datos nuevos no repite la marca. Marcas: `login`,
 `terminos`, `onboarding`, `inicio_cuentas`, `inicio_movimientos`, `cuenta_movimientos`,
-`movimiento_detalle`, `movimiento_desglose`, `mercado`, `cambio`, `mas`, `transferir_formulario`,
-`transferir_confirmacion` y `transferir_resultado`. Tras una transferencia, `inicio_cuentas` se
-dispara otra vez cuando llegan las cuentas refrescadas. Los precios en vivo no repiten `mercado`: solo
+`movimiento_detalle`, `movimiento_desglose`, `mercado`, `accion_detalle`, `portafolio`, `cambio`, `mas`,
+`transferir_formulario`, `transferir_confirmacion` y `transferir_resultado`. Tras una transferencia,
+`inicio_cuentas` se dispara otra vez cuando llegan las cuentas refrescadas. `accion_detalle` se repite
+con cada rango cargado. Los precios en vivo no repiten `mercado`, `portafolio` ni `accion_detalle`: solo
 la carga y el refresco del portafolio. Por defecto nadie escucha. Para
 recibirlas, agrega un `VisibleContentMarker` al conjunto desde un módulo de Hilt propio, sin tocar las
 pantallas:

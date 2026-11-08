@@ -23,6 +23,12 @@ class FormatsTest {
     }
 
     @Test
+    fun `counts use thousands separators`() {
+        assertEquals("2,795,000", 2_795_000L.formattedCount())
+        assertEquals("0", 0L.formattedCount())
+    }
+
+    @Test
     fun `dates use a fixed numeric format`() {
         assertEquals("06/11/2026 14:32", OffsetDateTime.parse("2026-11-06T14:32:00-05:00").formatted())
     }

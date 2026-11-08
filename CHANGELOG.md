@@ -48,11 +48,14 @@
 - Tab Mercado: cabecera de Mi portafolio con su valor y la variación del día, y las ocho acciones con precio y variación que se actualizan solos por el canal en vivo, fila por fila. Si el canal se cae, aviso "Reconectando…" y los precios quedan en su último valor.
 - Cliente del canal en vivo: una sola conexión compartida con suscripciones por símbolo y por par, abierta solo mientras una pantalla con precios se ve, reconexión con espera de 1, 2, 4 y 8 s y modal de sesión expirada ante un 401 en el handshake o un cierre 4401.
 - Datos de mercado y portafolio en la app (acciones, detalle, historial por rango y portafolio), con el portafolio recalculado en el cliente con los precios en vivo.
+- Detalle de acción: precio en vivo con su variación, gráfico de línea dibujado con el Canvas de Compose y rangos 1D, 1S, 1M y 1A, mínimo y máximo de la serie, datos del día y la tenencia propia con su ganancia o pérdida en vivo. En 1D, el último punto del gráfico sigue al precio.
+- Mi portafolio: totales y cada tenencia con cantidad, precio promedio, precio actual, valor de mercado y ganancia o pérdida en vivo; tocar una tenencia abre su detalle.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
 - Inicio y Movimientos vuelven a pedir sus datos al mostrarse solo si una transferencia los cambió; Inicio refresca solo las cuentas.
-- El tab Mercado deja de ser "Próximamente"; tocar una acción o Mi portafolio lleva a sus pantallas, por ahora "Próximamente".
+- El tab Mercado deja de ser "Próximamente"; tocar una acción o Mi portafolio lleva al Detalle de acción y a Mi portafolio.
+- El aviso "Reconectando…" y la fila etiqueta · valor pasan a componentes compartidos (`core/ui/market/`, `core/designsystem/component/`).
 - `ApiCaller` ya no trata cualquier `IllegalArgumentException` como respuesta inválida, solo los errores de lectura de la respuesta.
 - Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.
 - `hilt-lifecycle-viewmodel-compose` se declara en el catálogo en vez de llegar transitiva.

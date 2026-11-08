@@ -26,6 +26,7 @@ import com.hacybeyker.cartera.R
 import com.hacybeyker.cartera.core.designsystem.CarteraTheme
 import com.hacybeyker.cartera.core.designsystem.component.BackTopBar
 import com.hacybeyker.cartera.core.designsystem.component.ErrorState
+import com.hacybeyker.cartera.core.designsystem.component.LabeledRow
 import com.hacybeyker.cartera.core.designsystem.component.LoadingState
 import com.hacybeyker.cartera.core.designsystem.sizes
 import com.hacybeyker.cartera.core.designsystem.spacing
@@ -41,7 +42,6 @@ import com.hacybeyker.cartera.core.ui.movement.labelRes
 import com.hacybeyker.cartera.feature.movements.domain.model.Breakdown
 import com.hacybeyker.cartera.feature.movements.domain.model.BreakdownLine
 import com.hacybeyker.cartera.feature.movements.domain.model.Merchant
-import com.hacybeyker.cartera.feature.movements.ui.LabeledRow
 import com.hacybeyker.cartera.feature.movements.ui.MovementBreakdownTestTags
 
 /**

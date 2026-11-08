@@ -16,6 +16,8 @@ import com.hacybeyker.cartera.core.domain.portfolio.PortfolioChanges
 import com.hacybeyker.cartera.core.domain.portfolio.PortfolioRepository
 import com.hacybeyker.cartera.core.ui.preview.previewPortfolio
 import com.hacybeyker.cartera.core.ui.preview.previewQuotes
+import java.math.BigDecimal
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +36,13 @@ class FakeMarketRepository(var stocks: List<Quote> = TestQuotes, var error: AppE
     var stocksCalls = 0
     val requests = mutableListOf<String>()
 
+    /** Si no es null, `stock()` espera a que se complete: deja ver lo que pasa durante la carga. */
+    var stockGate: CompletableDeferred<Unit>? = null
+
+    /** Los precios de cada historial; sin ellos, un solo punto con el precio vigente. */
+    var historyPrices: List<BigDecimal>? = null
+    var historyError: AppError? = null
+
     override suspend fun stocks(): Outcome<List<Quote>> {
         stocksCalls++
         return error?.let { Outcome.Failure(it) } ?: Outcome.Success(stocks)
@@ -41,16 +50,30 @@ class FakeMarketRepository(var stocks: List<Quote> = TestQuotes, var error: AppE
 
     override suspend fun stock(symbol: String): Outcome<StockDetail> {
         requests += symbol
-        val quote = stocks.firstOrNull { it.symbol == symbol } ?: return Outcome.Failure(AppError.NotFound)
-        return Outcome.Success(
-            StockDetail(quote, quote.last, quote.last, quote.last, quote.last - quote.change, 1_000, "Descripción")
-        )
+        stockGate?.await()
+        val quote = stocks.firstOrNull { it.symbol == symbol }
+        val failure = error
+        return when {
+            failure != null -> Outcome.Failure(failure)
+            quote == null -> Outcome.Failure(AppError.NotFound)
+            else -> Outcome.Success(
+                StockDetail(quote, quote.last, quote.last, quote.last, quote.last - quote.change, 1_000, "Descripción")
+            )
+        }
     }
 
     override suspend fun history(symbol: String, range: HistoryRange): Outcome<PriceHistory> {
         requests += "$symbol/${range.wireName}"
-        val quote = stocks.firstOrNull { it.symbol == symbol } ?: return Outcome.Failure(AppError.NotFound)
-        return Outcome.Success(PriceHistory(symbol, range, "USD", listOf(PricePoint(quote.ts, quote.last))))
+        val quote = stocks.firstOrNull { it.symbol == symbol }
+        val failure = historyError
+        return when {
+            failure != null -> Outcome.Failure(failure)
+            quote == null -> Outcome.Failure(AppError.NotFound)
+            else -> {
+                val prices = historyPrices ?: listOf(quote.last)
+                Outcome.Success(PriceHistory(symbol, range, "USD", prices.map { PricePoint(quote.ts, it) }))
+            }
+        }
     }
 }
 

@@ -17,7 +17,9 @@ data class Sizes(
     val listIcon: Dp = 40.dp,
     /** Progreso dentro de una línea de texto, como el aviso de reconexión. */
     val inlineProgress: Dp = 16.dp,
-    val inlineProgressStroke: Dp = 2.dp
+    val inlineProgressStroke: Dp = 2.dp,
+    val chartHeight: Dp = 200.dp,
+    val chartStroke: Dp = 2.dp
 )
 
 val LocalSizes = staticCompositionLocalOf { Sizes() }

@@ -73,7 +73,7 @@ fun AppNavDisplay(
                 onMovementClick = { backStack.add(MovementDetailNavKey(it)) },
                 onBreakdownClick = { backStack.add(MovementBreakdownNavKey(it)) }
             )
-            marketEntries(onBack = back)
+            marketEntries(onBack = back, onStockClick = { backStack.add(StockDetailNavKey(it)) })
             legacyEntry(onBack = back)
             // Volver al inicio reutiliza la entrada de Home (con su estado) en vez de crear otra: Inicio refresca
             // solo las cuentas, una vez, porque la transferencia las cambió.

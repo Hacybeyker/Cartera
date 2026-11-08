@@ -61,6 +61,35 @@
     <string name="market_empty">No hay acciones disponibles.</string>
 
     <string name="portfolio_title">Mi portafolio</string>
+    <string name="portfolio_market_value">Valor de mercado</string>
+    <string name="portfolio_total_gain">Ganancia o pérdida: %1$s (%2$s)</string>
+    <string name="portfolio_empty">Todavía no tienes acciones.</string>
+    <string name="portfolio_item_price">Precio %1$s</string>
+    <plurals name="portfolio_item_shares">
+        <item quantity="one">%1$d acción · promedio %2$s</item>
+        <item quantity="other">%1$d acciones · promedio %2$s</item>
+    </plurals>
+
+    <string name="stock_change_today">%1$s (%2$s) hoy</string>
+    <string name="stock_range_day">1D</string>
+    <string name="stock_range_week">1S</string>
+    <string name="stock_range_month">1M</string>
+    <string name="stock_range_year">1A</string>
+    <string name="stock_chart_description">Gráfico del precio</string>
+    <string name="stock_chart_low">Mín. %1$s</string>
+    <string name="stock_chart_high">Máx. %1$s</string>
+    <string name="stock_day_title">Datos del día</string>
+    <string name="stock_open">Apertura</string>
+    <string name="stock_high">Máximo</string>
+    <string name="stock_low">Mínimo</string>
+    <string name="stock_previous_close">Cierre anterior</string>
+    <string name="stock_volume">Volumen</string>
+    <string name="stock_about_title">Sobre la empresa</string>
+    <string name="stock_holding_title">Tu tenencia</string>
+    <string name="stock_holding_quantity">Cantidad</string>
+    <string name="stock_holding_average_price">Precio promedio</string>
+    <string name="stock_holding_market_value">Valor de mercado</string>
+    <string name="stock_holding_gain">Ganancia o pérdida</string>
 
     <string name="overview_greeting">Hola, %1$s</string>
     <string name="overview_tab_accounts">Cuentas</string>

@@ -7,25 +7,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.hacybeyker.cartera.R
@@ -33,13 +27,13 @@ import com.hacybeyker.cartera.core.designsystem.CarteraTheme
 import com.hacybeyker.cartera.core.designsystem.component.EmptyState
 import com.hacybeyker.cartera.core.designsystem.component.ErrorState
 import com.hacybeyker.cartera.core.designsystem.component.LoadingState
-import com.hacybeyker.cartera.core.designsystem.sizes
 import com.hacybeyker.cartera.core.designsystem.spacing
 import com.hacybeyker.cartera.core.ui.format.formatted
 import com.hacybeyker.cartera.core.ui.format.formattedChange
 import com.hacybeyker.cartera.core.ui.format.formattedPercent
 import com.hacybeyker.cartera.core.ui.format.formattedSigned
 import com.hacybeyker.cartera.core.ui.isRetryable
+import com.hacybeyker.cartera.core.ui.market.ReconnectingBanner
 import com.hacybeyker.cartera.core.ui.market.trendColor
 import com.hacybeyker.cartera.core.ui.messageRes
 import com.hacybeyker.cartera.core.ui.preview.previewPortfolio
@@ -69,34 +63,10 @@ fun MarketContent(
             modifier = modifier
         )
         else -> Column(modifier = modifier.fillMaxSize()) {
-            if (uiState.isReconnecting) ReconnectingBanner()
+            if (uiState.isReconnecting) ReconnectingBanner(testTag = MarketTestTags.RECONNECTING)
             uiState.portfolio?.let { PortfolioCard(header = it, onClick = onPortfolioClick) }
             HorizontalDivider()
             StockList(stocks = uiState.stocks, onStockClick = onStockClick)
-        }
-    }
-}
-
-@Composable
-private fun ReconnectingBanner() {
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(MarketTestTags.RECONNECTING)
-            .semantics { liveRegion = LiveRegionMode.Polite }
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = MaterialTheme.spacing.screen, vertical = MaterialTheme.spacing.sm),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(MaterialTheme.sizes.inlineProgress),
-                strokeWidth = MaterialTheme.sizes.inlineProgressStroke
-            )
-            Text(text = stringResource(R.string.market_reconnecting), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
