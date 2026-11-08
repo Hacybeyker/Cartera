@@ -39,7 +39,7 @@ import com.hacybeyker.cartera.core.ui.preview.previewQuotes
 
 /**
  * Detalle de acción: precio en vivo, gráfico con rangos, datos del día y la tenencia propia si la hay. Operar abre el
- * sheet Comprar/Vender y lo elegido sale por [onTrade].
+ * sheet Comprar/Vender y lo elegido sale por [onTrade]. [chartLivePath] elige el camino de dibujo del gráfico.
  */
 @Composable
 fun StockDetailContent(
@@ -48,7 +48,8 @@ fun StockDetailContent(
     onAction: (StockDetailAction) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onTrade: (OrderSide) -> Unit = {}
+    onTrade: (OrderSide) -> Unit = {},
+    chartLivePath: Boolean = false
 ) {
     Column(modifier = modifier.fillMaxSize().testTag(StockDetailTestTags.SCREEN)) {
         BackTopBar(title = symbol, onBack = onBack)
@@ -60,7 +61,9 @@ fun StockDetailContent(
                 message = stringResource(error.messageRes()),
                 onRetry = { onAction(StockDetailAction.RetryClicked) }.takeIf { error.isRetryable }
             )
-            else -> uiState.price?.let { DetailBody(uiState = uiState, price = it, onAction = onAction) }
+            else -> uiState.price?.let {
+                DetailBody(uiState = uiState, price = it, chartLivePath = chartLivePath, onAction = onAction)
+            }
         }
     }
     if (uiState.isTradeSheetVisible) {
@@ -77,7 +80,12 @@ fun StockDetailContent(
 }
 
 @Composable
-private fun DetailBody(uiState: StockDetailUiState, price: LivePrice, onAction: (StockDetailAction) -> Unit) {
+private fun DetailBody(
+    uiState: StockDetailUiState,
+    price: LivePrice,
+    chartLivePath: Boolean,
+    onAction: (StockDetailAction) -> Unit
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         if (uiState.isReconnecting) ReconnectingBanner(testTag = StockDetailTestTags.RECONNECTING)
         Column(
@@ -96,6 +104,7 @@ private fun DetailBody(uiState: StockDetailUiState, price: LivePrice, onAction: 
             ChartArea(
                 chart = uiState.chart,
                 currency = price.price.currency,
+                livePath = chartLivePath,
                 onRetry = { onAction(StockDetailAction.ChartRetryClicked) }
             )
             uiState.day?.let { DaySection(day = it) }

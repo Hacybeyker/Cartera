@@ -31,7 +31,7 @@ import com.hacybeyker.cartera.core.ui.messageRes
 
 /** El gráfico del rango elegido, o su carga o su error, con el mínimo y el máximo de la serie debajo. */
 @Composable
-internal fun ChartArea(chart: ChartUiState, currency: String, onRetry: () -> Unit) {
+internal fun ChartArea(chart: ChartUiState, currency: String, livePath: Boolean, onRetry: () -> Unit) {
     Column {
         Box(
             modifier = Modifier
@@ -53,7 +53,8 @@ internal fun ChartArea(chart: ChartUiState, currency: String, onRetry: () -> Uni
                     color = MaterialTheme.colorScheme.primary,
                     strokeWidth = MaterialTheme.sizes.chartStroke,
                     description = stringResource(R.string.stock_chart_description),
-                    modifier = Modifier.fillMaxSize().testTag(StockDetailTestTags.CHART)
+                    modifier = Modifier.fillMaxSize().testTag(StockDetailTestTags.CHART),
+                    livePath = livePath
                 )
             }
         }

@@ -19,5 +19,7 @@ class BuildConfigFeatureFlags @Inject constructor(private val sources: Set<@JvmS
         FeatureFlag.MOVEMENTS_FULL_PAGE -> BuildConfig.MOVEMENTS_FULL_PAGE
         FeatureFlag.ACCOUNTS_EAGER_REFRESH -> BuildConfig.ACCOUNTS_EAGER_REFRESH
         FeatureFlag.BREAKDOWN_RICH_TRANSITION -> BuildConfig.BREAKDOWN_RICH_TRANSITION
+        FeatureFlag.QUOTES_FULL_REFRESH -> BuildConfig.QUOTES_FULL_REFRESH
+        FeatureFlag.CHART_LIVE_PATH -> BuildConfig.CHART_LIVE_PATH
     }
 }

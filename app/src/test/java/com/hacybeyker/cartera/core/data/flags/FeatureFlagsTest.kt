@@ -22,6 +22,8 @@ class FeatureFlagsTest {
         assertFalse(BuildConfig.MOVEMENTS_FULL_PAGE)
         assertFalse(BuildConfig.ACCOUNTS_EAGER_REFRESH)
         assertFalse(BuildConfig.BREAKDOWN_RICH_TRANSITION)
+        assertFalse(BuildConfig.QUOTES_FULL_REFRESH)
+        assertFalse(BuildConfig.CHART_LIVE_PATH)
     }
 
     @Test
@@ -38,7 +40,13 @@ class FeatureFlagsTest {
     @Test
     fun `keys match the adb extras`() {
         assertEquals(
-            listOf("movements_full_page", "accounts_eager_refresh", "breakdown_rich_transition"),
+            listOf(
+                "movements_full_page",
+                "accounts_eager_refresh",
+                "breakdown_rich_transition",
+                "quotes_full_refresh",
+                "chart_live_path"
+            ),
             FeatureFlag.entries.map { it.key }
         )
     }

@@ -495,6 +495,8 @@ devuelve a los valores por defecto. Release no tiene nada de esto.
 | Página completa de movimientos | `--ez movements_full_page true` | los movimientos de una cuenta llegan en una sola página completa | `false` |
 | Refresco anticipado de cuentas | `--ez accounts_eager_refresh true` | al volver al inicio tras una transferencia, las cuentas se refrescan de forma anticipada | `false` |
 | Transición enriquecida del desglose | `--ez breakdown_rich_transition true` | el desglose entra con una transición enriquecida y su ilustración a tamaño completo | `false` |
+| Camino de actualización de Mercado | `--ez quotes_full_refresh true` | elige el camino de actualización de los precios de Mercado; se ve igual | `false` |
+| Camino de dibujo del gráfico | `--ez chart_live_path true` | elige el camino de dibujo del gráfico del Detalle de acción; se ve igual | `false` |
 | Valores por defecto | `--ez defaults true` | restablece el escenario antes de aplicar el resto | — |
 
 Ids de endpoint: `app_config`, `login`, `me`, `accounts`, `account`, `movements`, `movement`,
@@ -505,10 +507,11 @@ handshake del canal en vivo), `portfolio`, `orders`, `fx_rates`, `fx_exchanges`,
 - `tick_ms` y `stream_drop_s` viajan solo en el handshake del canal en vivo; `quote_ttl_s`, en
   `GET /fx/rates` y en ese handshake. `session_ttl` rige también en el ingreso con huella.
 
-- Los tres últimos son interruptores del cliente: no viajan al backend y tienen el mismo nombre en
-  BuildConfig (`MOVEMENTS_FULL_PAGE`, `ACCOUNTS_EAGER_REFRESH`, `BREAKDOWN_RICH_TRANSITION`), donde
-  valen `false`. Rigen desde la próxima vez que se usan, sin reiniciar la app. Release no los puede
-  encender.
+- Página completa de movimientos y las cuatro filas que la siguen son interruptores del cliente: no
+  viajan al backend y tienen el mismo nombre en BuildConfig (`MOVEMENTS_FULL_PAGE`, `ACCOUNTS_EAGER_REFRESH`,
+  `BREAKDOWN_RICH_TRANSITION`, `QUOTES_FULL_REFRESH`, `CHART_LIVE_PATH`), donde valen `false`. Rigen
+  desde la próxima vez que se usan, sin reiniciar la app: Mercado lo lee cada vez que se vuelve a ver
+  el tab y el Detalle de acción, al abrirlo. Release no los puede encender.
 - Lo que no se envía no cambia. Un valor por endpoint sin `default=` usa el valor de fábrica como global.
 - Un valor inválido no se aplica: el escenario efectivo y lo rechazado se imprimen en logcat con la
   etiqueta `CarteraDemo`.
@@ -524,6 +527,11 @@ adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
 # Precios congelados y cotizaciones de 5 s
 adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
   -a com.hacybeyker.cartera.demo.SET_SCENARIO --ei tick_ms 0 --ei quote_ttl_s 5
+
+# Ticks cada 250 ms con los dos interruptores de mercado encendidos
+adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
+  -a com.hacybeyker.cartera.demo.SET_SCENARIO --ei tick_ms 250 \
+  --ez quotes_full_refresh true --ez chart_live_path true
 
 # Volver a los fixtures (saldos, movimientos, tenencias, precios, cotizaciones, huella e idempotencia;
 # los dispositivos registrados para la huella son lo único que sobrevive a cerrar la app)
@@ -544,6 +552,17 @@ broadcast, así que cada flow lleva su escenario aunque use `clearState`:
       latency: "default=400,movements=2000"
       session_ttl: 60
       tick_ms: 0
+```
+
+Los interruptores van igual, como texto o booleano:
+
+```yaml
+- launchApp:
+    clearState: true
+    arguments:
+      tick_ms: 250
+      quotes_full_refresh: true
+      chart_live_path: true
 ```
 
 Si un flow no usa argumentos, el orden es `pm clear` → broadcast → `launchApp` sin `clearState`.

@@ -20,7 +20,8 @@ class ScenarioTest {
     fun `defaults match the documented values`() {
         assertEquals(
             "latency=default=400 failure_rate=default=0 failure_mode=http_500 session_ttl=900 backend_down=false " +
-                "tick_ms=2000 stream_drop_s=0 quote_ttl_s=30 movements_full_page=false accounts_eager_refresh=false breakdown_rich_transition=false",
+                "tick_ms=2000 stream_drop_s=0 quote_ttl_s=30 movements_full_page=false accounts_eager_refresh=false " +
+                "breakdown_rich_transition=false quotes_full_refresh=false chart_live_path=false",
             Scenario().describe()
         )
     }
@@ -198,6 +199,22 @@ class ScenarioTest {
     }
 
     @Test
+    fun `market flags are parsed from adb booleans and launch arguments text`() {
+        val adb = ScenarioParser.apply(Scenario(), mapOf("quotes_full_refresh" to true, "chart_live_path" to true))
+        val launchArguments = ScenarioParser.apply(
+            Scenario(),
+            mapOf("quotes_full_refresh" to "true", "chart_live_path" to "si")
+        )
+
+        assertEquals(setOf(FeatureFlag.QUOTES_FULL_REFRESH, FeatureFlag.CHART_LIVE_PATH), adb.scenario.flags)
+        assertTrue(adb.rejected.isEmpty())
+        assertTrue(adb.ignoredKeys.isEmpty())
+        assertEquals(setOf(FeatureFlag.QUOTES_FULL_REFRESH), launchArguments.scenario.flags)
+        assertEquals(listOf("chart_live_path=si"), launchArguments.rejected)
+        assertTrue(adb.describe().contains("quotes_full_refresh=true chart_live_path=true"))
+    }
+
+    @Test
     fun `flags not sent keep their value and defaults turn them off`() {
         val current = Scenario(flags = setOf(FeatureFlag.BREAKDOWN_RICH_TRANSITION))
 
@@ -222,5 +239,26 @@ class ScenarioTest {
         assertEquals("false", storage.values["accounts_eager_refresh"])
         assertEquals(true, source.valueOf(FeatureFlag.MOVEMENTS_FULL_PAGE))
         assertEquals(setOf(FeatureFlag.MOVEMENTS_FULL_PAGE), ScenarioStore(storage).load().flags)
+    }
+
+    @Test
+    fun `stored market flags survive and feed the client at once`() {
+        val storage = FakeScenarioStorage()
+        val store = ScenarioStore(storage)
+        val source = ScenarioFeatureFlagSource(store)
+        assertEquals(false, source.valueOf(FeatureFlag.QUOTES_FULL_REFRESH))
+        assertEquals(false, source.valueOf(FeatureFlag.CHART_LIVE_PATH))
+
+        store.update(mapOf("quotes_full_refresh" to true, "chart_live_path" to "true"))
+
+        assertEquals("true", storage.values["quotes_full_refresh"])
+        assertEquals("true", storage.values["chart_live_path"])
+        assertEquals(true, source.valueOf(FeatureFlag.QUOTES_FULL_REFRESH))
+        assertEquals(true, source.valueOf(FeatureFlag.CHART_LIVE_PATH))
+
+        store.update(mapOf("chart_live_path" to false))
+
+        assertEquals(setOf(FeatureFlag.QUOTES_FULL_REFRESH), ScenarioStore(storage).load().flags)
+        assertEquals(false, source.valueOf(FeatureFlag.CHART_LIVE_PATH))
     }
 }

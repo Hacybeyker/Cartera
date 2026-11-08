@@ -56,6 +56,17 @@ class HomeScreenshotTest {
         MarketContent(uiState = loadedMarket, onAction = {}, onStockClick = {}, onPortfolioClick = {})
     }
 
+    // El mismo golden que marketLoaded: con quotes_full_refresh, Mercado se ve igual.
+    @Test
+    fun marketLoadedFullRefresh() = compose.captureLightAndDark("mercado_contenido") {
+        MarketContent(
+            uiState = loadedMarket.copy(fullRefresh = true),
+            onAction = {},
+            onStockClick = {},
+            onPortfolioClick = {}
+        )
+    }
+
     @Test
     fun marketLoading() = compose.captureLightAndDark("mercado_cargando") {
         MarketContent(uiState = MarketUiState(), onAction = {}, onStockClick = {}, onPortfolioClick = {})

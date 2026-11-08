@@ -17,12 +17,14 @@ import com.hacybeyker.cartera.core.data.session.InMemoryAccessTokenStore
 import com.hacybeyker.cartera.core.domain.Money
 import com.hacybeyker.cartera.core.domain.Outcome
 import com.hacybeyker.cartera.core.domain.account.GetAccountsUseCase
+import com.hacybeyker.cartera.core.domain.flags.IsFeatureEnabledUseCase
 import com.hacybeyker.cartera.core.domain.market.ObserveMarketStreamStatusUseCase
 import com.hacybeyker.cartera.core.domain.market.ObserveQuotesUseCase
 import com.hacybeyker.cartera.core.domain.market.OrderSide
 import com.hacybeyker.cartera.core.domain.movement.MovementCategory
 import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioRevisionUseCase
 import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioUseCase
+import com.hacybeyker.cartera.core.testing.FakeFeatureFlags
 import com.hacybeyker.cartera.core.testing.FakeMarketStream
 import com.hacybeyker.cartera.core.testing.MainDispatcherRule
 import com.hacybeyker.cartera.core.testing.SequentialKeys
@@ -158,7 +160,8 @@ class OrderClientEndToEndTest {
             getPortfolio = GetPortfolioUseCase(portfolio),
             getPortfolioRevision = GetPortfolioRevisionUseCase(portfolioChanges),
             observeQuotes = ObserveQuotesUseCase(stream),
-            observeStreamStatus = ObserveMarketStreamStatusUseCase(stream)
+            observeStreamStatus = ObserveMarketStreamStatusUseCase(stream),
+            isFeatureEnabled = IsFeatureEnabledUseCase(FakeFeatureFlags())
         )
         viewModel.uiState.first { it.contentKey == 1 }
         assertEquals(usd("1094.40"), viewModel.uiState.value.portfolio?.marketValue)

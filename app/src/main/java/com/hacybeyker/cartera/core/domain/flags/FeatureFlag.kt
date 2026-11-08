@@ -12,5 +12,11 @@ enum class FeatureFlag(val key: String) {
     ACCOUNTS_EAGER_REFRESH("accounts_eager_refresh"),
 
     /** El desglose entra completo con una transición y su ilustración a tamaño completo. */
-    BREAKDOWN_RICH_TRANSITION("breakdown_rich_transition")
+    BREAKDOWN_RICH_TRANSITION("breakdown_rich_transition"),
+
+    /** Camino de actualización de los precios de Mercado. */
+    QUOTES_FULL_REFRESH("quotes_full_refresh"),
+
+    /** Camino de dibujo del gráfico del Detalle de acción. */
+    CHART_LIVE_PATH("chart_live_path")
 }

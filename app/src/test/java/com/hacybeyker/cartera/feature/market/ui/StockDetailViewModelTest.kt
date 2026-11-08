@@ -2,6 +2,8 @@ package com.hacybeyker.cartera.feature.market.ui
 
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.Money
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.domain.flags.IsFeatureEnabledUseCase
 import com.hacybeyker.cartera.core.domain.market.GetPriceHistoryUseCase
 import com.hacybeyker.cartera.core.domain.market.HistoryRange
 import com.hacybeyker.cartera.core.domain.market.MarketStreamStatus
@@ -9,6 +11,7 @@ import com.hacybeyker.cartera.core.domain.market.ObserveMarketStreamStatusUseCas
 import com.hacybeyker.cartera.core.domain.market.ObserveQuotesUseCase
 import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioRevisionUseCase
 import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioUseCase
+import com.hacybeyker.cartera.core.testing.FakeFeatureFlags
 import com.hacybeyker.cartera.core.testing.FakeMarketRepository
 import com.hacybeyker.cartera.core.testing.FakeMarketStream
 import com.hacybeyker.cartera.core.testing.FakePortfolioChanges
@@ -44,6 +47,7 @@ class StockDetailViewModelTest {
     private val portfolio = FakePortfolioRepository()
     private val stream = FakeMarketStream()
     private val changes = FakePortfolioChanges()
+    private val flags = FakeFeatureFlags()
 
     private fun viewModel(symbol: String = "QORI") = StockDetailViewModel(
         symbol = symbol,
@@ -52,7 +56,8 @@ class StockDetailViewModelTest {
         observeQuotes = ObserveQuotesUseCase(stream),
         observeStreamStatus = ObserveMarketStreamStatusUseCase(stream),
         getPortfolio = GetPortfolioUseCase(portfolio),
-        getPortfolioRevision = GetPortfolioRevisionUseCase(changes)
+        getPortfolioRevision = GetPortfolioRevisionUseCase(changes),
+        isFeatureEnabled = IsFeatureEnabledUseCase(flags)
     )
 
     private fun usd(value: String) = Money(value.toBigDecimal(), "USD")
@@ -79,6 +84,17 @@ class StockDetailViewModelTest {
         assertEquals(usd("-9.60"), state.holding?.gain)
         assertEquals(1, state.contentKey)
         assertEquals(listOf("QORI", "QORI/1D"), market.requests)
+    }
+
+    @Test
+    fun `the chart drawing path is chosen when the detail opens`() {
+        val cached = viewModel()
+        flags.enabled += FeatureFlag.CHART_LIVE_PATH
+        val live = viewModel()
+        flags.enabled.clear()
+
+        assertFalse(cached.chartLivePath)
+        assertTrue(live.chartLivePath)
     }
 
     @Test

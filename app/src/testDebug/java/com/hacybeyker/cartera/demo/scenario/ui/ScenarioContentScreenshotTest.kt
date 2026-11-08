@@ -54,4 +54,23 @@ class ScenarioContentScreenshotTest {
             onBack = {}
         )
     }
+
+    // Más alto que el Pixel 5 para que entren todos los interruptores sin desplazar.
+    @Test
+    @Config(qualifiers = "+h1400dp")
+    fun clientFlags() = compose.captureLightAndDark("escenario_interruptores") {
+        ScenarioContent(
+            uiState = ScenarioUiState(
+                latency = "default=400",
+                failureRate = "default=0",
+                sessionTtl = "900",
+                tickMs = "250",
+                streamDrop = "0",
+                quoteTtl = "30",
+                flags = setOf(FeatureFlag.QUOTES_FULL_REFRESH, FeatureFlag.CHART_LIVE_PATH)
+            ),
+            onAction = {},
+            onBack = {}
+        )
+    }
 }

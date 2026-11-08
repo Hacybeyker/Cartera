@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -66,7 +67,11 @@ fun MarketContent(
             if (uiState.isReconnecting) ReconnectingBanner(testTag = MarketTestTags.RECONNECTING)
             uiState.portfolio?.let { PortfolioCard(header = it, onClick = onPortfolioClick) }
             HorizontalDivider()
-            StockList(stocks = uiState.stocks, onStockClick = onStockClick)
+            if (uiState.fullRefresh) {
+                FullRefreshStockList(stocks = uiState.stocks, onStockClick = onStockClick)
+            } else {
+                PerSymbolStockList(stocks = uiState.stocks, onStockClick = onStockClick)
+            }
         }
     }
 }
@@ -103,9 +108,8 @@ private fun PortfolioCard(header: PortfolioHeader, onClick: () -> Unit) {
 }
 
 @Composable
-private fun StockList(stocks: List<StockItem>, onStockClick: (String) -> Unit) {
+private fun PerSymbolStockList(stocks: List<StockItem>, onStockClick: (String) -> Unit) {
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(MarketTestTags.LIST)) {
-        // La clave estable por símbolo hace que un tick recomponga solo la fila de esa acción.
         items(items = stocks, key = { it.symbol }, contentType = { STOCK_ROW }) { stock ->
             StockRow(stock = stock, onClick = { onStockClick(stock.symbol) })
             HorizontalDivider()
@@ -114,7 +118,29 @@ private fun StockList(stocks: List<StockItem>, onStockClick: (String) -> Unit) {
 }
 
 @Composable
+private fun FullRefreshStockList(stocks: List<StockItem>, onStockClick: (String) -> Unit) {
+    LazyColumn(modifier = Modifier.fillMaxSize().testTag(MarketTestTags.LIST)) {
+        items(count = stocks.size) { index ->
+            StockRowAt(stocks = stocks, index = index, onStockClick = onStockClick)
+            HorizontalDivider()
+        }
+    }
+}
+
+@Composable
+private fun StockRowAt(stocks: List<StockItem>, index: Int, onStockClick: (String) -> Unit) {
+    val stock = stocks[index]
+    StockRowBody(stock = stock, onClick = { onStockClick(stock.symbol) })
+}
+
+@Composable
 private fun StockRow(stock: StockItem, onClick: () -> Unit) {
+    StockRowBody(stock = stock, onClick = onClick)
+}
+
+@Composable
+@NonRestartableComposable
+private fun StockRowBody(stock: StockItem, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

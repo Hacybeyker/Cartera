@@ -28,6 +28,7 @@ fun StockDetailScreen(
         onAction = viewModel::onAction,
         onBack = onBack,
         modifier = modifier,
-        onTrade = onTrade
+        onTrade = onTrade,
+        chartLivePath = viewModel.chartLivePath
     )
 }

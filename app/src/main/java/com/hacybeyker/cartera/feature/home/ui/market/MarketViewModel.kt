@@ -3,6 +3,8 @@ package com.hacybeyker.cartera.feature.home.ui.market
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hacybeyker.cartera.core.domain.Outcome
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.domain.flags.IsFeatureEnabledUseCase
 import com.hacybeyker.cartera.core.domain.market.MarketStreamStatus
 import com.hacybeyker.cartera.core.domain.market.ObserveMarketStreamStatusUseCase
 import com.hacybeyker.cartera.core.domain.market.ObserveQuotesUseCase
@@ -31,10 +33,11 @@ class MarketViewModel @Inject constructor(
     private val getPortfolio: GetPortfolioUseCase,
     private val getPortfolioRevision: GetPortfolioRevisionUseCase,
     private val observeQuotes: ObserveQuotesUseCase,
-    private val observeStreamStatus: ObserveMarketStreamStatusUseCase
+    private val observeStreamStatus: ObserveMarketStreamStatusUseCase,
+    private val isFeatureEnabled: IsFeatureEnabledUseCase
 ) : ViewModel() {
 
-    private val state = MutableStateFlow(MarketUiState())
+    private val state = MutableStateFlow(MarketUiState(fullRefresh = isFullRefresh()))
 
     // Lo que se necesita para revalorizar la cabecera; la UI solo ve sus totales.
     private var portfolio: Portfolio? = null
@@ -60,9 +63,16 @@ class MarketViewModel @Inject constructor(
     fun onAction(action: MarketAction) {
         when (action) {
             MarketAction.RetryClicked -> load()
-            MarketAction.Shown -> if (!state.value.isLoading && getPortfolioRevision() != shownRevision) refresh()
+            MarketAction.Shown -> {
+                state.update { it.copy(fullRefresh = isFullRefresh()) }
+                if (!state.value.isLoading && getPortfolioRevision() != shownRevision) refresh()
+            }
         }
     }
+
+    // Se decide cada vez que el tab vuelve a verse: este ViewModel vive en la entrada de Home, así un cambio del
+    // interruptor rige sin volver a iniciar sesión.
+    private fun isFullRefresh(): Boolean = isFeatureEnabled(FeatureFlag.QUOTES_FULL_REFRESH)
 
     private suspend fun followQuotes() {
         state.map { it.symbols }.distinctUntilChanged().collectLatest { symbols ->

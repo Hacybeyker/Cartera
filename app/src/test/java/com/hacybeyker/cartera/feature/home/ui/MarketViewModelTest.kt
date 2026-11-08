@@ -2,11 +2,14 @@ package com.hacybeyker.cartera.feature.home.ui
 
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.Money
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.domain.flags.IsFeatureEnabledUseCase
 import com.hacybeyker.cartera.core.domain.market.MarketStreamStatus
 import com.hacybeyker.cartera.core.domain.market.ObserveMarketStreamStatusUseCase
 import com.hacybeyker.cartera.core.domain.market.ObserveQuotesUseCase
 import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioRevisionUseCase
 import com.hacybeyker.cartera.core.domain.portfolio.GetPortfolioUseCase
+import com.hacybeyker.cartera.core.testing.FakeFeatureFlags
 import com.hacybeyker.cartera.core.testing.FakeMarketRepository
 import com.hacybeyker.cartera.core.testing.FakeMarketStream
 import com.hacybeyker.cartera.core.testing.FakePortfolioChanges
@@ -43,13 +46,15 @@ class MarketViewModelTest {
     private val portfolio = FakePortfolioRepository()
     private val changes = FakePortfolioChanges()
     private val stream = FakeMarketStream()
+    private val flags = FakeFeatureFlags()
 
     private fun viewModel() = MarketViewModel(
         loadMarket = LoadMarketUseCase(market, portfolio),
         getPortfolio = GetPortfolioUseCase(portfolio),
         getPortfolioRevision = GetPortfolioRevisionUseCase(changes),
         observeQuotes = ObserveQuotesUseCase(stream),
-        observeStreamStatus = ObserveMarketStreamStatusUseCase(stream)
+        observeStreamStatus = ObserveMarketStreamStatusUseCase(stream),
+        isFeatureEnabled = IsFeatureEnabledUseCase(flags)
     )
 
     private fun usd(value: String) = Money(value.toBigDecimal(), "USD")
@@ -107,6 +112,66 @@ class MarketViewModelTest {
         before.stocks.indices.drop(1).forEach { assertSame(before.stocks[it], after.stocks[it]) }
         assertEquals(usd("1104.40"), after.portfolio?.marketValue)
         assertEquals(before.contentKey, after.contentKey)
+        assertFalse(after.fullRefresh)
+    }
+
+    @Test
+    fun `with quotes_full_refresh every tick brings a new list of new rows with the same values`() = runTest {
+        flags.enabled += FeatureFlag.QUOTES_FULL_REFRESH
+        val viewModel = viewModel()
+        show(viewModel)
+        advanceUntilIdle()
+        val before = viewModel.uiState.value
+        assertTrue(before.fullRefresh)
+
+        stream.prices.emit(testQuote("ANDM", "43.10", change = "1.34"))
+        runCurrent()
+        val after = viewModel.uiState.value
+
+        assertNotSame(before.stocks, after.stocks)
+        assertEquals("43.10", after.stocks[0].price.amount.toPlainString())
+        before.stocks.indices.drop(1).forEach {
+            assertNotSame(before.stocks[it], after.stocks[it])
+            assertEquals(before.stocks[it], after.stocks[it])
+        }
+        assertEquals(usd("1104.40"), after.portfolio?.marketValue)
+        assertEquals(before.contentKey, after.contentKey)
+
+        stream.prices.emit(testQuote("LIMA", "9.90", change = "-0.23"))
+        runCurrent()
+        val again = viewModel.uiState.value
+        assertNotSame(after.stocks, again.stocks)
+        after.stocks.indices.forEach { assertNotSame(after.stocks[it], again.stocks[it]) }
+        assertEquals(after.stocks.filter { it.symbol != "LIMA" }, again.stocks.filter { it.symbol != "LIMA" })
+    }
+
+    @Test
+    fun `both update paths reach the same rows`() {
+        val loaded = MarketUiState(isLoading = false, stocks = TestQuotes.map(StockItem::from))
+        val ticks = listOf(testQuote("ANDM", "43.10", change = "1.34"), testQuote("LIMA", "9.90", change = "-0.23"))
+
+        val perSymbol = ticks.fold(loaded) { state, quote -> state.withQuote(quote, header = null) }
+        val fullRefresh = ticks.fold(loaded.copy(fullRefresh = true)) { state, quote -> state.withQuote(quote, null) }
+
+        assertEquals(perSymbol.stocks, fullRefresh.stocks)
+    }
+
+    @Test
+    fun `the update path is read again each time Mercado is shown`() = runTest {
+        val viewModel = viewModel()
+        show(viewModel)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.fullRefresh)
+
+        flags.enabled += FeatureFlag.QUOTES_FULL_REFRESH
+        viewModel.onAction(MarketAction.Shown)
+        runCurrent()
+        assertTrue(viewModel.uiState.value.fullRefresh)
+
+        flags.enabled -= FeatureFlag.QUOTES_FULL_REFRESH
+        viewModel.onAction(MarketAction.Shown)
+        runCurrent()
+        assertFalse(viewModel.uiState.value.fullRefresh)
     }
 
     @Test
@@ -209,5 +274,7 @@ class MarketViewModelTest {
         val same = state.withQuote(TestQuotes[0], header = null)
         assertSame(state.stocks, same.stocks)
         assertNotSame(state.stocks, state.withQuote(testQuote("ANDM", "1.00"), header = null).stocks)
+        val fullRefresh = state.copy(fullRefresh = true)
+        assertSame(fullRefresh, fullRefresh.withQuote(testQuote("QORI", "1.00"), header = null))
     }
 }

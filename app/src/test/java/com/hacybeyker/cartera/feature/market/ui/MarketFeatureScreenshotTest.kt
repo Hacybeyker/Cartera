@@ -41,6 +41,19 @@ class MarketFeatureScreenshotTest {
         )
     }
 
+    // El mismo golden que stockDetailWithHolding: con chart_live_path, el gráfico se ve igual.
+    @Test
+    @Config(qualifiers = TALL)
+    fun stockDetailWithHoldingLivePath() = compose.captureLightAndDark("accion_contenido_tenencia") {
+        StockDetailContent(
+            symbol = qori.symbol,
+            uiState = previewStockDetailState(qori, TestPortfolio.holdings.single { it.symbol == "QORI" }),
+            onAction = {},
+            onBack = {},
+            chartLivePath = true
+        )
+    }
+
     @Test
     @Config(qualifiers = TALL)
     fun stockDetailWithoutHolding() = compose.captureLightAndDark("accion_sin_tenencia") {

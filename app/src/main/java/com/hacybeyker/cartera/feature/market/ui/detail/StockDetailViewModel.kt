@@ -3,6 +3,8 @@ package com.hacybeyker.cartera.feature.market.ui.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hacybeyker.cartera.core.domain.Outcome
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.domain.flags.IsFeatureEnabledUseCase
 import com.hacybeyker.cartera.core.domain.market.GetPriceHistoryUseCase
 import com.hacybeyker.cartera.core.domain.market.HistoryRange
 import com.hacybeyker.cartera.core.domain.market.MarketStreamStatus
@@ -39,8 +41,12 @@ class StockDetailViewModel @AssistedInject constructor(
     private val observeQuotes: ObserveQuotesUseCase,
     private val observeStreamStatus: ObserveMarketStreamStatusUseCase,
     private val getPortfolio: GetPortfolioUseCase,
-    private val getPortfolioRevision: GetPortfolioRevisionUseCase
+    private val getPortfolioRevision: GetPortfolioRevisionUseCase,
+    isFeatureEnabled: IsFeatureEnabledUseCase
 ) : ViewModel() {
+
+    /** Se decide al abrir el detalle: cambiar el interruptor rige desde el próximo detalle. */
+    val chartLivePath: Boolean = isFeatureEnabled(FeatureFlag.CHART_LIVE_PATH)
 
     private val state = MutableStateFlow(StockDetailUiState())
 

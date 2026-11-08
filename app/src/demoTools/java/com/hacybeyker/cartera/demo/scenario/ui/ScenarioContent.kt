@@ -191,6 +191,8 @@ private fun FeatureFlag.labelRes(): Int = when (this) {
     FeatureFlag.MOVEMENTS_FULL_PAGE -> R.string.scenario_movements_full_page
     FeatureFlag.ACCOUNTS_EAGER_REFRESH -> R.string.scenario_accounts_eager_refresh
     FeatureFlag.BREAKDOWN_RICH_TRANSITION -> R.string.scenario_breakdown_rich_transition
+    FeatureFlag.QUOTES_FULL_REFRESH -> R.string.scenario_quotes_full_refresh
+    FeatureFlag.CHART_LIVE_PATH -> R.string.scenario_chart_live_path
 }
 
 @Composable

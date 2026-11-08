@@ -38,6 +38,7 @@
 - Modales propios para saldo insuficiente, destino inexistente y monedas distintas, y errores de validación por campo.
 - Confirmaciones para salir del formulario con datos y para cancelar en la confirmación.
 - Interruptores del cliente, apagados al inicio y con el mismo nombre en BuildConfig, en el escenario, adb, launchApp y la pantalla Escenario: página completa de movimientos (`movements_full_page`), refresco anticipado de cuentas (`accounts_eager_refresh`) y transición enriquecida del desglose (`breakdown_rich_transition`). Release no los puede encender.
+- Interruptores del cliente `quotes_full_refresh` (camino de actualización de Mercado) y `chart_live_path` (camino de dibujo del gráfico del Detalle de acción), apagados al inicio y con el mismo nombre en BuildConfig, en el escenario, adb, launchApp y la pantalla Escenario. Los dos caminos de cada uno se ven igual. Release no los puede encender.
 - Ilustraciones de categoría en `drawable-nodpi`, para la transición enriquecida del desglose.
 - Caché de cuentas en memoria: el formulario la reutiliza y una transferencia la invalida, así al volver al inicio se piden las cuentas una sola vez.
 - Contrato de mercado, portafolio, órdenes, cambio de divisas e ingreso con huella en `api/openapi.yaml`, con sus reglas de negocio, los códigos `INSUFFICIENT_HOLDINGS`, `QUOTE_EXPIRED` e `INVALID_DEVICE` y las cabeceras `X-Demo-Tick-Ms`, `X-Demo-Stream-Drop-S` y `X-Demo-Quote-Ttl-S`.

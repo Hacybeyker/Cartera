@@ -183,11 +183,18 @@ class ScenarioViewModelTest {
         viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.ACCOUNTS_EAGER_REFRESH, true))
         viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.BREAKDOWN_RICH_TRANSITION, true))
         viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.BREAKDOWN_RICH_TRANSITION, false))
+        viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.QUOTES_FULL_REFRESH, true))
+        viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.CHART_LIVE_PATH, true))
         viewModel.onAction(ScenarioAction.SaveClicked)
         advanceUntilIdle()
 
-        assertEquals(setOf(FeatureFlag.ACCOUNTS_EAGER_REFRESH), store.load().flags)
-        assertEquals(setOf(FeatureFlag.ACCOUNTS_EAGER_REFRESH), viewModel.uiState.value.flags)
+        val saved = setOf(
+            FeatureFlag.ACCOUNTS_EAGER_REFRESH,
+            FeatureFlag.QUOTES_FULL_REFRESH,
+            FeatureFlag.CHART_LIVE_PATH
+        )
+        assertEquals(saved, store.load().flags)
+        assertEquals(saved, viewModel.uiState.value.flags)
 
         viewModel.onAction(ScenarioAction.DefaultsClicked)
         advanceUntilIdle()
