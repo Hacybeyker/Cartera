@@ -109,6 +109,40 @@ vuelven a empezar. Con `tick_ms 0` quedan congelados en estos valores:
 - Si cambia `api/tools/generate_market.py`, los fixtures se regeneran con
   `python3 -I api/tools/generate_market.py`.
 
+### Pago de servicios de demo
+
+Veinte empresas por rubro (Electricidad, Agua, Gas, Telefonía, Internet, Cable, Seguros y Educación) en
+`api/fixtures/billers.json`; los recibos de cada una están en `api/fixtures/debts/<billerId>.json`.
+Cuatro traen un cliente de prueba, y las otras dieciséis, de relleno, no tienen ninguno: cualquier código
+da `CUSTOMER_NOT_FOUND`. Las de referencia van primero en su rubro:
+
+| Empresa | Id | Rubro | Código | Recibos pendientes |
+|---|---|---|---|---|
+| Luz del Norte | `BIL-LUZ` | Electricidad | `100200` | 2: S/ 85.40 (oct. 2026) y S/ 92.10 (nov. 2026) |
+| Agua Trujillo | `BIL-AGUA` | Agua | `300400` | 1: S/ 46.80 |
+| Telefonía Andina | `BIL-TEL` | Telefonía | `500600` | 1: S/ 59.90 |
+| Internet Moche | `BIL-NET` | Internet | `700800` | 0 |
+
+- `GET /billers?query=` filtra por nombre o rubro sin distinguir mayúsculas ni tildes. El código de cliente
+  debe cumplir el `customerCodeFormat` de la empresa (422 `VALIDATION_ERROR`); si no existe en ella, 404
+  `CUSTOMER_NOT_FOUND`, y si la empresa no existe, 404 `BILLER_NOT_FOUND`.
+- `GET /billers/{billerId}/debts` acepta `includeHistory=true`: añade el histórico de facturación de los
+  últimos 24 meses, con el detalle por concepto; Luz del Norte lo trae para el código `100200`.
+- La clave de operaciones de Ana es `1234`. El pago de referencia son los dos recibos de Luz del Norte
+  (S/ 177.50) desde Cuenta Gastos: ACC-002 pasa de S/ 2,300.00 a S/ 2,122.50, con el movimiento "Pago de Luz
+  del Norte" (categoría Servicios) y la operación 80000001. Las operaciones de pago tienen su propia
+  numeración, desde 80000001.
+- Casos negativos: el código `999999` da `CUSTOMER_NOT_FOUND`; la clave `0000`, `INVALID_PIN`; pagar de nuevo
+  un recibo ya pagado con otra `Idempotency-Key`, `DEBT_ALREADY_PAID` (un recibo pagado deja de aparecer en
+  la lista); una cuenta en dólares, `CURRENCY_MISMATCH`.
+- `GET /bill-payments/{paymentId}/voucher` responde la constancia en HTML (`text/html`), en español, sin
+  scripts ni ids, con la operación, la empresa, los recibos pagados, el total y el nuevo saldo
+  (`S/ 2,122.50`). Un pago de otra persona o inexistente da 404 `PAYMENT_NOT_FOUND`.
+- Como todo el estado del backend, los recibos pagados, los pagos y su numeración viven en memoria: vuelven
+  a los fixtures con cada proceso, con `RESET_DATA` y con `POST /_demo/reset`.
+- Si cambia `api/tools/generate_billers.py`, los fixtures se regeneran con
+  `python3 -I api/tools/generate_billers.py`.
+
 ### Canal en vivo
 
 `WS /market/stream` (contrato en `api/asyncapi.yaml`) abre con el mismo Bearer de la API: sin token
@@ -497,6 +531,7 @@ devuelve a los valores por defecto. Release no tiene nada de esto.
 | Intervalo de ticks | `--ei tick_ms 0` | ms entre ticks del canal en vivo; 0 = precios congelados | 2000 |
 | Corte del canal | `--ei stream_drop_s 15` | s desde la conexión hasta que el servidor corta el canal; 0 = nunca | 0 |
 | Vigencia de la cotización | `--ei quote_ttl_s 5` | s; rige desde la próxima cotización | 30 |
+| Semilla del teclado de la clave | `--ei pin_pad_seed 7` | entero ≥ 0; 0 = orden fijo 1–9 y 0; es del cliente y no viaja al backend | 0 |
 | Página completa de movimientos | `--ez movements_full_page true` | los movimientos de una cuenta llegan en una sola página completa | `false` |
 | Refresco anticipado de cuentas | `--ez accounts_eager_refresh true` | al volver al inicio tras una transferencia, las cuentas se refrescan de forma anticipada | `false` |
 | Transición enriquecida del desglose | `--ez breakdown_rich_transition true` | el desglose entra con una transición enriquecida y su ilustración a tamaño completo | `false` |
@@ -506,11 +541,15 @@ devuelve a los valores por defecto. Release no tiene nada de esto.
 
 Ids de endpoint: `app_config`, `login`, `me`, `accounts`, `account`, `movements`, `movement`,
 `breakdown`, `transfers`, `market_stocks`, `market_stock`, `market_history`, `market_stream` (el
-handshake del canal en vivo), `portfolio`, `orders`, `fx_rates`, `fx_exchanges`, `biometric_enroll`,
-`biometric_login` y `biometric_delete`.
+handshake del canal en vivo), `portfolio`, `orders`, `fx_rates`, `fx_exchanges`, `billers`,
+`biller_debts`, `bill_payments`, `bill_voucher`, `biometric_enroll`, `biometric_login` y `biometric_delete`.
 
 - `tick_ms` y `stream_drop_s` viajan solo en el handshake del canal en vivo; `quote_ttl_s`, en
   `GET /fx/rates` y en ese handshake. `session_ttl` rige también en el ingreso con huella.
+- `pin_pad_seed` no viaja al backend: el cliente lo lee del escenario guardado cada vez que lo necesita
+  (`PinPadSeed`, con `PinPadSeedSource` como punto de extensión: release no tiene ninguna fuente y rige el
+  orden fijo). Un valor negativo o que no es un entero se rechaza. La pantalla Escenario lo edita en
+  `escenario_pin_pad_seed`.
 
 - Página completa de movimientos y las cuatro filas que la siguen son interruptores del cliente: no
   viajan al backend y tienen el mismo nombre en BuildConfig (`MOVEMENTS_FULL_PAGE`, `ACCOUNTS_EAGER_REFRESH`,

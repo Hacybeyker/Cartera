@@ -37,18 +37,7 @@ class ScenarioViewModel @Inject constructor(
 
     fun onAction(action: ScenarioAction) {
         when (action) {
-            is ScenarioAction.LatencyChanged -> state.update { it.copy(latency = action.value, message = null) }
-            is ScenarioAction.FailureRateChanged -> state.update { it.copy(failureRate = action.value, message = null) }
-            is ScenarioAction.FailureModeSelected -> state.update { it.copy(failureMode = action.mode, message = null) }
-            is ScenarioAction.SessionTtlChanged -> state.update { it.copy(sessionTtl = action.value, message = null) }
-            is ScenarioAction.BackendDownChanged -> state.update { it.copy(backendDown = action.value, message = null) }
-            is ScenarioAction.TickMsChanged -> state.update { it.copy(tickMs = action.value, message = null) }
-            is ScenarioAction.StreamDropChanged -> state.update { it.copy(streamDrop = action.value, message = null) }
-            is ScenarioAction.QuoteTtlChanged -> state.update { it.copy(quoteTtl = action.value, message = null) }
-            is ScenarioAction.FlagChanged -> state.update {
-                val flags = if (action.enabled) it.flags + action.flag else it.flags - action.flag
-                it.copy(flags = flags, message = null)
-            }
+            is ScenarioAction.FieldEdit -> state.update { it.edited(action) }
             ScenarioAction.SaveClicked -> save()
             ScenarioAction.DefaultsClicked -> restoreDefaults()
             ScenarioAction.ResetDataClicked -> resetData()
@@ -65,7 +54,8 @@ class ScenarioViewModel @Inject constructor(
             ScenarioKeys.BACKEND_DOWN to form.backendDown,
             ScenarioKeys.TICK_MS to form.tickMs,
             ScenarioKeys.STREAM_DROP to form.streamDrop,
-            ScenarioKeys.QUOTE_TTL to form.quoteTtl
+            ScenarioKeys.QUOTE_TTL to form.quoteTtl,
+            ScenarioKeys.PIN_PAD_SEED to form.pinPadSeed
         ) + FeatureFlag.entries.associate { it.key to (it in form.flags) }
         viewModelScope.launch {
             val update = withContext(io) { store.update(values) }

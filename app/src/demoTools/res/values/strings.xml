@@ -9,13 +9,15 @@
     <string name="scenario_tick_ms">Intervalo de ticks en ms (0 = precios congelados)</string>
     <string name="scenario_stream_drop">Corte del canal en s desde la conexión (0 = nunca)</string>
     <string name="scenario_quote_ttl">Vigencia de la cotización en s</string>
+    <string name="scenario_bills">Pago de servicios (la semilla no viaja al backend)</string>
+    <string name="scenario_pin_pad_seed">Semilla del teclado (0 = orden fijo)</string>
     <string name="scenario_flags">Interruptores del cliente (no viajan al backend)</string>
     <string name="scenario_movements_full_page">Página completa de movimientos (movements_full_page)</string>
     <string name="scenario_accounts_eager_refresh">Refresco anticipado de cuentas (accounts_eager_refresh)</string>
     <string name="scenario_breakdown_rich_transition">Transición enriquecida del desglose (breakdown_rich_transition)</string>
     <string name="scenario_quotes_full_refresh">Camino de actualización de Mercado (quotes_full_refresh)</string>
     <string name="scenario_chart_live_path">Camino de dibujo del gráfico (chart_live_path)</string>
-    <string name="scenario_endpoints">Endpoints: app_config, login, me, accounts, account, movements, movement, breakdown, transfers, market_stocks, market_stock, market_history, market_stream, portfolio, orders, fx_rates, fx_exchanges, biometric_enroll, biometric_login, biometric_delete.</string>
+    <string name="scenario_endpoints">Endpoints: app_config, login, me, accounts, account, movements, movement, breakdown, transfers, market_stocks, market_stock, market_history, market_stream, portfolio, orders, fx_rates, fx_exchanges, billers, biller_debts, bill_payments, bill_voucher, biometric_enroll, biometric_login, biometric_delete.</string>
     <string name="scenario_save">Guardar</string>
     <string name="scenario_defaults">Valores por defecto</string>
     <string name="scenario_reset_data">Restablecer datos</string>

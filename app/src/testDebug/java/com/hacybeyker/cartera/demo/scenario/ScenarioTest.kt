@@ -20,7 +20,8 @@ class ScenarioTest {
     fun `defaults match the documented values`() {
         assertEquals(
             "latency=default=400 failure_rate=default=0 failure_mode=http_500 session_ttl=900 backend_down=false " +
-                "tick_ms=2000 stream_drop_s=0 quote_ttl_s=30 movements_full_page=false accounts_eager_refresh=false " +
+                "tick_ms=2000 stream_drop_s=0 quote_ttl_s=30 pin_pad_seed=0 movements_full_page=false " +
+                "accounts_eager_refresh=false " +
                 "breakdown_rich_transition=false quotes_full_refresh=false chart_live_path=false",
             Scenario().describe()
         )
@@ -141,6 +142,69 @@ class ScenarioTest {
         assertEquals("0", storage.values["stream_drop_s"])
         assertEquals("5", storage.values["quote_ttl_s"])
         assertEquals(Scenario(tickMs = 0, quoteTtlSeconds = 5), ScenarioStore(storage).load())
+    }
+
+    @Test
+    fun `pin pad seed arrives as an adb integer or launch text`() {
+        val fromAdb = ScenarioParser.apply(Scenario(), mapOf("pin_pad_seed" to 7))
+        val fromLaunch = ScenarioParser.apply(Scenario(), mapOf("pin_pad_seed" to " 42 "))
+
+        assertEquals(Scenario(pinPadSeed = 7), fromAdb.scenario)
+        assertEquals(Scenario(pinPadSeed = 42), fromLaunch.scenario)
+        assertTrue(fromAdb.rejected.isEmpty() && fromAdb.ignoredKeys.isEmpty())
+        assertTrue(fromAdb.describe().contains("quote_ttl_s=30 pin_pad_seed=7"))
+    }
+
+    @Test
+    fun `invalid pin pad seeds are rejected and keep the previous one, and defaults go back to the fixed order`() {
+        val current = Scenario(pinPadSeed = 7)
+
+        val update = ScenarioParser.apply(current, mapOf("pin_pad_seed" to "siete"))
+
+        assertEquals(current, update.scenario)
+        assertEquals(listOf("pin_pad_seed=siete"), update.rejected)
+        assertEquals(listOf("pin_pad_seed=-1"), ScenarioParser.apply(current, mapOf("pin_pad_seed" to -1)).rejected)
+        assertEquals(listOf("pin_pad_seed=1.5"), ScenarioParser.apply(current, mapOf("pin_pad_seed" to "1.5")).rejected)
+        assertEquals(0, ScenarioParser.apply(current, mapOf("defaults" to true)).scenario.pinPadSeed)
+        assertEquals(7, ScenarioParser.apply(current, mapOf("latency" to "0")).scenario.pinPadSeed)
+        assertEquals(0, ScenarioParser.apply(current, mapOf("pin_pad_seed" to 0)).scenario.pinPadSeed)
+    }
+
+    @Test
+    fun `the stored pin pad seed survives and feeds the client at once`() {
+        val storage = FakeScenarioStorage()
+        val store = ScenarioStore(storage)
+        val source = ScenarioPinPadSeedSource(store)
+        assertEquals(0, source.seed())
+
+        store.update(mapOf("pin_pad_seed" to 7))
+
+        assertEquals("7", storage.values["pin_pad_seed"])
+        assertEquals(7, source.seed())
+        assertEquals(7, ScenarioStore(storage).load().pinPadSeed)
+
+        store.update(mapOf("defaults" to true))
+
+        assertEquals(0, source.seed())
+    }
+
+    @Test
+    fun `new endpoint ids take latency and failure rate per endpoint`() {
+        val scenario = ScenarioParser.apply(
+            Scenario(),
+            mapOf(
+                "latency" to "billers=2000,biller_debts=1500,bill_payments=900,bill_voucher=700",
+                "failure_rate" to "bill_payments=100"
+            )
+        )
+
+        assertTrue(scenario.rejected.isEmpty())
+        assertEquals(2000L, scenario.scenario.latencyMs.valueFor("billers"))
+        assertEquals(1500L, scenario.scenario.latencyMs.valueFor("biller_debts"))
+        assertEquals(900L, scenario.scenario.latencyMs.valueFor("bill_payments"))
+        assertEquals(700L, scenario.scenario.latencyMs.valueFor("bill_voucher"))
+        assertEquals(100, scenario.scenario.failureRate.valueFor("bill_payments"))
+        assertEquals(0, scenario.scenario.failureRate.valueFor("billers"))
     }
 
     @Test

@@ -23,6 +23,7 @@ object ScenarioParser {
         ScenarioKeys.TICK_MS,
         ScenarioKeys.STREAM_DROP,
         ScenarioKeys.QUOTE_TTL,
+        ScenarioKeys.PIN_PAD_SEED,
         ScenarioKeys.DEFAULTS
     ) + FeatureFlag.entries.map { it.key }
     private val ENDPOINT_IDS = Endpoint.entries.filter { it != Endpoint.DEMO_RESET }.map { it.id }.toSet()
@@ -60,6 +61,7 @@ object ScenarioParser {
             quoteTtlSeconds = field(ScenarioKeys.QUOTE_TTL, base.quoteTtlSeconds) { raw ->
                 integer(raw)?.takeIf { it > 0 }
             },
+            pinPadSeed = field(ScenarioKeys.PIN_PAD_SEED, base.pinPadSeed) { raw -> integer(raw)?.takeIf { it >= 0 } },
             flags = FeatureFlag.entries.filter { flag -> field(flag.key, flag in base.flags, ::bool) }.toSet()
         )
         return ScenarioUpdate(scenario, rejected, values.keys - KNOWN_KEYS)

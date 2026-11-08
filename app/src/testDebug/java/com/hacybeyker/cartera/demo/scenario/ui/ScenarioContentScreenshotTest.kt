@@ -28,7 +28,8 @@ class ScenarioContentScreenshotTest {
                 sessionTtl = "900",
                 tickMs = "2000",
                 streamDrop = "0",
-                quoteTtl = "30"
+                quoteTtl = "30",
+                pinPadSeed = "0"
             ),
             onAction = {},
             onBack = {}
@@ -47,6 +48,7 @@ class ScenarioContentScreenshotTest {
                 tickMs = "0",
                 streamDrop = "15",
                 quoteTtl = "5",
+                pinPadSeed = "7",
                 flags = setOf(FeatureFlag.MOVEMENTS_FULL_PAGE),
                 message = ScenarioMessage.Rejected(listOf("session_ttl=0"))
             ),
@@ -67,6 +69,7 @@ class ScenarioContentScreenshotTest {
                 tickMs = "250",
                 streamDrop = "0",
                 quoteTtl = "30",
+                pinPadSeed = "7",
                 flags = setOf(FeatureFlag.QUOTES_FULL_REFRESH, FeatureFlag.CHART_LIVE_PATH)
             ),
             onAction = {},

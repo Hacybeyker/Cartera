@@ -55,6 +55,33 @@ class ScenarioViewModelTest {
         assertEquals("2000", state.tickMs)
         assertEquals("0", state.streamDrop)
         assertEquals("30", state.quoteTtl)
+        assertEquals("0", state.pinPadSeed)
+    }
+
+    @Test
+    fun `the pin pad seed is saved like the adb extra`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onAction(ScenarioAction.PinPadSeedChanged("7"))
+        assertEquals(null, viewModel.uiState.value.message)
+        viewModel.onAction(ScenarioAction.SaveClicked)
+        advanceUntilIdle()
+
+        assertEquals(Scenario(pinPadSeed = 7), store.load())
+        assertEquals("7", viewModel.uiState.value.pinPadSeed)
+        assertEquals(ScenarioMessage.Saved, viewModel.uiState.value.message)
+
+        viewModel.onAction(ScenarioAction.PinPadSeedChanged("-3"))
+        viewModel.onAction(ScenarioAction.SaveClicked)
+        advanceUntilIdle()
+
+        assertEquals(ScenarioMessage.Rejected(listOf("pin_pad_seed=-3")), viewModel.uiState.value.message)
+        assertEquals("7", viewModel.uiState.value.pinPadSeed)
+
+        viewModel.onAction(ScenarioAction.DefaultsClicked)
+        advanceUntilIdle()
+        assertEquals("0", viewModel.uiState.value.pinPadSeed)
     }
 
     @Test

@@ -13,12 +13,17 @@ enum class ProblemCode(val status: Int, val title: String) {
     SESSION_EXPIRED(401, "Sesión expirada"),
     UNAUTHORIZED(401, "No autorizado"),
     NOT_FOUND(404, "Recurso no encontrado"),
+    BILLER_NOT_FOUND(404, "Empresa no encontrada"),
+    CUSTOMER_NOT_FOUND(404, "Cliente no encontrado"),
+    PAYMENT_NOT_FOUND(404, "Pago no encontrado"),
     VALIDATION_ERROR(422, "Datos inválidos"),
     INSUFFICIENT_FUNDS(422, "Saldo insuficiente"),
     DESTINATION_NOT_FOUND(422, "Cuenta de destino no encontrada"),
     CURRENCY_MISMATCH(422, "Las monedas no coinciden"),
     INSUFFICIENT_HOLDINGS(422, "Tenencia insuficiente"),
     QUOTE_EXPIRED(422, "Cotización vencida"),
+    INVALID_PIN(422, "Clave de operaciones inválida"),
+    DEBT_ALREADY_PAID(422, "Recibo ya pagado"),
     INTERNAL_ERROR(500, "Error interno"),
     SERVICE_UNAVAILABLE(503, "Servicio no disponible")
 }

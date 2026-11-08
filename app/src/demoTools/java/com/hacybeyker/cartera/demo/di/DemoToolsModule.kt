@@ -4,9 +4,11 @@ import android.content.Context
 import com.hacybeyker.cartera.BuildConfig
 import com.hacybeyker.cartera.core.data.flags.FeatureFlagSource
 import com.hacybeyker.cartera.core.data.network.ExtraInterceptors
+import com.hacybeyker.cartera.core.data.pinpad.PinPadSeedSource
 import com.hacybeyker.cartera.demo.scenario.DemoResetClient
 import com.hacybeyker.cartera.demo.scenario.DemoScenarioInterceptor
 import com.hacybeyker.cartera.demo.scenario.ScenarioFeatureFlagSource
+import com.hacybeyker.cartera.demo.scenario.ScenarioPinPadSeedSource
 import com.hacybeyker.cartera.demo.scenario.ScenarioStore
 import com.hacybeyker.cartera.demo.scenario.ui.ScenarioNavKey
 import com.hacybeyker.cartera.demo.scenario.ui.ScenarioScreen
@@ -40,6 +42,10 @@ object DemoToolsModule {
     @Provides
     @IntoSet
     fun provideScenarioFeatureFlags(store: ScenarioStore): FeatureFlagSource = ScenarioFeatureFlagSource(store)
+
+    @Provides
+    @IntoSet
+    fun providePinPadSeedSource(store: ScenarioStore): PinPadSeedSource = ScenarioPinPadSeedSource(store)
 
     // Sin los interceptores de la app: restablecer datos no lleva cabeceras de escenario ni token.
     @Provides

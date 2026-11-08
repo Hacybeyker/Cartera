@@ -48,6 +48,44 @@ class DemoScenarioInterceptorTest {
     }
 
     @Test
+    fun `the bill payment endpoints get their own latency and failure rate`() {
+        ScenarioStore(storage).update(
+            mapOf(
+                "latency" to "default=400,billers=2000,biller_debts=1500,bill_payments=900,bill_voucher=700",
+                "failure_rate" to "bill_payments=100"
+            )
+        )
+
+        val billers = send("GET", "billers")
+        val debts = send("GET", "billers/BIL-LUZ/debts")
+        val payment = send("POST", "bill-payments")
+        val voucher = send("GET", "bill-payments/PAY-000001/voucher")
+
+        assertEquals(
+            listOf("2000", "1500", "900", "700"),
+            listOf(billers, debts, payment, voucher).map {
+                it.headers["X-Demo-Latency-Ms"]
+            }
+        )
+        assertEquals(
+            listOf("0", "0", "100", "0"),
+            listOf(billers, debts, payment, voucher).map {
+                it.headers["X-Demo-Failure-Rate"]
+            }
+        )
+    }
+
+    @Test
+    fun `the pin pad seed never travels to the backend`() {
+        ScenarioStore(storage).update(mapOf("pin_pad_seed" to 7))
+
+        val payment = send("POST", "bill-payments")
+
+        assertNull(payment.headers["X-Demo-Pin-Pad-Seed"])
+        assertEquals(emptyList<String>(), payment.headers.names().filter { it.contains("seed", ignoreCase = true) })
+    }
+
+    @Test
     fun `session ttl travels only with the login`() {
         ScenarioStore(storage).update(mapOf("session_ttl" to 60))
 

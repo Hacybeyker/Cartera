@@ -28,6 +28,10 @@ class EndpointAndScenarioTest {
             ("POST" to "orders") to Endpoint.Match(Endpoint.ORDERS, ""),
             ("GET" to "fx/rates") to Endpoint.Match(Endpoint.FX_RATES, ""),
             ("POST" to "fx/exchanges") to Endpoint.Match(Endpoint.FX_EXCHANGES, ""),
+            ("GET" to "billers") to Endpoint.Match(Endpoint.BILLERS, ""),
+            ("GET" to "billers/BIL-LUZ/debts") to Endpoint.Match(Endpoint.BILLER_DEBTS, "BIL-LUZ"),
+            ("POST" to "bill-payments") to Endpoint.Match(Endpoint.BILL_PAYMENTS, ""),
+            ("GET" to "bill-payments/PAY-000001/voucher") to Endpoint.Match(Endpoint.BILL_VOUCHER, "PAY-000001"),
             ("POST" to "auth/biometric/enroll") to Endpoint.Match(Endpoint.BIOMETRIC_ENROLL, ""),
             ("POST" to "auth/biometric/login") to Endpoint.Match(Endpoint.BIOMETRIC_LOGIN, ""),
             ("DELETE" to "auth/biometric") to Endpoint.Match(Endpoint.BIOMETRIC_DELETE, ""),
@@ -46,6 +50,10 @@ class EndpointAndScenarioTest {
         assertNull(Endpoint.resolve("GET", "/api/v2/accounts"))
         assertNull(Endpoint.resolve("GET", "/api/v1/auth/biometric"))
         assertNull(Endpoint.resolve("POST", "/api/v1/market/stocks/ANDM"))
+        assertNull(Endpoint.resolve("GET", "/api/v1/billers/BIL-LUZ"))
+        assertNull(Endpoint.resolve("POST", "/api/v1/billers/BIL-LUZ/debts"))
+        assertNull(Endpoint.resolve("GET", "/api/v1/bill-payments"))
+        assertNull(Endpoint.resolve("GET", "/api/v1/bill-payments/PAY-000001"))
     }
 
     @Test
@@ -54,7 +62,8 @@ class EndpointAndScenarioTest {
             listOf(
                 "app_config", "login", "me", "accounts", "account", "movements", "movement", "breakdown", "transfers",
                 "market_stocks", "market_stock", "market_history", "market_stream", "portfolio", "orders",
-                "fx_rates", "fx_exchanges", "biometric_enroll", "biometric_login", "biometric_delete"
+                "fx_rates", "fx_exchanges", "billers", "biller_debts", "bill_payments", "bill_voucher",
+                "biometric_enroll", "biometric_login", "biometric_delete"
             ),
             Endpoint.entries.filter { it != Endpoint.DEMO_RESET }.map { it.id }
         )

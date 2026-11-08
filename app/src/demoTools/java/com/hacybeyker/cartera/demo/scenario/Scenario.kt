@@ -22,6 +22,8 @@ data class Scenario(
     val tickMs: Int = DemoScenario.DEFAULT_TICK_MS,
     val streamDropSeconds: Int = 0,
     val quoteTtlSeconds: Int = DemoScenario.DEFAULT_QUOTE_TTL_SECONDS,
+    /** Semilla del orden del teclado de la clave; es del cliente y no viaja al backend. 0 = orden fijo 1–9, 0. */
+    val pinPadSeed: Int = 0,
     /** Interruptores del cliente encendidos; no viajan al backend. */
     val flags: Set<FeatureFlag> = emptySet()
 ) {
@@ -33,7 +35,8 @@ data class Scenario(
         ScenarioKeys.BACKEND_DOWN to backendDown.toString(),
         ScenarioKeys.TICK_MS to tickMs.toString(),
         ScenarioKeys.STREAM_DROP to streamDropSeconds.toString(),
-        ScenarioKeys.QUOTE_TTL to quoteTtlSeconds.toString()
+        ScenarioKeys.QUOTE_TTL to quoteTtlSeconds.toString(),
+        ScenarioKeys.PIN_PAD_SEED to pinPadSeed.toString()
     ) + FeatureFlag.entries.associate { it.key to (it in flags).toString() }
 
     fun describe(): String = toValues().entries.joinToString(" ") { (key, value) -> "$key=$value" }
@@ -53,5 +56,6 @@ object ScenarioKeys {
     const val TICK_MS = "tick_ms"
     const val STREAM_DROP = "stream_drop_s"
     const val QUOTE_TTL = "quote_ttl_s"
+    const val PIN_PAD_SEED = "pin_pad_seed"
     const val DEFAULTS = "defaults"
 }

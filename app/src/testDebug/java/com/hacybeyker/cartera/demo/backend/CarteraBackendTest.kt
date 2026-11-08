@@ -169,6 +169,93 @@ class CarteraBackendTest {
         }
     }
 
+    @Test
+    fun `bill payment endpoints follow the same latency and failure rules`() {
+        val headers = mapOf("X-Demo-Failure-Rate" to "100", "X-Demo-Latency-Ms" to "250")
+
+        val payment = backend.handle(BackendRequest("POST", "/api/v1/bill-payments", headers = headers))
+        val billers = backend.handle(BackendRequest("GET", "/api/v1/billers", headers = headers))
+        val voucher = backend.handle(
+            BackendRequest("GET", "/api/v1/bill-payments/PAY-000001/voucher", headers = headers)
+        )
+        val down = backend.handle(
+            BackendRequest(
+                "GET",
+                "/api/v1/billers/BIL-LUZ/debts",
+                headers = mapOf("X-Demo-Backend-Down" to "true")
+            )
+        )
+
+        listOf(payment, billers, voucher).forEach {
+            assertEquals(500, (it.outcome as Outcome.Respond).response.status)
+            assertEquals(250L, it.latencyMs)
+        }
+        assertEquals(503, (down.outcome as Outcome.Respond).response.status)
+    }
+
+    @Test
+    fun `a payment and its voucher travel over http with the right content types`() {
+        val token = login()
+        val payBody = billBody()
+        val pay = authorized("bill-payments", token).newBuilder()
+            .header("Idempotency-Key", "http-1")
+            .post(payBody.toRequestBody("application/json".toMediaType()))
+            .build()
+
+        val paymentId = client.newCall(pay).execute().use { response ->
+            assertEquals(201, response.code)
+            assertEquals("application/json; charset=utf-8", response.header("Content-Type"))
+            Regex(""""paymentId":"([^"]+)"""").find(response.body.string())!!.groupValues[1]
+        }
+        client.newCall(authorized("bill-payments/$paymentId/voucher", token)).execute().use { response ->
+            val html = response.body.string()
+            assertEquals(200, response.code)
+            assertEquals("text/html; charset=utf-8", response.header("Content-Type"))
+            assertTrue(">S/ 2,122.50<" in html)
+            assertTrue(">80000001<" in html)
+        }
+        client.newCall(authorized("bill-payments/PAY-999999/voucher", token)).execute().use { response ->
+            assertEquals(404, response.code)
+            assertEquals("application/problem+json; charset=utf-8", response.header("Content-Type"))
+        }
+        assertTrue(logs.any { it.startsWith("POST /api/v1/bill-payments 201 ") })
+        assertTrue(logs.any { it.startsWith("GET /api/v1/bill-payments/$paymentId/voucher 200 ") })
+    }
+
+    @Test
+    fun `the history is sent only when asked and measures at least 150 kb`() {
+        val token = login()
+        val debts = authorized("billers/BIL-LUZ/debts", token).let { request ->
+            request.newBuilder()
+                .url(request.url.newBuilder().addQueryParameter("customerCode", "100200").build())
+                .build()
+        }
+        val withHistory = debts.newBuilder()
+            .url(debts.url.newBuilder().addQueryParameter("includeHistory", "true").build())
+            .build()
+
+        val plainSize = client.newCall(debts).execute().use { it.body.bytes().size }
+        val historySize = client.newCall(withHistory).execute().use { it.body.bytes().size }
+
+        assertTrue(plainSize < 1_000)
+        assertTrue(historySize > 150_000)
+    }
+
+    private fun login(): String {
+        val request = Request.Builder()
+            .url(backend.baseUrl.resolve("auth/login")!!)
+            .post(
+                """{"username":"ana.torres","password":"Cartera2026"}""".toRequestBody("application/json".toMediaType())
+            )
+            .build()
+        return client.newCall(request).execute().use { response ->
+            Regex(""""accessToken":"([^"]+)"""").find(response.body.string())!!.groupValues[1]
+        }
+    }
+
+    private fun authorized(path: String, token: String) =
+        request(path).newBuilder().header("Authorization", "Bearer $token").build()
+
     private fun isOk(handled: Handled) = (handled.outcome as? Outcome.Respond)?.response?.status == 200
 
     private fun request(path: String) = Request.Builder().url(backend.baseUrl.resolve(path)!!).build()

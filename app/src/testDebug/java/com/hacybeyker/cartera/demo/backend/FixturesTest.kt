@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.demo.backend
 
+import java.io.File
 import java.math.BigDecimal
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
@@ -7,6 +8,8 @@ import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+
+private val REFERENCE_BILLERS = setOf("BIL-LUZ", "BIL-AGUA", "BIL-TEL", "BIL-NET")
 
 class FixturesTest {
     private val catalog = FixtureCatalog(fileFixtures)
@@ -147,6 +150,100 @@ class FixturesTest {
             ),
             portfolio.holdings
         )
+    }
+
+    @Test
+    fun `billers are twenty, the reference ones first in their category`() {
+        val billers = catalog.billers
+
+        assertEquals(20, billers.size)
+        assertEquals(billers.size, billers.map { it.id }.toSet().size)
+        assertEquals(
+            listOf(
+                Biller("BIL-LUZ", "Luz del Norte", "Electricidad", "^\\d{6}$"),
+                Biller("BIL-AGUA", "Agua Trujillo", "Agua", "^\\d{6}$"),
+                Biller("BIL-TEL", "Telefonía Andina", "Telefonía", "^\\d{6}$"),
+                Biller("BIL-NET", "Internet Moche", "Internet", "^\\d{6}$")
+            ),
+            billers.groupBy { it.category }.values.map { it.first() }.filter { it.id in REFERENCE_BILLERS }
+        )
+        assertEquals(
+            listOf("Electricidad", "Agua", "Gas", "Telefonía", "Internet", "Cable", "Seguros", "Educación"),
+            billers.map { it.category }.distinct()
+        )
+        assertTrue(billers.all { it.name.isNotBlank() && it.customerCodeFormat.startsWith("^") })
+    }
+
+    @Test
+    fun `reference customers and receipts match the reference data`() {
+        fun pending(billerId: String) = catalog.customers(billerId).single().let { customer ->
+            Triple(customer.code, customer.name, customer.debts.map { it.period to it.amount.toPlainString() })
+        }
+
+        assertEquals(
+            Triple("100200", "Ana Torres", listOf("2026-10" to "85.40", "2026-11" to "92.10")),
+            pending("BIL-LUZ")
+        )
+        assertEquals(Triple("300400", "Familia Torres", listOf("2026-10" to "46.80")), pending("BIL-AGUA"))
+        assertEquals(Triple("500600", "Ana Torres", listOf("2026-10" to "59.90")), pending("BIL-TEL"))
+        assertEquals(Triple("700800", "Ana Torres", emptyList<Pair<String, String>>()), pending("BIL-NET"))
+        catalog.billers.filter { it.id in REFERENCE_BILLERS }.forEach { biller ->
+            assertTrue(biller.id, biller.accepts(catalog.customers(biller.id).single().code))
+        }
+    }
+
+    @Test
+    fun `filler companies have a receipts file without customers`() {
+        val fillers = catalog.billers.filter { it.id !in REFERENCE_BILLERS }
+
+        assertEquals(16, fillers.size)
+        fillers.forEach { assertTrue(it.id, catalog.customers(it.id).isEmpty()) }
+    }
+
+    @Test
+    fun `receipt ids are unique and every receipt is in soles with two decimals`() {
+        val debts = catalog.billers.flatMap { biller -> catalog.customers(biller.id).flatMap { it.debts } }
+
+        assertEquals(4, debts.size)
+        assertEquals(debts.size, debts.map { it.id }.toSet().size)
+        assertTrue(debts.all { it.currency == "PEN" && it.amount.scale() == 2 && it.amount.signum() > 0 })
+        assertTrue(debts.all { Regex("""\d{4}-\d{2}""").matches(it.period) })
+    }
+
+    @Test
+    fun `luz del norte history covers twenty four months and every month adds up with igv`() {
+        val history = catalog.customers("BIL-LUZ").single().history.map { it.jsonObject }
+
+        assertEquals(24, history.size)
+        assertEquals("2024-10", history.first().string("period"))
+        assertEquals("2026-09", history.last().string("period"))
+        assertEquals(history.map { it.string("period") }.sorted(), history.map { it.string("period") })
+        history.forEach { month ->
+            val lines = month.getValue("lines").jsonArray.map { it.jsonObject }
+            val total = lines.sumOf { value(it.obj("amount")) }
+
+            assertEquals(month.string("period"), value(month.obj("amount")), total)
+            assertTrue(month.string("period"), lines.size > 50)
+            assertTrue(month.string("period"), lines.all { it.string("detail").isNotBlank() })
+            assertEquals("IGV (18 %)", lines.last().string("concept"))
+            assertTrue(month.string("paidAt").endsWith("-05:00"))
+        }
+        assertTrue(history.all { it.obj("amount").string("currency") == "PEN" })
+    }
+
+    @Test
+    fun `only luz del norte keeps history and its file measures at least 150 kb`() {
+        val withHistory = catalog.billers.filter { biller ->
+            catalog.customers(biller.id).any { it.history.isNotEmpty() }
+        }.map { it.id }
+
+        assertEquals(listOf("BIL-LUZ"), withHistory)
+        assertTrue(File(fixturesDir, "debts/BIL-LUZ.json").length() > 150_000)
+    }
+
+    @Test
+    fun `the test user has the operations pin`() {
+        assertEquals("1234", catalog.users.single().string("operationsPin"))
     }
 
     private fun value(money: JsonObject) = BigDecimal(money.string("value"))

@@ -15,6 +15,7 @@ object ScenarioTestTags {
     const val TICK_MS = "escenario_${ScenarioKeys.TICK_MS}"
     const val STREAM_DROP = "escenario_${ScenarioKeys.STREAM_DROP}"
     const val QUOTE_TTL = "escenario_${ScenarioKeys.QUOTE_TTL}"
+    const val PIN_PAD_SEED = "escenario_${ScenarioKeys.PIN_PAD_SEED}"
     const val SAVE = "escenario_guardar"
     const val DEFAULTS = "escenario_valores_defecto"
     const val RESET_DATA = "escenario_restablecer_datos"

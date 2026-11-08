@@ -52,15 +52,21 @@ info:
 
     Las de latencia y fallos aplican igual a todos los endpoints, incluido el handshake del canal.
     `POST /_demo/reset` no aplica ninguna. El estado (saldos, movimientos, tenencias, precios vigentes,
-    cotizaciones e idempotencia) vive en memoria y vuelve a los fixtures al reiniciar el proceso o con
+    cotizaciones, recibos pagados e idempotencia) vive en memoria y vuelve a los fixtures al reiniciar el proceso o con
     ese endpoint. La excepción son los dispositivos registrados para ingresar con huella: sobreviven al
     reinicio del proceso (el ingreso con huella sirve en los arranques siguientes) y solo los borran
     `POST /_demo/reset`, `DELETE /auth/biometric` o borrar los datos de la app.
 
-    **Idempotencia.** `POST /transfers`, `POST /orders` y `POST /fx/exchanges` exigen
-    `Idempotency-Key`. La clave vale por usuario y por operación: repetirla devuelve la misma
+    **Idempotencia.** `POST /transfers`, `POST /orders`, `POST /fx/exchanges` y `POST /bill-payments`
+    exigen `Idempotency-Key`. La clave vale por usuario y por operación: repetirla devuelve la misma
     respuesta 201 sin volver a ejecutar, aunque cambie el cuerpo. Las respuestas de error no se
     guardan, así que la misma clave se puede reintentar.
+
+    **Pago de servicios.** Veinte empresas por rubro (`GET /billers`). Cada una publica el formato de
+    su código de cliente (`customerCodeFormat`, una expresión regular) y, por código, los recibos
+    pendientes en soles (`GET /billers/{billerId}/debts`). Un recibo pagado deja de aparecer. El pago
+    exige la clave de operaciones de la persona (`INVALID_PIN`) y deja una constancia en HTML
+    (`GET /bill-payments/{paymentId}/voucher`). Los montos del pago son `Money` en PEN.
 servers:
   - url: http://127.0.0.1:8765/api/v1
     description: Backend embebido (debug y demo)
@@ -79,6 +85,7 @@ tags:
   - name: portfolio
   - name: orders
   - name: fx
+  - name: bills
   - name: biometric
   - name: demo
 paths:
@@ -498,6 +505,156 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /billers:
+    get:
+      tags: [bills]
+      operationId: listBillers
+      summary: Empresas de servicios, por rubro.
+      description: |
+        Las empresas salen en el orden de sus rubros. `query` filtra por nombre o rubro, sin distinguir
+        mayúsculas ni tildes: cada palabra debe aparecer en el nombre o en el rubro. Sin `query` salen todas.
+      parameters:
+        - name: query
+          in: query
+          description: Texto a buscar en el nombre o el rubro de la empresa.
+          schema: { type: string, examples: ["luz"] }
+      responses:
+        "200":
+          description: Empresas.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillerList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /billers/{billerId}/debts:
+    get:
+      tags: [bills]
+      operationId: listBillerDebts
+      summary: Recibos pendientes de un cliente de una empresa.
+      description: |
+        Validado en este orden:
+        1. La empresa existe (404 `BILLER_NOT_FOUND`).
+        2. `customerCode` cumple el `customerCodeFormat` de la empresa e `includeHistory` es `true` o
+           `false` (422 `VALIDATION_ERROR`, un elemento en `errors[]` por campo).
+        3. El código existe en esa empresa (404 `CUSTOMER_NOT_FOUND`).
+
+        Los recibos ya pagados no aparecen. Un cliente sin recibos pendientes da 200 con `debts: []`.
+
+        Con `includeHistory=true` la respuesta añade `history`: el histórico de facturación de los últimos
+        24 meses, del más antiguo al más reciente, con el detalle por concepto de cada mes. Si la
+        empresa no lleva histórico del cliente, `history` viene vacío. Sin el parámetro, o con `false`,
+        el campo no se envía.
+      parameters:
+        - $ref: "#/components/parameters/BillerId"
+        - name: customerCode
+          in: query
+          required: true
+          description: Código del cliente en la empresa; debe cumplir su `customerCodeFormat`.
+          schema: { type: string, examples: ["100200"] }
+        - name: includeHistory
+          in: query
+          description: Añade el histórico de facturación de los últimos 24 meses.
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Recibos pendientes.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillerDebts" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: "`BILLER_NOT_FOUND` o `CUSTOMER_NOT_FOUND` (el código no existe en esa empresa)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          description: "`VALIDATION_ERROR` (con `errors[]`): campos `customerCode` e `includeHistory`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /bill-payments:
+    post:
+      tags: [bills]
+      operationId: createBillPayment
+      summary: Paga recibos de una empresa con una cuenta propia en soles.
+      description: |
+        **Regla de negocio**, validada en este orden:
+        1. `Idempotency-Key` presente y cuerpo válido: `billerId` existente, `customerCode` con el formato
+           de la empresa, `debtIds` con al menos un id de recibo sin repetir, `accountId` y `pin` de
+           4 dígitos (`VALIDATION_ERROR`).
+        2. La cuenta es propia (`VALIDATION_ERROR`, campo `accountId`) y está en soles (`CURRENCY_MISMATCH`).
+        3. `pin` es la clave de operaciones de la persona (`INVALID_PIN`).
+        4. El código existe en la empresa y todos los recibos son de ese cliente (`VALIDATION_ERROR`,
+           campos `customerCode` y `debtIds`), y ninguno está pagado (`DEBT_ALREADY_PAID`; no se cobra
+           ninguno).
+        5. Total ≤ saldo disponible de la cuenta (`INSUFFICIENT_FUNDS`).
+
+        Si pasa, se debita el total de la cuenta, los recibos quedan pagados y se agrega un movimiento
+        `SERVICES` `DEBIT` ("Pago de <empresa>") al inicio de la cuenta, con un recibo por línea de
+        desglose. Sin comisiones ni impuestos. El número de operación es consecutivo, desde `80000001`.
+
+        Un `Idempotency-Key` repetido devuelve la misma respuesta 201 sin volver a cobrar. Las
+        respuestas de error no se guardan: el mismo key se puede reintentar.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BillPaymentRequest" }
+      responses:
+        "201":
+          description: Pago hecho.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BillPaymentResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422":
+          description: |
+            `VALIDATION_ERROR` (con `errors[]`), `CURRENCY_MISMATCH`, `INVALID_PIN`,
+            `DEBT_ALREADY_PAID` o `INSUFFICIENT_FUNDS`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /bill-payments/{paymentId}/voucher:
+    get:
+      tags: [bills]
+      operationId: getBillPaymentVoucher
+      summary: Constancia de un pago, en HTML.
+      description: |
+        Una página HTML simple y semántica, sin scripts, en español: número de operación, fecha, empresa,
+        cliente, cuenta de cargo, los recibos pagados (período e importe), el total y el saldo disponible
+        que dejó el pago. Los montos van con formato de soles (`S/ 2,122.50`). La constancia no cambia
+        aunque la cuenta se mueva después.
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Constancia.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            text/html:
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: "`PAYMENT_NOT_FOUND`: el pago no existe o no es de la persona."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/biometric/enroll:
     post:
       tags: [biometric]
@@ -593,6 +750,16 @@ components:
       in: header
       description: Solo entornos de demo. Vigencia en segundos de la cotización emitida.
       schema: { type: integer, minimum: 1, default: 30, examples: [5] }
+    BillerId:
+      name: billerId
+      in: path
+      required: true
+      schema: { type: string, examples: ["BIL-LUZ"] }
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema: { type: string, examples: ["PAY-000001"] }
     Symbol:
       name: symbol
       in: path
@@ -963,6 +1130,113 @@ components:
           description: El del origen y el del destino, en ese orden.
           items: { type: string }
           examples: [["MOV-003-X0001", "MOV-002-X0001"]]
+    Biller:
+      type: object
+      required: [id, name, category, customerCodeFormat]
+      properties:
+        id: { type: string, examples: ["BIL-LUZ"] }
+        name: { type: string, examples: ["Luz del Norte"] }
+        category:
+          type: string
+          description: Rubro de la empresa.
+          examples: ["Electricidad"]
+        customerCodeFormat:
+          type: string
+          description: Expresión regular que debe cumplir el código de cliente.
+          examples: ["^\\d{6}$"]
+    BillerList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Biller" }
+    BillDebt:
+      type: object
+      required: [id, period, dueDate, amount]
+      properties:
+        id: { type: string, examples: ["DEB-LUZ-202610"] }
+        period: { type: string, pattern: "^\\d{4}-(0[1-9]|1[0-2])$", examples: ["2026-10"] }
+        dueDate: { type: string, format: date, examples: ["2026-11-12"] }
+        amount: { $ref: "#/components/schemas/Money" }
+    BillHistoryLine:
+      type: object
+      required: [concept, amount, detail]
+      properties:
+        concept: { type: string, examples: ["Cargo fijo mensual"] }
+        amount: { $ref: "#/components/schemas/Money" }
+        detail: { type: string, examples: ["Cargo por cliente"] }
+    BillHistoryMonth:
+      type: object
+      description: Un mes facturado y pagado; `amount` es la suma de `lines`.
+      required: [period, amount, paidAt, lines]
+      properties:
+        period: { type: string, pattern: "^\\d{4}-(0[1-9]|1[0-2])$", examples: ["2026-09"] }
+        amount: { $ref: "#/components/schemas/Money" }
+        paidAt: { type: string, format: date-time }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/BillHistoryLine" }
+    BillerDebts:
+      type: object
+      required: [customerName, debts]
+      properties:
+        customerName: { type: string, examples: ["Ana Torres"] }
+        debts:
+          type: array
+          description: Recibos pendientes, del más antiguo al más reciente; vacío si no hay.
+          items: { $ref: "#/components/schemas/BillDebt" }
+        history:
+          type: array
+          description: Solo con `includeHistory=true`. Últimos 24 meses, del más antiguo al más reciente.
+          items: { $ref: "#/components/schemas/BillHistoryMonth" }
+    BillPaymentRequest:
+      type: object
+      required: [billerId, customerCode, debtIds, accountId, pin]
+      properties:
+        billerId: { type: string, examples: ["BIL-LUZ"] }
+        customerCode: { type: string, examples: ["100200"] }
+        debtIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string }
+          examples: [["DEB-LUZ-202610", "DEB-LUZ-202611"]]
+        accountId: { type: string, examples: ["ACC-002"] }
+        pin:
+          type: string
+          pattern: "^\\d{4}$"
+          description: Clave de operaciones de 4 dígitos.
+          examples: ["1234"]
+    PaidDebt:
+      type: object
+      required: [id, period, amount]
+      properties:
+        id: { type: string, examples: ["DEB-LUZ-202610"] }
+        period: { type: string, examples: ["2026-10"] }
+        amount: { $ref: "#/components/schemas/Money" }
+    BillPaymentResponse:
+      type: object
+      required:
+        - paymentId
+        - operationNumber
+        - createdAt
+        - paidDebts
+        - total
+        - accountId
+        - accountAvailableBalance
+        - movementId
+      properties:
+        paymentId: { type: string, examples: ["PAY-000001"] }
+        operationNumber: { type: string, examples: ["80000001"] }
+        createdAt: { type: string, format: date-time }
+        paidDebts:
+          type: array
+          items: { $ref: "#/components/schemas/PaidDebt" }
+        total: { $ref: "#/components/schemas/Money" }
+        accountId: { type: string, examples: ["ACC-002"] }
+        accountAvailableBalance: { $ref: "#/components/schemas/Money" }
+        movementId: { type: string, examples: ["MOV-002-P0001"] }
     BiometricEnrollResponse:
       type: object
       required: [deviceToken]
@@ -1003,6 +1277,11 @@ components:
             - CURRENCY_MISMATCH
             - INSUFFICIENT_HOLDINGS
             - QUOTE_EXPIRED
+            - BILLER_NOT_FOUND
+            - CUSTOMER_NOT_FOUND
+            - PAYMENT_NOT_FOUND
+            - INVALID_PIN
+            - DEBT_ALREADY_PAID
             - INTERNAL_ERROR
             - SERVICE_UNAVAILABLE
         traceId: { type: string, description: Igual al `X-Request-Id` de la respuesta. }

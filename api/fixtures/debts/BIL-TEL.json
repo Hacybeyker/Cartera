@@ -1,0 +1,20 @@
+{
+  "billerId": "BIL-TEL",
+  "customers": [
+    {
+      "code": "500600",
+      "name": "Ana Torres",
+      "debts": [
+        {
+          "id": "DEB-TEL-202610",
+          "period": "2026-10",
+          "dueDate": "2026-11-20",
+          "amount": {
+            "value": "59.90",
+            "currency": "PEN"
+          }
+        }
+      ]
+    }
+  ]
+}

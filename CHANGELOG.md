@@ -72,6 +72,10 @@
 - `LegacyContract` y `LegacyResult`: el punto de entrada a `:legacy`, con un resultado tipado.
 - Interfaces propias de `:legacy` para la sesión, la URL base, el aviso de sesión expirada y las marcas de contenido visible, que `app` conecta con Hilt (`feature/legacy/`).
 - Goldens de Views de Roborazzi, en claro y oscuro, para `:legacy` (`legacy/src/test/screenshots/`).
+- Contrato del pago de servicios en `api/openapi.yaml`: `GET /billers`, `GET /billers/{billerId}/debts` (con `includeHistory`), `POST /bill-payments` con `Idempotency-Key` y clave de operaciones, y `GET /bill-payments/{paymentId}/voucher` (HTML), con los códigos `BILLER_NOT_FOUND`, `CUSTOMER_NOT_FOUND`, `PAYMENT_NOT_FOUND`, `INVALID_PIN` y `DEBT_ALREADY_PAID`.
+- Fixtures del pago de servicios con un generador de semilla fija (`api/tools/generate_billers.py`): veinte empresas por rubro, cuatro con clientes y recibos de referencia, el histórico de 24 meses de Luz del Norte y la clave de operaciones de Ana (`operationsPin`).
+- Backend embebido: `BillDesk` con empresas, recibos pendientes, pago de recibos con clave de operaciones, saldo e idempotencia (movimiento `SERVICES` "Pago de <empresa>" y operaciones desde 80000001) y constancia HTML sin ids ni scripts.
+- Escenario: ids de endpoint `billers`, `biller_debts`, `bill_payments` y `bill_voucher` con latencia y fallos por endpoint, y la semilla del teclado de la clave (`pin_pad_seed`) por adb, launchApp y la pantalla Escenario; el cliente la lee con `PinPadSeed`.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).

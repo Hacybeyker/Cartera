@@ -1,0 +1,122 @@
+[
+  {
+    "id": "BIL-LUZ",
+    "name": "Luz del Norte",
+    "category": "Electricidad",
+    "customerCodeFormat": "^\\d{6}$"
+  },
+  {
+    "id": "BIL-ESI",
+    "name": "Electro Sierra",
+    "category": "Electricidad",
+    "customerCodeFormat": "^\\d{8}$"
+  },
+  {
+    "id": "BIL-ECO",
+    "name": "Energía Costa",
+    "category": "Electricidad",
+    "customerCodeFormat": "^\\d{7}$"
+  },
+  {
+    "id": "BIL-AGUA",
+    "name": "Agua Trujillo",
+    "category": "Agua",
+    "customerCodeFormat": "^\\d{6}$"
+  },
+  {
+    "id": "BIL-AVA",
+    "name": "Agua del Valle",
+    "category": "Agua",
+    "customerCodeFormat": "^\\d{8}$"
+  },
+  {
+    "id": "BIL-APA",
+    "name": "Aguas Pacífico",
+    "category": "Agua",
+    "customerCodeFormat": "^\\d{10}$"
+  },
+  {
+    "id": "BIL-GAN",
+    "name": "Gas Andino",
+    "category": "Gas",
+    "customerCodeFormat": "^\\d{8}$"
+  },
+  {
+    "id": "BIL-GCO",
+    "name": "Gas Costa Norte",
+    "category": "Gas",
+    "customerCodeFormat": "^\\d{6}$"
+  },
+  {
+    "id": "BIL-TEL",
+    "name": "Telefonía Andina",
+    "category": "Telefonía",
+    "customerCodeFormat": "^\\d{6}$"
+  },
+  {
+    "id": "BIL-MSO",
+    "name": "Móvil Sol",
+    "category": "Telefonía",
+    "customerCodeFormat": "^\\d{9}$"
+  },
+  {
+    "id": "BIL-TVA",
+    "name": "Telecom Valle",
+    "category": "Telefonía",
+    "customerCodeFormat": "^\\d{9}$"
+  },
+  {
+    "id": "BIL-NET",
+    "name": "Internet Moche",
+    "category": "Internet",
+    "customerCodeFormat": "^\\d{6}$"
+  },
+  {
+    "id": "BIL-FNO",
+    "name": "Fibra Norte",
+    "category": "Internet",
+    "customerCodeFormat": "^\\d{8}$"
+  },
+  {
+    "id": "BIL-RHO",
+    "name": "Red Hogar",
+    "category": "Internet",
+    "customerCodeFormat": "^\\d{10}$"
+  },
+  {
+    "id": "BIL-CVS",
+    "name": "Cable Visión Sur",
+    "category": "Cable",
+    "customerCodeFormat": "^\\d{8}$"
+  },
+  {
+    "id": "BIL-TVC",
+    "name": "TV Andina Cable",
+    "category": "Cable",
+    "customerCodeFormat": "^\\d{6}$"
+  },
+  {
+    "id": "BIL-SHO",
+    "name": "Seguros Horizonte",
+    "category": "Seguros",
+    "customerCodeFormat": "^\\d{10}$"
+  },
+  {
+    "id": "BIL-PFA",
+    "name": "Protección Familiar",
+    "category": "Seguros",
+    "customerCodeFormat": "^\\d{8}$"
+  },
+  {
+    "id": "BIL-IAN",
+    "name": "Instituto Andino",
+    "category": "Educación",
+    "customerCodeFormat": "^\\d{7}$"
+  },
+  {
+    "id": "BIL-AHO",
+    "name": "Academia Horizonte",
+    "category": "Educación",
+    "customerCodeFormat": "^\\d{6}$"
+  }
+]

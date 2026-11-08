@@ -38,13 +38,22 @@ class FixtureCatalog(private val source: FixtureSource) {
     val fxTicks: List<FxTick> by lazy {
         parse("fx/rates.json").jsonObject.getValue("ticks").jsonArray.map { FxTick.from(it.jsonObject) }
     }
+    val billers: List<Biller> by lazy { objects("billers.json").map(Biller::from) }
     private val movements = mutableMapOf<String, List<MovementRecord>>()
+    private val customers = mutableMapOf<String, List<BillerCustomer>>()
     private val ticks = mutableMapOf<String, List<BigDecimal>>()
     private val histories = mutableMapOf<String, Map<HistoryRange, PriceSeries>>()
 
     fun movements(accountId: String): List<MovementRecord> = synchronized(movements) {
         movements.getOrPut(accountId) {
             objects("movements/$accountId.json").map(MovementRecord::from).sortedWith(MovementRecord.NEWEST_FIRST)
+        }
+    }
+
+    fun customers(billerId: String): List<BillerCustomer> = synchronized(customers) {
+        customers.getOrPut(billerId) {
+            parse("debts/$billerId.json").jsonObject.getValue("customers").jsonArray
+                .map { BillerCustomer.from(it.jsonObject) }
         }
     }
 

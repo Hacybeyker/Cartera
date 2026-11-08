@@ -10,6 +10,7 @@ class BackendDesks(
     val market: MarketDesk,
     val orders: OrderDesk,
     val fx: FxDesk,
+    val bills: BillDesk,
     val biometrics: BiometricDesk
 ) {
     companion object {
@@ -21,6 +22,7 @@ class BackendDesks(
                 market = MarketDesk(state, clock),
                 orders = OrderDesk(state, clock),
                 fx = FxDesk(state, clock),
+                bills = BillDesk(state, clock),
                 biometrics = BiometricDesk(state, sessions)
             )
         }
@@ -65,6 +67,12 @@ class BackendRouter(
         Endpoint.FX_EXCHANGES to { call ->
             desks.fx.exchange(call.userId, call.idempotencyKey, call.request.jsonBody())
         },
+        Endpoint.BILLERS to { call -> desks.bills.billers(call.request.query) },
+        Endpoint.BILLER_DEBTS to { call -> desks.bills.debts(call.id, call.request.query) },
+        Endpoint.BILL_PAYMENTS to { call ->
+            desks.bills.pay(call.userId, call.idempotencyKey, call.request.jsonBody())
+        },
+        Endpoint.BILL_VOUCHER to { call -> desks.bills.voucher(call.userId, call.id) },
         Endpoint.BIOMETRIC_ENROLL to { call -> desks.biometrics.enroll(call.userId) },
         Endpoint.BIOMETRIC_LOGIN to { call -> desks.biometrics.login(call.request) },
         Endpoint.BIOMETRIC_DELETE to { call -> desks.biometrics.revoke(call.userId) },

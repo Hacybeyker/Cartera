@@ -25,6 +25,7 @@ class BackendState(
     val market = MarketState(catalog, clock)
     val holdings = HoldingsBook(catalog)
     val fxQuotes = mutableMapOf<String, FxQuote>()
+    val bills = BillBook(catalog)
 
     val appConfig: JsonObject get() = catalog.appConfig
 
@@ -51,7 +52,7 @@ class BackendState(
         }
     }
 
-    /** Numeración propia por tipo de operación (transferencias, órdenes, cambios, cotizaciones), desde 1. */
+    /** Numeración propia por tipo de operación (transferencias, órdenes, cambios, cotizaciones, pagos), desde 1. */
     fun nextSequence(kind: String): Int = sequences.merge(kind, 1, Int::plus) ?: 1
 
     fun post(accountId: String, newBalance: BigDecimal, movement: MovementRecord) {
@@ -67,6 +68,7 @@ class BackendState(
         market.reset()
         holdings.reset()
         fxQuotes.clear()
+        bills.reset()
         devices.clear()
     }
 
@@ -87,7 +89,7 @@ class IdempotencyStore {
     fun clear() = responses.clear()
 }
 
-private val LIMA: ZoneOffset = ZoneOffset.ofHours(-5)
+internal val LIMA: ZoneOffset = ZoneOffset.ofHours(-5)
 
 fun timestamp(instant: Instant): String = OffsetDateTime.ofInstant(
     instant,

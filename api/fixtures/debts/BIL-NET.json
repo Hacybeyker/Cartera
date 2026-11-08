@@ -1,0 +1,10 @@
+{
+  "billerId": "BIL-NET",
+  "customers": [
+    {
+      "code": "700800",
+      "name": "Ana Torres",
+      "debts": []
+    }
+  ]
+}

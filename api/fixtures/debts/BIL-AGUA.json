@@ -1,0 +1,20 @@
+{
+  "billerId": "BIL-AGUA",
+  "customers": [
+    {
+      "code": "300400",
+      "name": "Familia Torres",
+      "debts": [
+        {
+          "id": "DEB-AGUA-202610",
+          "period": "2026-10",
+          "dueDate": "2026-11-18",
+          "amount": {
+            "value": "46.80",
+            "currency": "PEN"
+          }
+        }
+      ]
+    }
+  ]
+}

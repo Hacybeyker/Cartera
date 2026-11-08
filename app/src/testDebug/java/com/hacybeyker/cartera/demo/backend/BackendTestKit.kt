@@ -67,6 +67,9 @@ class RouterHarness(val clock: MutableClock = MutableClock(), devices: DeviceReg
     fun exchange(token: String, body: String, key: String? = "fx-1"): BackendResponse =
         post("fx/exchanges", token, body, key)
 
+    fun billPayment(token: String, body: String, key: String? = "bill-1"): BackendResponse =
+        post("bill-payments", token, body, key)
+
     fun quote(token: String, ttlSeconds: Int? = null): JsonObject = call(
         method = "GET",
         path = "fx/rates",
@@ -97,6 +100,18 @@ fun exchangeBody(
     currency: String = "USD"
 ) = """{"quoteId":"$quoteId","sourceAccountId":"$source","destinationAccountId":"$destination",""" +
     """"amount":{"value":"$value","currency":"$currency"}}"""
+
+fun billBody(
+    billerId: String = "BIL-LUZ",
+    customerCode: String = "100200",
+    debtIds: List<String> = listOf("DEB-LUZ-202610", "DEB-LUZ-202611"),
+    accountId: String = "ACC-002",
+    pin: String = "1234"
+): String {
+    val ids = debtIds.joinToString(",") { "\"$it\"" }
+    return """{"billerId":"$billerId","customerCode":"$customerCode","debtIds":[$ids],""" +
+        """"accountId":"$accountId","pin":"$pin"}"""
+}
 
 fun BackendResponse.problemCode(): String = json().string("code")
 

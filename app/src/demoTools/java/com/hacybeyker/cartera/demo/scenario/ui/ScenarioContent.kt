@@ -51,6 +51,7 @@ fun ScenarioContent(
         ) {
             NetworkFields(uiState = uiState, onAction = onAction)
             MarketFields(uiState = uiState, onAction = onAction)
+            BillFields(uiState = uiState, onAction = onAction)
             Text(text = stringResource(R.string.scenario_flags), style = MaterialTheme.typography.titleSmall)
             FeatureFlag.entries.forEach { flag ->
                 LabeledSwitch(
@@ -129,6 +130,18 @@ private fun MarketFields(uiState: ScenarioUiState, onAction: (ScenarioAction) ->
 }
 
 @Composable
+private fun BillFields(uiState: ScenarioUiState, onAction: (ScenarioAction) -> Unit) {
+    Text(text = stringResource(R.string.scenario_bills), style = MaterialTheme.typography.titleSmall)
+    ScenarioField(
+        value = uiState.pinPadSeed,
+        label = R.string.scenario_pin_pad_seed,
+        testTag = ScenarioTestTags.PIN_PAD_SEED,
+        onValueChange = { onAction(ScenarioAction.PinPadSeedChanged(it)) },
+        keyboardType = KeyboardType.Number
+    )
+}
+
+@Composable
 private fun ScenarioField(
     value: String,
     @StringRes label: Int,
@@ -186,15 +199,6 @@ private fun LabeledSwitch(label: String, checked: Boolean, testTag: String, onCh
     }
 }
 
-@StringRes
-private fun FeatureFlag.labelRes(): Int = when (this) {
-    FeatureFlag.MOVEMENTS_FULL_PAGE -> R.string.scenario_movements_full_page
-    FeatureFlag.ACCOUNTS_EAGER_REFRESH -> R.string.scenario_accounts_eager_refresh
-    FeatureFlag.BREAKDOWN_RICH_TRANSITION -> R.string.scenario_breakdown_rich_transition
-    FeatureFlag.QUOTES_FULL_REFRESH -> R.string.scenario_quotes_full_refresh
-    FeatureFlag.CHART_LIVE_PATH -> R.string.scenario_chart_live_path
-}
-
 @Composable
 private fun ScenarioButtons(uiState: ScenarioUiState, onAction: (ScenarioAction) -> Unit) {
     Button(
@@ -224,15 +228,6 @@ private fun ScenarioButtons(uiState: ScenarioUiState, onAction: (ScenarioAction)
     }
 }
 
-@Composable
-private fun ScenarioMessage.text(): String = when (this) {
-    ScenarioMessage.Saved -> stringResource(R.string.scenario_saved)
-    is ScenarioMessage.Rejected -> stringResource(R.string.scenario_rejected, values.joinToString())
-    ScenarioMessage.DefaultsRestored -> stringResource(R.string.scenario_defaults_restored)
-    ScenarioMessage.DataReset -> stringResource(R.string.scenario_data_reset)
-    ScenarioMessage.DataResetFailed -> stringResource(R.string.scenario_data_reset_failed)
-}
-
 @PreviewLightDark
 @Composable
 private fun ScenarioContentPreview() {
@@ -245,6 +240,7 @@ private fun ScenarioContentPreview() {
                 tickMs = "2000",
                 streamDrop = "0",
                 quoteTtl = "30",
+                pinPadSeed = "0",
                 message = ScenarioMessage.Saved
             ),
             onAction = {},
