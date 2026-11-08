@@ -1,6 +1,8 @@
 package com.hacybeyker.cartera.core.data.network
 
 import com.hacybeyker.cartera.core.data.network.dto.FieldErrorDto
+import com.hacybeyker.cartera.core.data.network.dto.FxQuoteDto
+import com.hacybeyker.cartera.core.data.network.dto.toFxQuote
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.Outcome
 import org.junit.Assert.assertEquals
@@ -36,6 +38,30 @@ class AppErrorsTest {
         assertEquals(AppError.CurrencyMismatch, problem(ProblemCode.CURRENCY_MISMATCH).toAppError())
         assertEquals(AppError.InsufficientHoldings, problem(ProblemCode.INSUFFICIENT_HOLDINGS).toAppError())
         assertEquals(AppError.Server, problem(ProblemCode.UNKNOWN).toAppError())
+    }
+
+    @Test
+    fun `an expired quote carries the new one, or none if it came malformed`() {
+        val fresh = FxQuoteDto(
+            pair = "USD/PEN",
+            buy = "3.745",
+            sell = "3.771",
+            quoteId = "QTE-000002",
+            expiresAt = "2026-11-07T10:00:40-05:00",
+            ts = "2026-11-07T10:00:10-05:00"
+        )
+        val expired = problem(ProblemCode.QUOTE_EXPIRED).copy(quote = fresh).toAppError()
+
+        assertEquals(AppError.QuoteExpired(fresh.toFxQuote()), expired)
+        assertEquals(
+            AppError.QuoteExpired(null),
+            problem(ProblemCode.QUOTE_EXPIRED).copy(quote = fresh.copy(buy = "tres")).toAppError()
+        )
+        assertEquals(
+            AppError.QuoteExpired(null),
+            problem(ProblemCode.QUOTE_EXPIRED).copy(quote = fresh.copy(ts = "ayer")).toAppError()
+        )
+        assertEquals(AppError.QuoteExpired(null), problem(ProblemCode.QUOTE_EXPIRED).toAppError())
     }
 
     @Test

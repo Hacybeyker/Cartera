@@ -13,7 +13,8 @@ data class ProblemDto(
     val detail: String,
     val code: String,
     val traceId: String,
-    val errors: List<FieldErrorDto> = emptyList()
+    val errors: List<FieldErrorDto> = emptyList(),
+    val quote: FxQuoteDto? = null
 )
 
 @Serializable

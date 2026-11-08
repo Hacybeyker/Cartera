@@ -64,6 +64,19 @@ class ApiCallerTest {
     }
 
     @Test
+    fun `an expired quote problem keeps the new quote`() = runTest {
+        val quote = """{"pair":"USD/PEN","buy":"3.745","sell":"3.771","quoteId":"QTE-000002",""" +
+            """"expiresAt":"2026-11-07T10:00:40-05:00","ts":"2026-11-07T10:00:10-05:00"}"""
+        enqueue(422, problem("QUOTE_EXPIRED", 422).replace("}", ""","quote":$quote}"""), "application/problem+json")
+
+        val error = (caller { api.accounts() } as ApiResult.Failure).error as ApiError.Problem
+
+        assertEquals(ProblemCode.QUOTE_EXPIRED, error.code)
+        assertEquals("QTE-000002", error.quote?.quoteId)
+        assertEquals("3.745", error.quote?.buy)
+    }
+
+    @Test
     fun `session expired and unauthorized notify the session expiry`() = runTest {
         enqueue(401, problem("SESSION_EXPIRED", 401), "application/problem+json")
         enqueue(401, problem("UNAUTHORIZED", 401), "application/problem+json")

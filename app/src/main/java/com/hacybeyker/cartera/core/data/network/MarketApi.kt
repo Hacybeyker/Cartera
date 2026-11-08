@@ -1,5 +1,8 @@
 package com.hacybeyker.cartera.core.data.network
 
+import com.hacybeyker.cartera.core.data.network.dto.ExchangeRequestDto
+import com.hacybeyker.cartera.core.data.network.dto.ExchangeResponseDto
+import com.hacybeyker.cartera.core.data.network.dto.FxQuoteDto
 import com.hacybeyker.cartera.core.data.network.dto.OrderRequestDto
 import com.hacybeyker.cartera.core.data.network.dto.OrderResponseDto
 import com.hacybeyker.cartera.core.data.network.dto.PortfolioDto
@@ -13,7 +16,10 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-/** Mercado, portafolio y órdenes: la misma API y el mismo cliente que [CarteraApi], en su propia interfaz. */
+/**
+ * Mercado, portafolio, órdenes y cambio de divisas: la misma API y el mismo cliente que [CarteraApi], en su propia
+ * interfaz.
+ */
 interface MarketApi {
     @GET("market/stocks")
     suspend fun stocks(): StockListDto
@@ -29,4 +35,13 @@ interface MarketApi {
 
     @POST("orders")
     suspend fun order(@Header("Idempotency-Key") idempotencyKey: String, @Body body: OrderRequestDto): OrderResponseDto
+
+    @GET("fx/rates")
+    suspend fun fxRates(): FxQuoteDto
+
+    @POST("fx/exchanges")
+    suspend fun exchange(
+        @Header("Idempotency-Key") idempotencyKey: String,
+        @Body body: ExchangeRequestDto
+    ): ExchangeResponseDto
 }

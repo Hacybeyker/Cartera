@@ -2,11 +2,13 @@ package com.hacybeyker.cartera.core.data.market
 
 import com.hacybeyker.cartera.core.data.network.ApiCaller
 import com.hacybeyker.cartera.core.data.network.MarketApi
+import com.hacybeyker.cartera.core.data.network.dto.toFxQuote
 import com.hacybeyker.cartera.core.data.network.dto.toPriceHistory
 import com.hacybeyker.cartera.core.data.network.dto.toQuote
 import com.hacybeyker.cartera.core.data.network.dto.toStockDetail
 import com.hacybeyker.cartera.core.data.network.toOutcome
 import com.hacybeyker.cartera.core.domain.Outcome
+import com.hacybeyker.cartera.core.domain.market.FxQuote
 import com.hacybeyker.cartera.core.domain.market.HistoryRange
 import com.hacybeyker.cartera.core.domain.market.MarketRepository
 import com.hacybeyker.cartera.core.domain.market.PriceHistory
@@ -25,4 +27,6 @@ class RemoteMarketRepository @Inject constructor(private val api: MarketApi, pri
 
     override suspend fun history(symbol: String, range: HistoryRange): Outcome<PriceHistory> =
         call { api.stockHistory(symbol, range.wireName).toPriceHistory() }.toOutcome()
+
+    override suspend fun fxRates(): Outcome<FxQuote> = call { api.fxRates().toFxQuote() }.toOutcome()
 }

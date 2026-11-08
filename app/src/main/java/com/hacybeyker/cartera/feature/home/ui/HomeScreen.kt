@@ -8,8 +8,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.hacybeyker.cartera.core.designsystem.component.ComingSoonState
-import com.hacybeyker.cartera.core.ui.marks.ReportContentVisible
+import com.hacybeyker.cartera.feature.home.ui.exchange.ExchangeScreen
 import com.hacybeyker.cartera.feature.home.ui.market.MarketScreen
 import com.hacybeyker.cartera.feature.home.ui.more.MoreScreen
 import com.hacybeyker.cartera.feature.home.ui.overview.AccountsTabActions
@@ -41,7 +40,7 @@ fun HomeScreen(actions: HomeActions, modifier: Modifier = Modifier, tabRequest: 
                     onStockClick = actions.onStockClick,
                     onPortfolioClick = actions.onPortfolioClick
                 )
-                HomeTab.EXCHANGE -> ComingSoonTab(screen = HomeTestTags.EXCHANGE)
+                HomeTab.EXCHANGE -> ExchangeScreen(onContinue = actions.onExchangeContinue)
                 HomeTab.MORE -> MoreScreen(
                     onLegacyClick = actions.onLegacyClick,
                     onLoggedOut = actions.onLoggedOut,
@@ -50,10 +49,4 @@ fun HomeScreen(actions: HomeActions, modifier: Modifier = Modifier, tabRequest: 
             }
         }
     }
-}
-
-@Composable
-private fun ComingSoonTab(screen: String) {
-    ReportContentVisible(mark = screen)
-    ComingSoonState(screen = screen)
 }

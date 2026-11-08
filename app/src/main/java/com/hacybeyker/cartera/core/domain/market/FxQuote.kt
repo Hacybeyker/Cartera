@@ -11,4 +11,9 @@ data class FxQuote(
     val quoteId: String,
     val expiresAt: OffsetDateTime,
     val ts: OffsetDateTime
-)
+) {
+    companion object {
+        /** El único par del contrato. */
+        const val USD_PEN = "USD/PEN"
+    }
+}

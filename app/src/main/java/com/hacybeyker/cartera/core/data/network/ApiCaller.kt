@@ -51,7 +51,8 @@ class ApiCaller @Inject constructor(private val json: Json, private val sessionE
                 code = ProblemCode.fromWire(it.code),
                 detail = it.detail,
                 traceId = it.traceId,
-                fieldErrors = it.errors
+                fieldErrors = it.errors,
+                quote = it.quote
             )
         } ?: ApiError.Http(code())
     }

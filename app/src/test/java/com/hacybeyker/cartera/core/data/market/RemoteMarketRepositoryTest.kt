@@ -5,6 +5,7 @@ import com.hacybeyker.cartera.core.data.network.CarteraHttpClient
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.Outcome
 import com.hacybeyker.cartera.core.domain.market.HistoryRange
+import com.hacybeyker.cartera.core.testing.TestFxQuote
 import com.hacybeyker.cartera.core.testing.enqueueJson
 import com.hacybeyker.cartera.core.testing.marketApi
 import com.hacybeyker.cartera.core.testing.problemJson
@@ -87,7 +88,28 @@ class RemoteMarketRepositoryTest {
         assertEquals(Outcome.Failure(AppError.Server), repository.history("QORI", HistoryRange.DAY))
     }
 
+    @Test
+    fun `issues a fx quote with its expiry`() = runTest {
+        server.enqueueJson(200, FX)
+
+        val quote = (repository.fxRates() as Outcome.Success).value
+
+        assertEquals(TestFxQuote, quote)
+        assertEquals("/api/v1/fx/rates", server.takeRequest().url.encodedPath)
+    }
+
+    @Test
+    fun `a malformed fx quote is a server error`() = runTest {
+        server.enqueueJson(200, FX.replace("\"3.742\"", "\"tres\""))
+        server.enqueueJson(200, FX.replace("2026-11-07T10:00:30-05:00", "luego"))
+
+        assertEquals(Outcome.Failure(AppError.Server), repository.fxRates())
+        assertEquals(Outcome.Failure(AppError.Server), repository.fxRates())
+    }
+
     private companion object {
+        const val FX = """{"pair":"USD/PEN","buy":"3.742","sell":"3.768","quoteId":"QTE-000001",""" +
+            """"expiresAt":"2026-11-07T10:00:30-05:00","ts":"2026-11-07T10:00:00-05:00"}"""
         const val ANDM = """{"symbol":"ANDM","name":"Andina Minerals","currency":"USD","last":"42.10",""" +
             """"change":"0.34","changePct":"0.81","ts":"2026-11-07T10:00:00-05:00"}"""
         const val ANDM_DETAIL = """{"symbol":"ANDM","name":"Andina Minerals","currency":"USD","last":"42.10",""" +

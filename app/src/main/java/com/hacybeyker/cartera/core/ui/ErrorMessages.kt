@@ -16,6 +16,7 @@ fun AppError.messageRes(): Int = when (this) {
     AppError.DestinationNotFound -> R.string.error_destination_not_found
     AppError.CurrencyMismatch -> R.string.error_currency_mismatch
     AppError.InsufficientHoldings -> R.string.error_insufficient_holdings
+    is AppError.QuoteExpired -> R.string.error_quote_expired
 }
 
 /** Reintentar no arregla un id inexistente: esos errores se muestran sin botón. */

@@ -1,6 +1,7 @@
 package com.hacybeyker.cartera.core.data.network
 
 import com.hacybeyker.cartera.core.data.network.dto.FieldErrorDto
+import com.hacybeyker.cartera.core.data.network.dto.FxQuoteDto
 
 sealed interface ApiResult<out T> {
     data class Success<T>(val value: T) : ApiResult<T>
@@ -21,7 +22,9 @@ sealed interface ApiError {
         val code: ProblemCode,
         val detail: String,
         val traceId: String,
-        val fieldErrors: List<FieldErrorDto>
+        val fieldErrors: List<FieldErrorDto>,
+        /** Solo en `QUOTE_EXPIRED`: la cotización nueva que ofrece el servidor. */
+        val quote: FxQuoteDto? = null
     ) : ApiError
 }
 
@@ -35,6 +38,7 @@ enum class ProblemCode {
     DESTINATION_NOT_FOUND,
     CURRENCY_MISMATCH,
     INSUFFICIENT_HOLDINGS,
+    QUOTE_EXPIRED,
     INTERNAL_ERROR,
     SERVICE_UNAVAILABLE,
     UNKNOWN;

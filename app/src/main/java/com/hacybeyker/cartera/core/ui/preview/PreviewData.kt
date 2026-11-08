@@ -2,6 +2,7 @@ package com.hacybeyker.cartera.core.ui.preview
 
 import com.hacybeyker.cartera.core.domain.Money
 import com.hacybeyker.cartera.core.domain.account.Account
+import com.hacybeyker.cartera.core.domain.market.FxQuote
 import com.hacybeyker.cartera.core.domain.market.Quote
 import com.hacybeyker.cartera.core.domain.movement.Movement
 import com.hacybeyker.cartera.core.domain.movement.MovementCategory
@@ -100,3 +101,13 @@ val previewHistoryPrices = listOf(
     "115.47", "115.21", "114.98", "114.76", "114.90", "115.12", "115.35", "115.28", "115.04", "114.85",
     "114.62", "114.71", "114.93", "115.10", "115.02", "115.26", "115.44", "115.31", "115.12", "115.20"
 ).map { it.toBigDecimal() }
+
+/** La cotización inicial de USD/PEN (compra 3.742, venta 3.768), vigente 30 s. */
+val previewFxQuote = FxQuote(
+    pair = FxQuote.USD_PEN,
+    buy = "3.742".toBigDecimal(),
+    sell = "3.768".toBigDecimal(),
+    quoteId = "QTE-000001",
+    expiresAt = previewQuoteTime.plusSeconds(30),
+    ts = previewQuoteTime
+)

@@ -1,5 +1,7 @@
 package com.hacybeyker.cartera.core.domain
 
+import com.hacybeyker.cartera.core.domain.market.FxQuote
+
 sealed interface AppError {
     /** Timeout o desconexión: no llegó respuesta. */
     data object Network : AppError
@@ -27,4 +29,7 @@ sealed interface AppError {
 
     /** Se quiere vender más acciones de las que se tienen. */
     data object InsufficientHoldings : AppError
+
+    /** La cotización del cambio venció. [quote] es la nueva que ofrece el servidor, si llegó bien formada. */
+    data class QuoteExpired(val quote: FxQuote?) : AppError
 }

@@ -14,6 +14,7 @@ import com.hacybeyker.cartera.core.domain.market.StockDetail
 import com.hacybeyker.cartera.core.domain.portfolio.Portfolio
 import com.hacybeyker.cartera.core.domain.portfolio.PortfolioChanges
 import com.hacybeyker.cartera.core.domain.portfolio.PortfolioRepository
+import com.hacybeyker.cartera.core.ui.preview.previewFxQuote
 import com.hacybeyker.cartera.core.ui.preview.previewPortfolio
 import com.hacybeyker.cartera.core.ui.preview.previewQuotes
 import java.math.BigDecimal
@@ -22,12 +23,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
 
 val TestQuotes: List<Quote> = previewQuotes
 val TestPortfolio: Portfolio = previewPortfolio
+
+/** USD/PEN a 3.742 y 3.768, emitida a las 10:00:00 de Lima y vigente 30 s. */
+val TestFxQuote: FxQuote = previewFxQuote
 
 fun testQuote(symbol: String, last: String, change: String = "0.00"): Quote =
     TestQuotes.first { it.symbol == symbol }.copy(last = last.toBigDecimal(), change = change.toBigDecimal())
@@ -42,6 +45,20 @@ class FakeMarketRepository(var stocks: List<Quote> = TestQuotes, var error: AppE
     /** Los precios de cada historial; sin ellos, un solo punto con el precio vigente. */
     var historyPrices: List<BigDecimal>? = null
     var historyError: AppError? = null
+
+    /** Las cotizaciones de las próximas llamadas a `fxRates()`, en orden; vacía, responde [fxQuote]. */
+    val fxQuotes = ArrayDeque<Outcome<FxQuote>>()
+    var fxQuote: FxQuote = TestFxQuote
+    var fxCalls = 0
+
+    /** Si no es null, `fxRates()` espera a que se complete: deja ver lo que pasa mientras se pide la cotización. */
+    var fxGate: CompletableDeferred<Unit>? = null
+
+    override suspend fun fxRates(): Outcome<FxQuote> {
+        fxCalls++
+        fxGate?.await()
+        return fxQuotes.removeFirstOrNull() ?: error?.let { Outcome.Failure(it) } ?: Outcome.Success(fxQuote)
+    }
 
     override suspend fun stocks(): Outcome<List<Quote>> {
         stocksCalls++
@@ -102,6 +119,10 @@ class FakeMarketStream : MarketStream {
 
     override val status = MutableStateFlow(MarketStreamStatus.IDLE)
 
+    val fx = MutableSharedFlow<FxQuote>(extraBufferCapacity = 64)
+    var activeFxSubscribers = 0
+        private set
+
     override fun quotes(symbols: Set<String>): Flow<Quote> = flow {
         subscriptions += symbols
         activeSubscribers++
@@ -112,5 +133,12 @@ class FakeMarketStream : MarketStream {
         }
     }
 
-    override fun fxQuotes(pair: String): Flow<FxQuote> = emptyFlow()
+    override fun fxQuotes(pair: String): Flow<FxQuote> = flow {
+        activeFxSubscribers++
+        try {
+            emitAll(fx.filter { it.pair == pair })
+        } finally {
+            activeFxSubscribers--
+        }
+    }
 }

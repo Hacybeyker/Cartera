@@ -10,6 +10,9 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.hacybeyker.cartera.core.domain.entry.EntryStep
+import com.hacybeyker.cartera.feature.exchange.ui.FxConfirmNavKey
+import com.hacybeyker.cartera.feature.exchange.ui.exchangeEntries
+import com.hacybeyker.cartera.feature.exchange.ui.toArgs
 import com.hacybeyker.cartera.feature.home.ui.HomeActions
 import com.hacybeyker.cartera.feature.home.ui.HomeNavKey
 import com.hacybeyker.cartera.feature.home.ui.HomeTab
@@ -91,6 +94,16 @@ fun AppNavDisplay(
                     backStack.popTo(HomeNavKey)
                 }
             )
+            // Igual que la orden: el resultado y Cancelar vuelven a la entrada de Home que ya existe, en el tab Cambio,
+            // que vuelve a pedir solo las cuentas porque el cambio subió su revisión.
+            exchangeEntries(
+                onBack = back,
+                onNavigate = { backStack.add(it) },
+                onBackToExchange = {
+                    homeTabRequest.request(HomeTab.EXCHANGE)
+                    backStack.popTo(HomeNavKey)
+                }
+            )
             extraEntries.forEach { installer -> with(installer) { install(onBack = back) } }
         }
     )
@@ -102,6 +115,7 @@ private fun NavBackStack<NavKey>.homeActions(hiddenScreens: Set<HiddenScreen>) =
     onMovementClick = { add(MovementDetailNavKey(it)) },
     onStockClick = { add(StockDetailNavKey(it)) },
     onPortfolioClick = { add(PortfolioNavKey) },
+    onExchangeContinue = { add(FxConfirmNavKey(it.toArgs())) },
     onLegacyClick = { add(LegacyNavKey) },
     onLoggedOut = { resetTo(LoginNavKey) },
     // Sin pantalla oculta (release), los 7 toques no hacen nada.

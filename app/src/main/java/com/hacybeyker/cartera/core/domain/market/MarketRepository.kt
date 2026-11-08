@@ -9,4 +9,7 @@ interface MarketRepository {
     suspend fun stock(symbol: String): Outcome<StockDetail>
 
     suspend fun history(symbol: String, range: HistoryRange): Outcome<PriceHistory>
+
+    /** Una cotización nueva del par USD/PEN, con su vencimiento. */
+    suspend fun fxRates(): Outcome<FxQuote>
 }

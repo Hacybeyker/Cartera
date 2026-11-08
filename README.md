@@ -181,7 +181,7 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
 │   └─ Movimientos ──► Detalle ──► Desglose
 ├─ Mercado ──► Detalle de acción ──► [Operar: Comprar · Vender] ──► Orden ──► Confirmación ──► Resultado ──► Home (Mercado)
 │     └─ Mi portafolio ──► Detalle de acción
-├─ Cambio   (próximamente)
+├─ Cambio ──► Confirmación ──► Resultado ──► Home (Cambio)
 └─ Más ──► Servicios clásicos (próximamente) · Cerrar sesión · Versión
 ```
 
@@ -209,7 +209,7 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
   cambio se vuelve a pedir solo `GET /portfolio`.
 
 **El canal en la app.** Hay una sola conexión para toda la app, que se abre con la primera pantalla
-que sigue precios (Mercado, Detalle de acción o Mi portafolio) y se cierra 1 s después de que no queda ninguna: al cambiar de tab,
+que sigue precios (Mercado, Detalle de acción, Mi portafolio, el formulario de una orden o Cambio) y se cierra 1 s después de que no queda ninguna: al cambiar de tab,
 al abrir otra pantalla sin precios, al pasar a segundo plano o al cerrar sesión. Si se cae, reconecta
 esperando 1, 2, 4 y 8 s (y 8 s desde ahí), vuelve a suscribir todo y reinicia la espera tras conectar.
 Un 401 en el handshake o un cierre 4401 abren "Tu sesión expiró" y no reconectan. Con
@@ -273,6 +273,46 @@ code=1006 por=servidor` seguido de un `WS#n+1 abierto` alrededor de 1 s después
 | Saldo insuficiente | un total mayor que el saldo (el cliente lo frena; el servidor responde `INSUFFICIENT_FUNDS`) | "El total supera el saldo disponible." o modal "Saldo insuficiente" |
 | Acciones insuficientes | vender más de las que se tienen (el cliente lo frena; el servidor responde `INSUFFICIENT_HOLDINGS`) | "La cantidad supera las acciones que tienes." o modal "Acciones insuficientes" |
 
+### Cambio de divisas
+
+- Carga al abrir el tab: las cuentas (de la memoria de Inicio) y `GET /fx/rates` en paralelo. Arriba,
+  la **compra** y la **venta** de USD/PEN, que cambian solas por el canal en vivo mientras el tab se
+  ve; si el canal se cae, aparece "Reconectando…" y quedan en su último valor.
+- **Calculadora:** el sentido (de dólares a soles o de soles a dólares; invertirlo intercambia las
+  cuentas), el monto en la moneda de origen, la cuenta de origen y la de destino (cada una en el
+  bottom sheet de cuentas, solo con las de su moneda; con una sola posible, ya queda elegida) y lo que
+  se recibe, en vivo. Si el banco compra los dólares se aplica la **compra** (monto × compra); si los
+  vende, la **venta** (monto ÷ venta); a 2 decimales y mitad hacia arriba, igual que el servidor.
+  **¿Cómo calculamos el tipo de cambio?** abre un bottom sheet con la explicación y un ejemplo con la
+  cotización de ahora.
+- **Continuar** valida en el cliente (monto mayor que cero, con hasta dos decimales, no mayor que el
+  saldo del origen y que alcance un centavo de la otra moneda; origen y destino de las monedas del
+  sentido) y, si todo está bien, pide una cotización nueva con `GET /fx/rates`: la confirmación
+  empieza con la vigencia completa (`quote_ttl_s`) y una `Idempotency-Key` nueva.
+- **Confirmación:** origen, destino, monto a debitar, monto a acreditar, tipo de cambio y una cuenta
+  regresiva hasta el vencimiento de la cotización. No sigue al canal: la tasa es la de la cotización.
+  Confirmar envía `POST /fx/exchanges` con progreso bloqueante; Reintentar (en el modal de error de red
+  o del servidor) reenvía la misma clave. Saldo insuficiente y monedas que no corresponden tienen su
+  modal, que vuelve a Cambio, y un `VALIDATION_ERROR` se muestra bajo cada fila. Cancelar pide
+  confirmación y vuelve a Cambio.
+- **Cotización vencida:** al llegar el vencimiento la pantalla pide otra con `GET /fx/rates`, y si el
+  servidor responde `QUOTE_EXPIRED` usa la que trae la respuesta. En los dos casos se abre "La
+  cotización venció" con la tasa y el monto nuevos: **Usar la nueva** actualiza el resumen y reinicia
+  la cuenta regresiva (el próximo Confirmar va con otra `Idempotency-Key`, porque es otro cuerpo);
+  **Salir** vuelve a Cambio.
+- **Resultado:** n.º de operación, monto debitado, monto acreditado, tipo de cambio y los nuevos
+  saldos de las dos cuentas. **Volver a Cambio** (o Atrás) vuelve a la entrada de Home que ya existe,
+  con el tab Cambio elegido y lo escrito en la calculadora. Si el cambio terminó sin respuesta, el
+  resultado dice "No pudimos confirmar el cambio".
+- Un cambio confirmado, o que terminó sin respuesta o con un error del servidor, invalida las cuentas:
+  Cambio e Inicio vuelven a pedir solo `GET /accounts` al mostrarse.
+
+| Caso (`tick_ms 0`, datos limpios) | Datos | Resultado |
+|---|---|---|
+| Cambio de referencia | US$ 100.00 de ACC-003 a ACC-002 a 3.742 | acredita S/ 374.20; ACC-003 queda en US$ 950.20 y ACC-002 en S/ 2,674.20 |
+| Soles a dólares | S/ 376.80 de ACC-002 a ACC-003 a 3.768 | acredita US$ 100.00 |
+| Cotización vencida | `quote_ttl_s 5` y esperar más de 5 s en la confirmación | modal "La cotización venció" con la cotización nueva |
+
 ### Transferir
 
 - **Formulario:** cuenta de origen propia, número de destino (`999-0000001-0-01`), monto y
@@ -318,7 +358,10 @@ en su ventana (también los bottom sheets). La convención es snake_case en espa
 | Detalle | `movimiento_detalle`, `movimiento_monto`, `movimiento_ver_desglose` y estados `movimiento_*` |
 | Desglose | `movimiento_desglose`, `desglose_ilustracion`, `desglose_linea_<n>` (desde 1) y estados `desglose_*` |
 | Mercado | `mercado_portafolio`, `mercado_lista`, `mercado_item_<symbol>`, `mercado_reconectando` y estados `mercado_*` |
-| Cambio | `cambio_proximamente` |
+| Cambio | `cambio_pantalla`, `cambio_compra`, `cambio_venta`, `cambio_direccion`, `cambio_monto`, `cambio_origen`, `cambio_destino`, `cambio_estimado`, `cambio_como_calculamos`, `cambio_continuar`, `cambio_reconectando`, `<campo>_error` (`cambio_monto`, `cambio_origen`, `cambio_destino`) y estados `cambio_*` |
+| Sheet "Cómo calculamos" | `sheet_como_calculamos`, `sheet_como_calculamos_entendido` |
+| Cambio · confirmación | `cambio_confirmacion`, `cambio_confirmacion_debito`, `cambio_confirmacion_credito`, `cambio_confirmacion_tasa`, `cambio_vencimiento`, `cambio_confirmar`, `cambio_cancelar`, `<campo>_error` (también `cambio_cotizacion`), `modal_cotizacion_vencida` (`_aceptar`, `_salir`), `modal_fondos_insuficientes`, `modal_moneda_distinta` (cada uno con `_aceptar`) |
+| Cambio · resultado | `cambio_resultado`, `cambio_resultado_operacion`, `cambio_resultado_debitado`, `cambio_resultado_acreditado`, `cambio_resultado_tasa`, `cambio_resultado_saldo_origen`, `cambio_resultado_saldo_destino`, `cambio_resultado_error`, `cambio_volver` |
 | Detalle de acción | `accion_detalle`, `accion_precio`, `accion_grafico`, `accion_rango_<1D\|1S\|1M\|1A>`, `accion_tenencia`, `accion_reconectando`, `accion_operar`, estados `accion_*` y, del gráfico, `accion_grafico_cargando`, `accion_grafico_error` y `accion_grafico_reintentar` |
 | Sheet Comprar/Vender | `sheet_accion`, `sheet_accion_comprar`, `sheet_accion_vender`, `sheet_accion_vender_no_disponible` |
 | Sheet de cuentas | `sheet_cuentas`, `sheet_cuentas_item_<id>` |
@@ -342,10 +385,11 @@ páginas. Rotar o volver a una pantalla sin datos nuevos no repite la marca. Mar
 `terminos`, `onboarding`, `inicio_cuentas`, `inicio_movimientos`, `cuenta_movimientos`,
 `movimiento_detalle`, `movimiento_desglose`, `mercado`, `accion_detalle`, `portafolio`, `cambio`, `mas`,
 `transferir_formulario`, `transferir_confirmacion`, `transferir_resultado`, `orden_formulario`,
-`orden_confirmacion` y `orden_resultado`. Tras una transferencia,
+`orden_confirmacion`, `orden_resultado`, `cambio_confirmacion` y `cambio_resultado`. Tras una transferencia,
 `inicio_cuentas` se dispara otra vez cuando llegan las cuentas refrescadas. `accion_detalle` se repite
 con cada rango cargado. Los precios en vivo no repiten `mercado`, `portafolio` ni `accion_detalle`: solo
-la carga y el refresco del portafolio. Por defecto nadie escucha. Para
+la carga y el refresco del portafolio. Las cotizaciones en vivo tampoco repiten `cambio`: solo la carga
+y el refresco de las cuentas. Por defecto nadie escucha. Para
 recibirlas, agrega un `VisibleContentMarker` al conjunto desde un módulo de Hilt propio, sin tocar las
 pantallas:
 

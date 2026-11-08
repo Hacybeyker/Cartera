@@ -1,7 +1,11 @@
 package com.hacybeyker.cartera.core.data.network
 
+import com.hacybeyker.cartera.core.data.network.dto.FxQuoteDto
+import com.hacybeyker.cartera.core.data.network.dto.toFxQuote
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.Outcome
+import com.hacybeyker.cartera.core.domain.market.FxQuote
+import java.time.DateTimeException
 
 private const val HTTP_UNAUTHORIZED = 401
 private const val HTTP_NOT_FOUND = 404
@@ -35,7 +39,17 @@ private fun ProblemCode.toAppError(problem: ApiError.Problem): AppError = when (
     ProblemCode.DESTINATION_NOT_FOUND -> AppError.DestinationNotFound
     ProblemCode.CURRENCY_MISMATCH -> AppError.CurrencyMismatch
     ProblemCode.INSUFFICIENT_HOLDINGS -> AppError.InsufficientHoldings
+    ProblemCode.QUOTE_EXPIRED -> AppError.QuoteExpired(problem.quote?.toFxQuoteOrNull())
     else -> AppError.Server
+}
+
+// Una cotización nueva mal formada no oculta que la anterior venció: la app pide otra con GET /fx/rates.
+private fun FxQuoteDto.toFxQuoteOrNull(): FxQuote? = try {
+    toFxQuote()
+} catch (_: NumberFormatException) {
+    null
+} catch (_: DateTimeException) {
+    null
 }
 
 inline fun <T, R> ApiResult<T>.toOutcome(transform: (T) -> R): Outcome<R> = when (this) {

@@ -54,6 +54,11 @@
 - Validación de la orden en el cliente (cantidad entera, saldo en una compra y tenencia en una venta), `Idempotency-Key` reutilizada en cada Reintentar y modales propios para saldo y acciones insuficientes.
 - Bottom sheet de cuentas reutilizable (`sheet_cuentas`), con alias, número enmascarado y saldo disponible.
 - Categoría de movimientos Inversiones (`INVESTMENT`) para los movimientos de las órdenes.
+- Tab Cambio: compra y venta de USD/PEN en vivo por el canal, calculadora con monto, sentido (de dólares a soles o al revés), cuentas de origen y destino en el bottom sheet de cuentas (solo las de su moneda) y lo que se recibe en vivo, con la misma regla y el mismo redondeo que el servidor; aviso "Reconectando…" si el canal se cae.
+- Bottom sheet "Cómo calculamos el tipo de cambio", con la compra, la venta, cuál se aplica en cada sentido y un ejemplo con la cotización de ahora.
+- Confirmación del cambio con la cotización pedida al continuar y su cuenta regresiva; al vencer (por el reloj o por un `QUOTE_EXPIRED` del servidor) ofrece la cotización nueva en un modal, y usarla reinicia la cuenta regresiva con otra `Idempotency-Key`.
+- Resultado del cambio con monto debitado, monto acreditado, tipo de cambio y los nuevos saldos de las dos cuentas, y Volver a Cambio; "No pudimos confirmar el cambio" si terminó sin respuesta.
+- Validación del cambio en el cliente (monto, saldo, un centavo como mínimo y cuentas de las monedas del sentido), `Idempotency-Key` reutilizada en cada Reintentar y modales propios para saldo insuficiente y monedas que no corresponden.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -68,6 +73,8 @@
 - La `Idempotency-Key` vale por usuario y por operación: la misma clave en una transferencia y en una orden no se cruza.
 - Una orden confirmada, o que terminó sin respuesta o con un error del servidor, invalida las cuentas y el portafolio: Mercado, Mi portafolio y el Detalle de acción vuelven a pedir solo el portafolio al mostrarse, e Inicio solo las cuentas.
 - El generador de `Idempotency-Key` pasa a `core/` para compartirlo entre transferencias y órdenes.
+- El tab Cambio deja de ser "Próximamente".
+- Un cambio confirmado, o que terminó sin respuesta o con un error del servidor, invalida las cuentas: Cambio e Inicio vuelven a pedirlas al mostrarse.
 
 ### Removed
 - `hilt-navigation-compose`, que ningún import usaba.
