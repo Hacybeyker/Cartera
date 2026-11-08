@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="legacy_primary">#6650A4</color>
+    <color name="legacy_on_primary">#FFFFFF</color>
+    <color name="legacy_secondary">#625B71</color>
+    <color name="legacy_on_secondary">#FFFFFF</color>
+</resources>

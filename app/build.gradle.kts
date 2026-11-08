@@ -71,29 +71,6 @@ android {
         compose = true
         buildConfig = true
     }
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-            all { test ->
-                test.maxHeapSize = "2g"
-                test.systemProperty("cartera.fixturesDir", "$rootDir/api/fixtures")
-                // Robolectric 4.17+ en JDK 17+ necesita abrir paquetes internos del JDK
-                // (https://robolectric.org/getting-started/). Sin jdk.internal.access, el arranque del
-                // entorno de SDK 36+ falla en ApplicationSharedMemory.create().
-                test.jvmArgs(
-                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
-                    "--add-opens=java.base/java.util=ALL-UNNAMED",
-                    "--add-opens=java.base/java.io=ALL-UNNAMED",
-                    "--add-opens=java.base/java.net=ALL-UNNAMED",
-                    "--add-opens=java.base/java.security=ALL-UNNAMED",
-                    "--add-opens=java.base/java.text=ALL-UNNAMED",
-                    "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
-                    "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED",
-                    "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED"
-                )
-            }
-        }
-    }
     lint {
         abortOnError = true
         warningsAsErrors = false
@@ -108,6 +85,7 @@ composeCompiler {
 }
 
 dependencies {
+    implementation(project(":legacy"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.biometric)
@@ -152,105 +130,19 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    failOnNoDiscoveredTests = false
+    systemProperty("cartera.fixturesDir", "$rootDir/api/fixtures")
 }
 
 detekt {
-    buildUponDefaultConfig = true
-    parallel = true
-    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     source.setFrom(
         "src/main/java",
         "src/test/java",
         "src/demoTools/java"
     )
-    basePath = rootDir
-}
-
-ktlint {
-    android.set(true)
-    ignoreFailures.set(false)
-    reporters {
-        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)
-        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.HTML)
-        reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)
-    }
-}
-
-tasks.register("codeQuality") {
-    group = "verification"
-    description = "Ejecuta Android Lint + ktlint + detekt en un solo comando."
-    dependsOn("ktlintCheck", "detekt", "lint")
-}
-
-listOf("ktlintCheck", "detekt", "lint").forEach { check ->
-    tasks.named(check) { mustRunAfter("ktlintFormat") }
-}
-
-tasks.register("formatAndAnalyze") {
-    group = "verification"
-    description = "Formatea el codigo (ktlintFormat) y luego verifica todo (ktlintCheck + detekt + lint)."
-    dependsOn("ktlintFormat", "codeQuality")
-}
-
-val htmlReports =
-    mapOf(
-        "Android Lint" to "lint-results-debug.html",
-        "detekt" to "detekt/detekt.html",
-        "ktlint (main)" to "ktlint/ktlintMainSourceSetCheck/ktlintMainSourceSetCheck.html",
-        "ktlint (test)" to "ktlint/ktlintTestSourceSetCheck/ktlintTestSourceSetCheck.html",
-        "ktlint (scripts)" to "ktlint/ktlintKotlinScriptCheck/ktlintKotlinScriptCheck.html",
-        "Kover (cobertura)" to "kover/htmlDebug/index.html"
-    )
-val reportsRoot = layout.buildDirectory.dir("reports")
-
-tasks.register("qualityReports") {
-    group = "verification"
-    description = "Genera los reportes HTML de Lint, detekt, ktlint y Kover. Usa --continue si un gate falla."
-    dependsOn("lint", "detekt", "ktlintCheck", "koverHtmlReportDebug")
-
-    val root = reportsRoot
-    val reports = htmlReports
-    doLast {
-        logger.lifecycle("\nReportes HTML:")
-        reports.forEach { (name, relativePath) ->
-            val file = root.get().file(relativePath).asFile
-            val status = if (file.exists()) file.toURI().toString() else "(no generado)"
-            logger.lifecycle("  %-20s %s".format(name, status))
-        }
-    }
 }
 
 roborazzi {
     outputDir.set(file("src/test/screenshots"))
-}
-
-sonar {
-    properties {
-        property("sonar.androidLint.reportPaths", "build/reports/lint-results-debug.xml")
-        property("sonar.kotlin.detekt.reportPaths", "build/reports/detekt/detekt.xml")
-        property(
-            "sonar.kotlin.ktlint.reportPaths",
-            listOf(
-                "build/reports/ktlint/ktlintKotlinScriptCheck/ktlintKotlinScriptCheck.xml",
-                "build/reports/ktlint/ktlintMainSourceSetCheck/ktlintMainSourceSetCheck.xml",
-                "build/reports/ktlint/ktlintTestSourceSetCheck/ktlintTestSourceSetCheck.xml"
-            ).joinToString(",")
-        )
-        property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/kover/reportDebug.xml")
-        property("sonar.junit.reportPaths", "build/test-results/testDebugUnitTest")
-        property(
-            "sonar.coverage.exclusions",
-            listOf(
-                "**/ui/**",
-                "**/navigation/**",
-                "**/di/**",
-                "**/*Module.kt",
-                "**/MainActivity.kt",
-                "**/MainApplication.kt"
-            ).joinToString(",")
-        )
-    }
 }
 
 kover {

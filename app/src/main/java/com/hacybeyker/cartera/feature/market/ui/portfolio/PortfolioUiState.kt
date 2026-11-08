@@ -7,7 +7,7 @@ import com.hacybeyker.cartera.core.domain.portfolio.Holding
 import com.hacybeyker.cartera.core.domain.portfolio.Portfolio
 import java.math.BigDecimal
 
-/** Una tenencia de Mi portafolio, valorizada al último precio. Inmutable: Compose salta las filas que no cambian. */
+/** Una tenencia de Mi portafolio, valorizada al último precio. */
 @Immutable
 data class HoldingItem(
     val symbol: String,
@@ -78,7 +78,7 @@ data class PortfolioUiState(
         contentVersion = contentVersion + 1
     )
 
-    /** Cambia solo la fila de [symbol] (las demás conservan su instancia) y los totales. */
+    /** Cambia la fila de [symbol] y los totales. */
     fun revalued(portfolio: Portfolio, symbol: String): PortfolioUiState {
         val index = holdings.indexOfFirst { it.symbol == symbol }
         val holding = portfolio.holdings.firstOrNull { it.symbol == symbol }

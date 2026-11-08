@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="legacy_screen_padding">24dp</dimen>
+    <dimen name="legacy_spacing_small">8dp</dimen>
+</resources>

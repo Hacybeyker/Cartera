@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Cartera.Legacy" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/legacy_primary</item>
+        <item name="colorOnPrimary">@color/legacy_on_primary</item>
+        <item name="colorSecondary">@color/legacy_secondary</item>
+        <item name="colorOnSecondary">@color/legacy_on_secondary</item>
+    </style>
+</resources>

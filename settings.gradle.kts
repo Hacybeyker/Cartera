@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Cartera"
 include(":app")
+include(":legacy")

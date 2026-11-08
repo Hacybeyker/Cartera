@@ -21,6 +21,10 @@
 │   ├── asyncapi.yaml      # Contrato del canal en vivo /market/stream (AsyncAPI 3.0)
 │   ├── fixtures/          # Datos del backend embebido
 │   └── tools/             # Generadores de movimientos y de mercado (semilla fija)
+├── legacy/                # Módulo :legacy (Android library): Fragments, XML con ViewBinding, MVP y RxJava 3
+│   └── src/main/java/com/hacybeyker/cartera/legacy/
+│       ├── integration/   # Lo único que ve `app`: LegacyContract y las interfaces que `app` implementa
+│       └── ui/            # LegacyActivity (Hilt) y sus Fragments
 ├── app/src/main/java/com/hacybeyker/cartera/
 │   ├── core/              # Compartido: design system y componentes comunes, dominio y datos de sesión,
 │   │                      # configuración, primer uso, cuentas y movimientos, mercado y portafolio,
@@ -223,7 +227,7 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más; coach marks la prime
 ├─ Mercado ──► Detalle de acción ──► [Operar: Comprar · Vender] ──► Orden ──► Confirmación ──► Resultado ──► Home (Mercado)
 │     └─ Mi portafolio ──► Detalle de acción
 ├─ Cambio ──► Confirmación ──► Resultado ──► Home (Cambio)
-└─ Más ──► Seguridad · Servicios clásicos (próximamente) · Cerrar sesión · Versión
+└─ Más ──► Seguridad · Servicios clásicos (abre el módulo `:legacy`) · Cerrar sesión · Versión
 Menú lateral ──► Mi portafolio · Cambio (tab) · Seguridad · Ayuda (próximamente) · Cerrar sesión
 ```
 
@@ -243,7 +247,7 @@ Menú lateral ──► Mi portafolio · Cambio (tab) · Seguridad · Ayuda (pr�
   abre, solo lo cierra; también se cierra con Atrás o tocando fuera.
 - **Mi portafolio** y **Seguridad** abren su pantalla cuando el menú terminó de cerrarse; Atrás vuelve
   a Inicio con el menú cerrado. **Cambio** cierra el menú y elige el tab Cambio. **Ayuda** muestra
-  "Próximamente" en el menú y abre una pantalla reservada, como Servicios clásicos.
+  "Próximamente" en el menú y abre una pantalla reservada.
 - **Cerrar sesión** cierra el menú y pide la misma confirmación que Más, con el mismo resultado: la
   pila queda en `[Login]`.
 
@@ -439,7 +443,8 @@ en su ventana (también los bottom sheets). La convención es snake_case en espa
 | Mi portafolio | `portafolio_lista`, `portafolio_item_<symbol>`, `portafolio_reconectando` y estados `portafolio_*` (con `portafolio_vacio`) |
 | Más | `mas_pantalla`, `mas_nombre`, `mas_seguridad`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
 | Seguridad | `seguridad_pantalla`, `seguridad_huella` (interruptor) |
-| Servicios clásicos | `legacy_proximamente` |
+| Servicios clásicos (puente en Compose) | `legacy_cargando` y `barra_volver`: se ve unos instantes mientras abre `LegacyActivity` |
+| Servicios clásicos (`:legacy`, `android:id`) | `legacy_actividad_barra`, `legacy_actividad_contenedor`, `legacy_inicio_titulo`, `legacy_inicio_mensaje` |
 | Ayuda | `ayuda_proximamente` |
 | Transferir · formulario | `transferir_pantalla`, `transferir_origen`, `transferir_origen_item_<id>`, `transferir_destino`, `transferir_monto`, `transferir_descripcion`, `transferir_continuar`, `<campo>_error` y estados `transferir_*` |
 | Transferir · confirmación | `transferir_confirmacion`, `transferir_confirmar`, `transferir_cancelar`, `<campo>_error`, `modal_fondos_insuficientes`, `modal_destino_inexistente`, `modal_moneda_distinta` (cada uno con `_aceptar`) |
@@ -573,16 +578,31 @@ compila: ahí los 7 toques no hacen nada.
 
 ---
 
+## 🧱 Módulo `:legacy`
+
+Un módulo Android library con el stack de una app clásica a propósito: Fragments, XML con ViewBinding,
+MVP, RxJava 3, AppCompat y Material Components, con Hilt para la DI. `app` depende de él y lo abre desde
+Más ► Servicios clásicos con `LegacyContract`, que lanza `LegacyActivity` y devuelve un `LegacyResult`.
+
+`:legacy` no ve nada de `app`: define sus propias interfaces (`LegacySession`, `LegacyApiConfig`,
+`LegacySessionExpiry` y `LegacyContentMarker`, con los nombres de las marcas en `LegacyMarks`) y `app` las
+conecta con Hilt en `feature/legacy/`. Sus ids son `android:id` en snake_case con el prefijo
+`legacy_<pantalla>_<elemento>`. Pasa por los mismos gates que `app`: ktlint, detekt, Lint, Kover y goldens
+de Roborazzi en claro y oscuro.
+
+---
+
 ## 🧪 Tests y quality gates
 
 Todo corre en la JVM: no hay tests instrumentados. Lo que necesita hardware se verifica a mano en un
-dispositivo.
+dispositivo. Los comandos se ejecutan desde la raíz y corren en los dos módulos, `:app` y `:legacy`
+(para uno solo, `./gradlew :legacy:test`, por ejemplo).
 
 ```bash
 ./gradlew test                    # Unitarios + Robolectric (JVM, sin emulador)
-./gradlew koverVerifyDebug        # Gate de cobertura (>=90% sobre domain/data/ViewModels)
+./gradlew koverVerifyDebug        # Gate de cobertura (>=90% sobre domain/data/ViewModels y Presenters)
 ./gradlew verifyRoborazziDebug    # Gate de screenshots (compara contra los goldens del repo)
-./gradlew recordRoborazziDebug    # Regenera los goldens tras un cambio visual intencional
+./gradlew recordRoborazziDebug    # Regenera los goldens tras un cambio visual intencional (en `:legacy`, los de las Views)
 ```
 
 El CI encadena `test koverVerifyDebug verifyRoborazziDebug` en una sola invocación: los tests corren
@@ -607,10 +627,12 @@ ktlint + detekt + Android Lint están preconfigurados. Reglas en `.editorconfig`
 
 | Herramienta | HTML | Formato para Sonar |
 |-------------|------|--------------------|
-| Android Lint | `app/build/reports/lint-results-debug.html` | `lint-results-debug.xml` |
-| detekt | `app/build/reports/detekt/detekt.html` | `detekt/detekt.xml` |
-| ktlint | `app/build/reports/ktlint/<sourceSet>/*.html` | `*.xml` (Checkstyle) |
-| Kover | `app/build/reports/kover/htmlDebug/index.html` | `kover/reportDebug.xml` |
+| Android Lint | `<módulo>/build/reports/lint-results-debug.html` | `lint-results-debug.xml` |
+| detekt | `<módulo>/build/reports/detekt/detekt.html` | `detekt/detekt.xml` |
+| ktlint | `<módulo>/build/reports/ktlint/<sourceSet>/*.html` | `*.xml` (Checkstyle) |
+| Kover | `<módulo>/build/reports/kover/htmlDebug/index.html` | `kover/reportDebug.xml` |
+
+`<módulo>` es `app` o `legacy`: cada uno tiene sus reportes y sus goldens (`legacy/src/test/screenshots/`).
 
 ### SonarQube / SonarCloud
 

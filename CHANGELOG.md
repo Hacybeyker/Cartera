@@ -68,6 +68,10 @@
 - Pantalla Seguridad, desde Más, con el interruptor "Ingresar con huella": activarlo registra el dispositivo y desactivarlo lo revoca (`DELETE /auth/biometric`) y borra el token y la clave; sin huella en el dispositivo queda deshabilitado con su explicación.
 - Menú lateral en Home, abierto con el botón de la barra de Inicio: Mi portafolio, Cambio (elige el tab), Seguridad, Ayuda (próximamente) y Cerrar sesión con la misma confirmación que Más. Se cierra deslizando, tocando fuera o con Atrás.
 - Coach marks la primera vez que se entra a Home: tres pasos (Transferir, el tab Mercado y el botón del menú) que resaltan cada elemento, con Siguiente, Entendido en el último y Omitir. Se ven una vez por instalación.
+- Módulo `:legacy` (Android library con Fragments, XML con ViewBinding, AppCompat, Material Components, RxJava 3 e Hilt) con `LegacyActivity` y un fragmento reservado, del que depende `app`.
+- `LegacyContract` y `LegacyResult`: el punto de entrada a `:legacy`, con un resultado tipado.
+- Interfaces propias de `:legacy` para la sesión, la URL base, el aviso de sesión expirada y las marcas de contenido visible, que `app` conecta con Hilt (`feature/legacy/`).
+- Goldens de Views de Roborazzi, en claro y oscuro, para `:legacy` (`legacy/src/test/screenshots/`).
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -89,6 +93,10 @@
 - El generador de `Idempotency-Key` pasa a `core/` para compartirlo entre transferencias y órdenes.
 - El tab Cambio deja de ser "Próximamente".
 - Un cambio confirmado, o que terminó sin respuesta o con un error del servidor, invalida las cuentas: Cambio e Inicio vuelven a pedirlas al mostrarse.
+- Servicios clásicos abre `LegacyActivity` en vez de mostrar "Próximamente"; al volver se ve Más.
+- Los gates (ktlint, detekt, Lint, Kover y Roborazzi) y el DoD cubren `:app` y `:legacy`; la configuración común vive en el `build.gradle.kts` raíz.
+- Sonar y el CI analizan y publican los reportes de los dos módulos.
+- Fragment 1.9.1 llega a `app` por `:legacy`.
 
 ### Removed
 - `hilt-navigation-compose`, que ningún import usaba.

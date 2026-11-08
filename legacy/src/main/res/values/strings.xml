@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="legacy_title">Servicios clásicos</string>
+    <string name="legacy_back">Volver</string>
+    <string name="legacy_placeholder_title">Próximamente</string>
+    <string name="legacy_placeholder_message">Estamos preparando el pago de servicios.</string>
+</resources>

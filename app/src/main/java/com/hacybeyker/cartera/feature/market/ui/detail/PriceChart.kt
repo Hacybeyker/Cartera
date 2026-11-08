@@ -3,10 +3,7 @@ package com.hacybeyker.cartera.feature.market.ui.detail
 import androidx.compose.runtime.Immutable
 import java.math.BigDecimal
 
-/**
- * Los puntos fijos de una serie: todos menos el último, que es el precio vivo. Se crea una vez por carga de un rango
- * y se compara por identidad, así sirve de clave para recordar el trazado mientras solo cambia el último punto.
- */
+/** Los puntos fijos de una serie: todos menos el último, que es el precio vivo. */
 class ChartSeries(prices: List<BigDecimal>) {
     val values: FloatArray = FloatArray(prices.size) { prices[it].toFloat() }
     val low: BigDecimal? = prices.minOrNull()
@@ -29,7 +26,7 @@ data class PriceChart(val series: ChartSeries, val last: BigDecimal) {
     /** Índice del último punto; los fijos van de 0 a `lastIndex - 1`. */
     val lastIndex: Int get() = series.size
 
-    /** El mismo gráfico con el último punto en [price]; la serie fija se conserva (misma instancia). */
+    /** El mismo gráfico con el último punto en [price]. */
     fun withLast(price: BigDecimal): PriceChart = if (price.compareTo(last) == 0) this else copy(last = price)
 
     companion object {

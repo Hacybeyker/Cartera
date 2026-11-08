@@ -18,7 +18,7 @@ class LegacyContentScreenshotTest {
     val compose = createComposeRule()
 
     @Test
-    fun comingSoon() = compose.captureLightAndDark("legacy_proximamente") {
+    fun opening() = compose.captureLightAndDark("legacy_abriendo") {
         LegacyContent(onBack = {})
     }
 }

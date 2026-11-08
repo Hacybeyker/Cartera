@@ -9,15 +9,16 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.hacybeyker.cartera.R
 import com.hacybeyker.cartera.core.designsystem.CarteraTheme
 import com.hacybeyker.cartera.core.designsystem.component.BackTopBar
-import com.hacybeyker.cartera.core.designsystem.component.ComingSoonState
+import com.hacybeyker.cartera.core.designsystem.component.LoadingState
 
 const val LEGACY_SCREEN = "legacy"
 
+/** Lo que se ve mientras `LegacyActivity` se abre; al volver de ella, la pantalla se cierra. */
 @Composable
 fun LegacyContent(onBack: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
         BackTopBar(title = stringResource(R.string.more_legacy), onBack = onBack)
-        ComingSoonState(screen = LEGACY_SCREEN)
+        LoadingState(screen = LEGACY_SCREEN)
     }
 }
 

@@ -22,11 +22,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 
-/**
- * Gráfico de línea de [chart], dibujado con el Canvas de Compose: el trazado de los puntos fijos sale de
- * [ChartTrace], y el precio vivo mueve el último tramo y el punto final, que se leen al dibujar. [livePath] elige el
- * camino de dibujo (`CHART_LIVE_PATH`); los dos se ven igual.
- */
+/** Gráfico de línea de [chart], dibujado con el Canvas de Compose. [livePath] elige el camino (`CHART_LIVE_PATH`). */
 @Composable
 fun PriceChartLine(
     chart: PriceChart,

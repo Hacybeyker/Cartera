@@ -1,6 +1,6 @@
 # CI — Calidad + Build/Tests/Gates Android
-# Genérico: usa las tareas agregadas del módulo app (codeQuality, formatAndAnalyze)
-# y no depende del nombre del proyecto ni del package.
+# Genérico: usa las tareas agregadas de cada módulo (codeQuality, formatAndAnalyze), que Gradle
+# corre en :app y :legacy desde la raíz, y no depende del nombre del proyecto ni del package.
 #
 # Las actions van pineadas al SHA del commit: `@v7` es una etiqueta MUTABLE y quien
 # comprometa el repo del action puede re-apuntarla. El comentario `# vN` no es decorativo:
@@ -130,7 +130,7 @@ jobs:
             **/build/reports/tests/
             **/build/reports/kover/
             **/build/reports/roborazzi/
-            app/build/outputs/roborazzi/
-            app/src/test/screenshots/
+            **/build/outputs/roborazzi/
+            **/src/test/screenshots/
           if-no-files-found: ignore
           retention-days: 7

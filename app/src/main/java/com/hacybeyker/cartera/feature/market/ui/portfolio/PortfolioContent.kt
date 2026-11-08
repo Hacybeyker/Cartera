@@ -108,7 +108,6 @@ private fun SummaryHeader(summary: PortfolioSummary) {
 @Composable
 private fun HoldingList(holdings: List<HoldingItem>, onStockClick: (String) -> Unit) {
     LazyColumn(modifier = Modifier.fillMaxSize().testTag(PortfolioTestTags.LIST)) {
-        // La clave estable por símbolo hace que un tick recomponga solo la fila de esa acción.
         items(items = holdings, key = { it.symbol }, contentType = { HOLDING_ROW }) { holding ->
             HoldingRow(holding = holding, onClick = { onStockClick(holding.symbol) })
             HorizontalDivider()
