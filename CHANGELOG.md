@@ -51,6 +51,7 @@
 - `hilt-navigation-compose`, que ningún import usaba.
 
 ### Fixed
+- Tras un error del servidor al confirmar una transferencia, volver al inicio vuelve a pedir las cuentas: el cobro no está descartado.
 - Un 401 sin cuerpo RFC 9457 también abre el modal de sesión expirada.
 - Un monto o una fecha mal formados en una respuesta se muestran como error del servicio en vez de cerrar la app.
 

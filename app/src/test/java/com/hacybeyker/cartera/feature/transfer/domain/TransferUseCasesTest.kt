@@ -156,12 +156,22 @@ class TransferUseCasesTest {
     }
 
     @Test
+    fun `after a server error the transfer may have charged, so the accounts change too`() = runTest {
+        val transfers = FakeTransferRepository().apply { failures += AppError.Server }
+        val changes = FakeAccountChanges()
+
+        ConfirmTransferUseCase(transfers, changes)(ReferenceOrder)
+
+        assertEquals(1, changes.revision)
+    }
+
+    @Test
     fun `a rejected transfer does not change the accounts`() = runTest {
         val transfers = FakeTransferRepository()
         val changes = FakeAccountChanges()
         val confirm = ConfirmTransferUseCase(transfers, changes)
 
-        listOf(AppError.InsufficientFunds, AppError.DestinationNotFound, AppError.CurrencyMismatch, AppError.Server)
+        listOf(AppError.InsufficientFunds, AppError.DestinationNotFound, AppError.CurrencyMismatch)
             .forEach { error ->
                 transfers.failures += error
                 assertEquals(Outcome.Failure(error), confirm(ReferenceOrder))
