@@ -19,6 +19,16 @@ info:
       El cursor apunta al último elemento entregado, no a una posición: un movimiento nuevo no
       desplaza las páginas.
 
+    **Mercado.** Ocho acciones ficticias cotizadas en USD. Los precios de las acciones y el tipo de
+    cambio USD/PEN avanzan por una secuencia de ticks pregenerados con semilla (`fixtures/market/ticks/`
+    y `fixtures/fx/rates.json`): el primero es el precio inicial y, al agotarse, se vuelve a empezar
+    desde el primero. Los endpoints REST devuelven siempre el tick vigente del servidor; el canal en
+    vivo (`/market/stream`, WebSocket, fuera de este documento) lo hace avanzar al intervalo de
+    `X-Demo-Tick-Ms`, y con 0 los precios quedan congelados. Los precios de mercado viajan como texto
+    decimal en la moneda de `currency` (`"42.10"`); los porcentajes, con 2 decimales (`"1.25"` = 1,25 %).
+    Las órdenes, el portafolio y el cambio usan `Money`. Los montos calculados se redondean a 2
+    decimales, mitad hacia arriba.
+
     **Autenticación.** `Authorization: Bearer <JWT>`, HS256 con claims `sub`, `iat` y `exp`
     (TTL por defecto: 900 s). La clave de demo es pública a propósito: `cartera-demo-hs256-key-2026-not-a-secret`.
     No hay refresh token.
@@ -33,9 +43,22 @@ info:
     | `X-Demo-Failure-Mode` | `http_500` · `timeout` · `disconnect` | Cómo falla: 500 `INTERNAL_ERROR`, sin respuesta, o cierre del socket. |
     | `X-Demo-Session-Ttl` | segundos | Solo en el login: TTL del token emitido. |
     | `X-Demo-Backend-Down` | `true` | 503 `SERVICE_UNAVAILABLE` con `Retry-After` en todos los endpoints. |
+    | `X-Demo-Quote-Ttl-S` | segundos > 0 (30) | En `GET /fx/rates` y en el handshake del canal: vigencia de la cotización emitida. |
+    | `X-Demo-Tick-Ms` | entero ≥ 0 (2000) | Solo en el handshake del canal: milisegundos entre ticks; 0 congela los precios. |
+    | `X-Demo-Stream-Drop-S` | entero ≥ 0 (0) | Solo en el handshake del canal: segundos hasta que el servidor corta la conexión; 0 = nunca. |
 
-    `POST /_demo/reset` no aplica ninguna. El estado vive en memoria y vuelve a los fixtures
-    al reiniciar el proceso o con ese endpoint.
+    `X-Demo-Session-Ttl` también rige en `POST /auth/biometric/login`. Un valor inválido equivale a
+    no enviar la cabecera (entre paréntesis, el valor que rige entonces).
+
+    Las de latencia y fallos aplican igual a todos los endpoints, incluido el handshake del canal.
+    `POST /_demo/reset` no aplica ninguna. El estado (saldos, movimientos, tenencias, precios vigentes,
+    cotizaciones, dispositivos registrados e idempotencia) vive en memoria y vuelve a los fixtures al
+    reiniciar el proceso o con ese endpoint.
+
+    **Idempotencia.** `POST /transfers`, `POST /orders` y `POST /fx/exchanges` exigen
+    `Idempotency-Key`. La clave vale por usuario y por operación: repetirla devuelve la misma
+    respuesta 201 sin volver a ejecutar, aunque cambie el cuerpo. Las respuestas de error no se
+    guardan, así que la misma clave se puede reintentar.
 servers:
   - url: http://127.0.0.1:8765/api/v1
     description: Backend embebido (debug y demo)
@@ -50,6 +73,11 @@ tags:
   - name: accounts
   - name: movements
   - name: transfers
+  - name: market
+  - name: portfolio
+  - name: orders
+  - name: fx
+  - name: biometric
   - name: demo
 paths:
   /app/config:
@@ -265,6 +293,269 @@ paths:
               schema: { $ref: "#/components/schemas/Problem" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /market/stocks:
+    get:
+      tags: [market]
+      operationId: listStocks
+      summary: Las acciones con su precio vigente.
+      responses:
+        "200":
+          description: Acciones, por símbolo.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StockList" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /market/stocks/{symbol}:
+    get:
+      tags: [market]
+      operationId: getStock
+      summary: Una acción con los datos del día.
+      description: "`high` y `low` incluyen los precios que ya pasaron por el servidor."
+      parameters:
+        - $ref: "#/components/parameters/Symbol"
+      responses:
+        "200":
+          description: Acción.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StockDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /market/stocks/{symbol}/history:
+    get:
+      tags: [market]
+      operationId: getStockHistory
+      summary: Historial de precios para el gráfico.
+      description: |
+        Puntos equiespaciados, del más antiguo al más reciente: 1D tiene 390 (uno por minuto), 1W 168
+        (uno por hora), 1M 120 (cada 6 horas) y 1Y 365 (uno por día). El último punto tiene el precio
+        inicial de la acción y la hora de la consulta, así el gráfico empalma con el precio en vivo.
+      parameters:
+        - $ref: "#/components/parameters/Symbol"
+        - name: range
+          in: query
+          required: true
+          schema: { type: string, enum: ["1D", "1W", "1M", "1Y"] }
+      responses:
+        "200":
+          description: Historial.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PriceHistory" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422":
+          description: "`VALIDATION_ERROR` (campo `range`) si falta o no es uno de los cuatro rangos."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /portfolio:
+    get:
+      tags: [portfolio]
+      operationId: getPortfolio
+      summary: Tenencias valorizadas al precio vigente.
+      description: |
+        Por tenencia: `marketValue` = cantidad × precio vigente, `cost` = cantidad × precio promedio,
+        `gain` = `marketValue` − `cost` y `dayChange` = cantidad × (precio vigente − cierre anterior).
+        `totals` suma cada uno; `gainPct` es sobre `cost` y `dayChangePct` sobre el valor al cierre
+        anterior. Una tenencia que llega a 0 sale de la lista.
+      responses:
+        "200":
+          description: Portafolio, por símbolo.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Portfolio" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /orders:
+    post:
+      tags: [orders]
+      operationId: createOrder
+      summary: Compra o vende acciones a mercado.
+      description: |
+        Solo órdenes a mercado, por cantidad entera, que se ejecutan al precio vigente del servidor
+        (el último tick, no el que vio la app). Se pagan y se cobran en una cuenta propia en USD.
+
+        **Regla de negocio**, validada en este orden:
+        1. `Idempotency-Key` presente y cuerpo válido: símbolo existente, `side` `BUY` o `SELL`,
+           `quantity` entero mayor que cero (`VALIDATION_ERROR`).
+        2. La cuenta es propia y en USD (`VALIDATION_ERROR`, campo `accountId`).
+        3. Compra: total = cantidad × precio ≤ saldo disponible (`INSUFFICIENT_FUNDS`).
+           Venta: cantidad ≤ tenencia (`INSUFFICIENT_HOLDINGS`).
+
+        Si pasa, la compra descuenta el total, suma la tenencia y recalcula el precio promedio
+        ((cantidad anterior × promedio + cantidad × precio) / cantidad nueva, a 2 decimales); la venta
+        acredita el total, resta la tenencia y conserva el promedio. En los dos casos se agrega un
+        movimiento `INVESTMENT` al inicio de la cuenta (`DEBIT` la compra, `CREDIT` la venta), con un
+        desglose mínimo. Sin comisiones ni impuestos.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderRequest" }
+      responses:
+        "201":
+          description: Orden ejecutada.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422":
+          description: "`VALIDATION_ERROR` (con `errors[]`), `INSUFFICIENT_FUNDS` o `INSUFFICIENT_HOLDINGS`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /fx/rates:
+    get:
+      tags: [fx]
+      operationId: getFxRates
+      summary: Tipo de cambio vigente, como una cotización que vence.
+      description: |
+        Cada llamada emite una cotización nueva (`quoteId`) con el tipo de cambio vigente. El servidor
+        la recuerda con su tasa hasta `expiresAt` (ahora + `X-Demo-Quote-Ttl-S`, o 30 s si no llega).
+        `buy` es lo que paga el banco por cada dólar; `sell`, lo que cobra.
+      parameters:
+        - $ref: "#/components/parameters/DemoQuoteTtl"
+      responses:
+        "200":
+          description: Cotización.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FxQuote" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /fx/exchanges:
+    post:
+      tags: [fx]
+      operationId: createExchange
+      summary: Cambia dólares por soles, o soles por dólares, entre cuentas propias.
+      description: |
+        **Regla de negocio**, validada en este orden:
+        1. `Idempotency-Key` presente y cuerpo válido: monto decimal con hasta dos decimales y mayor
+           que cero, moneda ISO 4217 (`VALIDATION_ERROR`).
+        2. Origen y destino son cuentas propias (`VALIDATION_ERROR`, campos `sourceAccountId` y
+           `destinationAccountId`) y la cotización existe y es de la persona (`VALIDATION_ERROR`,
+           campo `quoteId`).
+        3. Origen y destino forman el par USD/PEN, en cualquier sentido, y el monto está en la moneda
+           de origen (`CURRENCY_MISMATCH`).
+        4. La cotización no venció (`QUOTE_EXPIRED`). El problema trae en `quote` una cotización nueva,
+           con la misma vigencia que la vencida, para ofrecerla sin otra llamada.
+        5. Monto ≤ saldo disponible del origen (`INSUFFICIENT_FUNDS`).
+        6. El monto acreditado es de al menos 0.01 (`VALIDATION_ERROR`, campo `amount.value`).
+
+        Si el banco compra dólares (USD → PEN), acredita monto × `buy`; si los vende (PEN → USD),
+        acredita monto / `sell`. Ambos a 2 decimales, mitad hacia arriba. Debita el origen y acredita el
+        destino, con un movimiento `TRANSFER` en cada cuenta (`exchangeRate` en su desglose). La
+        cotización se puede usar más de una vez mientras esté vigente. Sin comisiones ni impuestos.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExchangeRequest" }
+      responses:
+        "201":
+          description: Cambio hecho.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExchangeResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422":
+          description: |
+            `VALIDATION_ERROR` (con `errors[]`), `INSUFFICIENT_FUNDS`, `CURRENCY_MISMATCH` o
+            `QUOTE_EXPIRED` (con `quote`).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /auth/biometric/enroll:
+    post:
+      tags: [biometric]
+      operationId: enrollBiometric
+      summary: Registra el dispositivo para ingresar con huella.
+      description: |
+        Devuelve un `deviceToken` opaco que el servidor recuerda para la persona. Cada registro crea
+        uno nuevo; los anteriores siguen vigentes hasta `DELETE /auth/biometric`.
+      responses:
+        "201":
+          description: Dispositivo registrado.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BiometricEnrollResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /auth/biometric/login:
+    post:
+      tags: [biometric]
+      operationId: loginBiometric
+      summary: Inicia sesión con el token del dispositivo.
+      description: Responde igual que `POST /auth/login`, con el mismo TTL.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/DemoSessionTtl"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BiometricLoginRequest" }
+      responses:
+        "200":
+          description: Sesión iniciada.
+          headers:
+            X-Request-Id: { $ref: "#/components/headers/RequestId" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401":
+          description: "`INVALID_DEVICE`: el token no existe o fue revocado."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /auth/biometric:
+    delete:
+      tags: [biometric]
+      operationId: deleteBiometric
+      summary: Revoca todos los dispositivos registrados de la persona.
+      responses:
+        "204":
+          description: Dispositivos revocados.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /_demo/reset:
     post:
       tags: [demo]
@@ -295,6 +586,22 @@ components:
       in: header
       description: Solo entornos de demo. TTL en segundos del token emitido.
       schema: { type: integer, minimum: 1, examples: [60] }
+    DemoQuoteTtl:
+      name: X-Demo-Quote-Ttl-S
+      in: header
+      description: Solo entornos de demo. Vigencia en segundos de la cotización emitida.
+      schema: { type: integer, minimum: 1, default: 30, examples: [5] }
+    Symbol:
+      name: symbol
+      in: path
+      required: true
+      schema: { type: string, examples: ["ANDM"] }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Por usuario y por operación; ver Idempotencia en la descripción general.
+      schema: { type: string, examples: ["3f1c2a9e-7d4b-4b8e-9c55-1a2b3c4d5e6f"] }
   responses:
     Unauthorized:
       description: "`SESSION_EXPIRED` si el token venció; `UNAUTHORIZED` si falta o no es válido."
@@ -378,7 +685,7 @@ components:
           items: { $ref: "#/components/schemas/Account" }
     Category:
       type: string
-      enum: [GROCERIES, RESTAURANTS, TRANSPORT, SHOPPING, SERVICES, HEALTH, ENTERTAINMENT, SALARY, TRANSFER]
+      enum: [GROCERIES, RESTAURANTS, TRANSPORT, SHOPPING, SERVICES, HEALTH, ENTERTAINMENT, SALARY, TRANSFER, INVESTMENT]
     Movement:
       type: object
       required: [id, accountId, date, description, category, amount, type]
@@ -467,6 +774,203 @@ components:
         sourceAccountId: { type: string, examples: ["ACC-002"] }
         sourceAvailableBalance: { $ref: "#/components/schemas/Money" }
         movementId: { type: string, examples: ["MOV-002-T0001"] }
+    Decimal:
+      type: string
+      description: Texto decimal; con 2 decimales en precios y porcentajes, con 3 en el tipo de cambio.
+      pattern: "^-?\\d+\\.\\d{2,3}$"
+    StockQuote:
+      type: object
+      required: [symbol, name, currency, last, change, changePct, ts]
+      properties:
+        symbol: { type: string, examples: ["ANDM"] }
+        name: { type: string, examples: ["Andina Minerals"] }
+        currency: { type: string, const: USD }
+        last: { $ref: "#/components/schemas/Decimal", examples: ["42.10"] }
+        change: { $ref: "#/components/schemas/Decimal", description: "`last` − `previousClose`.", examples: ["0.34"] }
+        changePct: { $ref: "#/components/schemas/Decimal", description: "`change` sobre `previousClose`, en %.", examples: ["0.81"] }
+        ts: { type: string, format: date-time, description: Cuándo cambió el precio por última vez. }
+    StockList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/StockQuote" }
+    StockDetail:
+      allOf:
+        - $ref: "#/components/schemas/StockQuote"
+        - type: object
+          required: [open, high, low, previousClose, volume, description]
+          properties:
+            open: { $ref: "#/components/schemas/Decimal" }
+            high: { $ref: "#/components/schemas/Decimal" }
+            low: { $ref: "#/components/schemas/Decimal" }
+            previousClose: { $ref: "#/components/schemas/Decimal" }
+            volume: { type: integer, examples: [3643000] }
+            description: { type: string }
+    PricePoint:
+      type: object
+      required: [ts, price]
+      properties:
+        ts: { type: string, format: date-time }
+        price: { $ref: "#/components/schemas/Decimal" }
+    PriceHistory:
+      type: object
+      required: [symbol, range, currency, points]
+      properties:
+        symbol: { type: string, examples: ["QORI"] }
+        range: { type: string, enum: ["1D", "1W", "1M", "1Y"] }
+        currency: { type: string, const: USD }
+        points:
+          type: array
+          items: { $ref: "#/components/schemas/PricePoint" }
+    PortfolioHolding:
+      type: object
+      required: [symbol, name, quantity, averagePrice, lastPrice, marketValue, cost, gain, gainPct, dayChange]
+      properties:
+        symbol: { type: string, examples: ["ANDM"] }
+        name: { type: string }
+        quantity: { type: integer, minimum: 1, examples: [10] }
+        averagePrice: { $ref: "#/components/schemas/Money" }
+        lastPrice: { $ref: "#/components/schemas/Money" }
+        marketValue: { $ref: "#/components/schemas/Money" }
+        cost: { $ref: "#/components/schemas/Money" }
+        gain: { $ref: "#/components/schemas/Money" }
+        gainPct: { $ref: "#/components/schemas/Decimal" }
+        dayChange: { $ref: "#/components/schemas/Money" }
+    PortfolioTotals:
+      type: object
+      required: [marketValue, cost, gain, gainPct, dayChange, dayChangePct]
+      properties:
+        marketValue: { $ref: "#/components/schemas/Money" }
+        cost: { $ref: "#/components/schemas/Money" }
+        gain: { $ref: "#/components/schemas/Money" }
+        gainPct: { $ref: "#/components/schemas/Decimal" }
+        dayChange: { $ref: "#/components/schemas/Money" }
+        dayChangePct: { $ref: "#/components/schemas/Decimal" }
+    Portfolio:
+      type: object
+      required: [accountId, currency, holdings, totals]
+      properties:
+        accountId: { type: string, description: Cuenta en la que se liquidan las órdenes., examples: ["ACC-003"] }
+        currency: { type: string, const: USD }
+        holdings:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioHolding" }
+        totals: { $ref: "#/components/schemas/PortfolioTotals" }
+    OrderRequest:
+      type: object
+      required: [symbol, side, quantity, accountId]
+      properties:
+        symbol: { type: string, examples: ["ANDM"] }
+        side: { type: string, enum: [BUY, SELL] }
+        quantity: { type: integer, minimum: 1, examples: [2] }
+        accountId: { type: string, examples: ["ACC-003"] }
+    OrderResponse:
+      type: object
+      required:
+        - orderId
+        - operationNumber
+        - createdAt
+        - side
+        - symbol
+        - quantity
+        - executedPrice
+        - total
+        - accountId
+        - accountAvailableBalance
+        - movementId
+        - holding
+      properties:
+        orderId: { type: string, examples: ["ORD-000001"] }
+        operationNumber: { type: string, examples: ["70000001"] }
+        createdAt: { type: string, format: date-time }
+        side: { type: string, enum: [BUY, SELL] }
+        symbol: { type: string, examples: ["ANDM"] }
+        quantity: { type: integer, examples: [2] }
+        executedPrice: { $ref: "#/components/schemas/Money" }
+        total: { $ref: "#/components/schemas/Money" }
+        accountId: { type: string, examples: ["ACC-003"] }
+        accountAvailableBalance: { $ref: "#/components/schemas/Money" }
+        movementId: { type: string, examples: ["MOV-003-O0001"] }
+        holding:
+          type: object
+          description: La tenencia después de la orden.
+          required: [symbol, quantity, averagePrice]
+          properties:
+            symbol: { type: string }
+            quantity: { type: integer, minimum: 0, examples: [12] }
+            averagePrice:
+              description: "`null` si la tenencia quedó en 0."
+              oneOf:
+                - $ref: "#/components/schemas/Money"
+                - type: "null"
+    FxQuote:
+      type: object
+      required: [pair, buy, sell, quoteId, expiresAt, ts]
+      properties:
+        pair: { type: string, const: USD/PEN }
+        buy: { $ref: "#/components/schemas/Decimal", examples: ["3.742"] }
+        sell: { $ref: "#/components/schemas/Decimal", examples: ["3.768"] }
+        quoteId: { type: string, examples: ["QTE-000001"] }
+        expiresAt: { type: string, format: date-time }
+        ts: { type: string, format: date-time, description: Cuándo se emitió. }
+    ExchangeRequest:
+      type: object
+      required: [quoteId, sourceAccountId, destinationAccountId, amount]
+      properties:
+        quoteId: { type: string, examples: ["QTE-000001"] }
+        sourceAccountId: { type: string, examples: ["ACC-003"] }
+        destinationAccountId: { type: string, examples: ["ACC-002"] }
+        amount:
+          type: object
+          description: En la moneda de la cuenta de origen.
+          required: [value, currency]
+          properties:
+            value: { type: string, pattern: "^\\d{1,9}(\\.\\d{1,2})?$", examples: ["100.00"] }
+            currency: { type: string, pattern: "^[A-Z]{3}$", examples: ["USD"] }
+    ExchangeResponse:
+      type: object
+      required:
+        - exchangeId
+        - operationNumber
+        - createdAt
+        - quoteId
+        - rate
+        - debited
+        - credited
+        - sourceAccountId
+        - sourceAvailableBalance
+        - destinationAccountId
+        - destinationAvailableBalance
+        - movementIds
+      properties:
+        exchangeId: { type: string, examples: ["FX-000001"] }
+        operationNumber: { type: string, examples: ["80000001"] }
+        createdAt: { type: string, format: date-time }
+        quoteId: { type: string }
+        rate: { $ref: "#/components/schemas/Decimal", examples: ["3.742"] }
+        debited: { $ref: "#/components/schemas/Money" }
+        credited: { $ref: "#/components/schemas/Money" }
+        sourceAccountId: { type: string, examples: ["ACC-003"] }
+        sourceAvailableBalance: { $ref: "#/components/schemas/Money" }
+        destinationAccountId: { type: string, examples: ["ACC-002"] }
+        destinationAvailableBalance: { $ref: "#/components/schemas/Money" }
+        movementIds:
+          type: array
+          description: El del origen y el del destino, en ese orden.
+          items: { type: string }
+          examples: [["MOV-003-X0001", "MOV-002-X0001"]]
+    BiometricEnrollResponse:
+      type: object
+      required: [deviceToken]
+      properties:
+        deviceToken: { type: string, description: Opaco. Guárdalo cifrado en el dispositivo. }
+    BiometricLoginRequest:
+      type: object
+      required: [deviceToken]
+      properties:
+        deviceToken: { type: string }
     FieldError:
       type: object
       required: [field, code, message]
@@ -487,6 +991,7 @@ components:
           type: string
           enum:
             - INVALID_CREDENTIALS
+            - INVALID_DEVICE
             - SESSION_EXPIRED
             - UNAUTHORIZED
             - NOT_FOUND
@@ -494,6 +999,8 @@ components:
             - INSUFFICIENT_FUNDS
             - DESTINATION_NOT_FOUND
             - CURRENCY_MISMATCH
+            - INSUFFICIENT_HOLDINGS
+            - QUOTE_EXPIRED
             - INTERNAL_ERROR
             - SERVICE_UNAVAILABLE
         traceId: { type: string, description: Igual al `X-Request-Id` de la respuesta. }
@@ -501,3 +1008,6 @@ components:
           type: array
           description: Solo en `VALIDATION_ERROR`.
           items: { $ref: "#/components/schemas/FieldError" }
+        quote:
+          $ref: "#/components/schemas/FxQuote"
+          description: Solo en `QUOTE_EXPIRED`, la cotización nueva.

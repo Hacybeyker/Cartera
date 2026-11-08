@@ -2,13 +2,8 @@ package com.hacybeyker.cartera.demo.backend
 
 import java.math.BigDecimal
 import java.time.Clock
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -29,10 +24,7 @@ class TransferDesk(private val state: BackendState, private val clock: Clock) {
         if (idempotencyKey.isNullOrBlank()) {
             reject(FieldError(IDEMPOTENCY_HEADER, "REQUIRED", "La cabecera es obligatoria."))
         }
-        val storageKey = "$userId:$idempotencyKey"
-        return state.idempotency[storageKey] ?: transferOnce(userId, parse(body)).also {
-            state.idempotency[storageKey] = it
-        }
+        return state.idempotency.once("$OPERATION:$userId:$idempotencyKey") { transferOnce(userId, parse(body)) }
     }
 
     private fun transferOnce(userId: String, order: TransferOrder): BackendResponse {
@@ -52,13 +44,12 @@ class TransferDesk(private val state: BackendState, private val clock: Clock) {
     }
 
     private fun execute(order: TransferOrder, holderName: String, newBalance: BigDecimal): BackendResponse {
-        val sequence = state.nextTransferSequence()
-        val createdAt = OffsetDateTime.ofInstant(clock.instant(), LIMA).truncatedTo(ChronoUnit.SECONDS)
-            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        val sequence = state.nextSequence(OPERATION)
+        val createdAt = timestamp(clock.instant())
         val movementId = "MOV-${order.sourceAccountId.substringAfter("ACC-")}-T%04d".format(sequence)
         val operationNumber = "9%07d".format(sequence)
         val movement = movementJson(order, movementId, operationNumber, createdAt, holderName)
-        state.debit(order.sourceAccountId, newBalance, MovementRecord.from(movement))
+        state.post(order.sourceAccountId, newBalance, MovementRecord.from(movement))
         return json(
             status = CREATED,
             body = buildJsonObject {
@@ -145,13 +136,11 @@ class TransferDesk(private val state: BackendState, private val clock: Clock) {
 
     private fun reject(code: ProblemCode, detail: String): Nothing = throw ProblemException(code, detail)
 
-    private fun JsonObject.text(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content
-
     companion object {
         const val IDEMPOTENCY_HEADER = "Idempotency-Key"
         private const val CREATED = 201
+        private const val OPERATION = "transfers"
         private const val MAX_DESCRIPTION = 140
-        private val LIMA = ZoneOffset.ofHours(-5)
         private val AMOUNT_FORMAT = Regex("""\d{1,9}(\.\d{1,2})?""")
         private val CURRENCY_FORMAT = Regex("[A-Z]{3}")
     }

@@ -52,6 +52,43 @@ class ScenarioViewModelTest {
         assertEquals(FailureMode.HTTP_500, state.failureMode)
         assertEquals("900", state.sessionTtl)
         assertEquals(true, state.backendDown)
+        assertEquals("2000", state.tickMs)
+        assertEquals("0", state.streamDrop)
+        assertEquals("30", state.quoteTtl)
+    }
+
+    @Test
+    fun `market fields are saved like the adb extras`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onAction(ScenarioAction.TickMsChanged("0"))
+        viewModel.onAction(ScenarioAction.StreamDropChanged("15"))
+        viewModel.onAction(ScenarioAction.QuoteTtlChanged("5"))
+        assertEquals(null, viewModel.uiState.value.message)
+        viewModel.onAction(ScenarioAction.SaveClicked)
+        advanceUntilIdle()
+
+        assertEquals(Scenario(tickMs = 0, streamDropSeconds = 15, quoteTtlSeconds = 5), store.load())
+        assertEquals("15", viewModel.uiState.value.streamDrop)
+        assertEquals(ScenarioMessage.Saved, viewModel.uiState.value.message)
+    }
+
+    @Test
+    fun `invalid market values are reported`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onAction(ScenarioAction.QuoteTtlChanged("0"))
+        viewModel.onAction(ScenarioAction.TickMsChanged("rapido"))
+        viewModel.onAction(ScenarioAction.SaveClicked)
+        advanceUntilIdle()
+
+        assertEquals(
+            ScenarioMessage.Rejected(listOf("tick_ms=rapido", "quote_ttl_s=0")),
+            viewModel.uiState.value.message
+        )
+        assertEquals("30", viewModel.uiState.value.quoteTtl)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.hacybeyker.cartera.demo.scenario
 
 import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.demo.backend.DemoScenario
 import com.hacybeyker.cartera.demo.backend.FailureMode
 
 data class EndpointValues<T>(val default: T, val overrides: Map<String, T> = emptyMap()) {
@@ -18,6 +19,9 @@ data class Scenario(
     val failureMode: FailureMode = FailureMode.HTTP_500,
     val sessionTtlSeconds: Long = DEFAULT_SESSION_TTL_SECONDS,
     val backendDown: Boolean = false,
+    val tickMs: Int = DemoScenario.DEFAULT_TICK_MS,
+    val streamDropSeconds: Int = 0,
+    val quoteTtlSeconds: Int = DemoScenario.DEFAULT_QUOTE_TTL_SECONDS,
     /** Interruptores del cliente encendidos; no viajan al backend. */
     val flags: Set<FeatureFlag> = emptySet()
 ) {
@@ -26,7 +30,10 @@ data class Scenario(
         ScenarioKeys.FAILURE_RATE to failureRate.encode(),
         ScenarioKeys.FAILURE_MODE to failureMode.wireName,
         ScenarioKeys.SESSION_TTL to sessionTtlSeconds.toString(),
-        ScenarioKeys.BACKEND_DOWN to backendDown.toString()
+        ScenarioKeys.BACKEND_DOWN to backendDown.toString(),
+        ScenarioKeys.TICK_MS to tickMs.toString(),
+        ScenarioKeys.STREAM_DROP to streamDropSeconds.toString(),
+        ScenarioKeys.QUOTE_TTL to quoteTtlSeconds.toString()
     ) + FeatureFlag.entries.associate { it.key to (it in flags).toString() }
 
     fun describe(): String = toValues().entries.joinToString(" ") { (key, value) -> "$key=$value" }
@@ -43,5 +50,8 @@ object ScenarioKeys {
     const val FAILURE_MODE = "failure_mode"
     const val SESSION_TTL = "session_ttl"
     const val BACKEND_DOWN = "backend_down"
+    const val TICK_MS = "tick_ms"
+    const val STREAM_DROP = "stream_drop_s"
+    const val QUOTE_TTL = "quote_ttl_s"
     const val DEFAULTS = "defaults"
 }

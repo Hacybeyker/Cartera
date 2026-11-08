@@ -42,6 +42,9 @@ class ScenarioViewModel @Inject constructor(
             is ScenarioAction.FailureModeSelected -> state.update { it.copy(failureMode = action.mode, message = null) }
             is ScenarioAction.SessionTtlChanged -> state.update { it.copy(sessionTtl = action.value, message = null) }
             is ScenarioAction.BackendDownChanged -> state.update { it.copy(backendDown = action.value, message = null) }
+            is ScenarioAction.TickMsChanged -> state.update { it.copy(tickMs = action.value, message = null) }
+            is ScenarioAction.StreamDropChanged -> state.update { it.copy(streamDrop = action.value, message = null) }
+            is ScenarioAction.QuoteTtlChanged -> state.update { it.copy(quoteTtl = action.value, message = null) }
             is ScenarioAction.FlagChanged -> state.update {
                 val flags = if (action.enabled) it.flags + action.flag else it.flags - action.flag
                 it.copy(flags = flags, message = null)
@@ -59,7 +62,10 @@ class ScenarioViewModel @Inject constructor(
             ScenarioKeys.FAILURE_RATE to form.failureRate,
             ScenarioKeys.FAILURE_MODE to form.failureMode.wireName,
             ScenarioKeys.SESSION_TTL to form.sessionTtl,
-            ScenarioKeys.BACKEND_DOWN to form.backendDown
+            ScenarioKeys.BACKEND_DOWN to form.backendDown,
+            ScenarioKeys.TICK_MS to form.tickMs,
+            ScenarioKeys.STREAM_DROP to form.streamDrop,
+            ScenarioKeys.QUOTE_TTL to form.quoteTtl
         ) + FeatureFlag.entries.associate { it.key to (it in form.flags) }
         viewModelScope.launch {
             val update = withContext(io) { store.update(values) }

@@ -24,10 +24,11 @@ val fixturesDir: File = File(requireNotNull(System.getProperty("cartera.fixtures
 val fileFixtures = FixtureSource { path -> File(fixturesDir, path).readText() }
 
 class RouterHarness(val clock: MutableClock = MutableClock()) {
-    val state = BackendState(FixtureCatalog(fileFixtures))
+    val state = BackendState(FixtureCatalog(fileFixtures), clock)
     val jwt = JwtSigner(clock)
+    val desks = BackendDesks.create(state, jwt, clock)
     var resets = 0
-    val router = BackendRouter(state, SessionDesk(state, jwt), TransferDesk(state, clock), onReset = { resets++ })
+    val router = BackendRouter(state, desks, onReset = { resets++ })
 
     fun call(
         method: String,
@@ -58,14 +59,49 @@ class RouterHarness(val clock: MutableClock = MutableClock()) {
         return response.json().string("accessToken")
     }
 
-    fun transfer(token: String, body: String, key: String? = "key-1"): BackendResponse = call(
+    fun transfer(token: String, body: String, key: String? = "key-1"): BackendResponse =
+        post("transfers", token, body, key)
+
+    fun order(token: String, body: String, key: String? = "order-1"): BackendResponse = post("orders", token, body, key)
+
+    fun exchange(token: String, body: String, key: String? = "fx-1"): BackendResponse =
+        post("fx/exchanges", token, body, key)
+
+    fun quote(token: String, ttlSeconds: Int? = null): JsonObject = call(
+        method = "GET",
+        path = "fx/rates",
+        token = token,
+        headers = ttlSeconds?.let { mapOf("X-Demo-Quote-Ttl-S" to it.toString()) }.orEmpty()
+    ).json()
+
+    fun balance(token: String, accountId: String): String =
+        get("accounts/$accountId", token).json().obj("availableBalance").string("value")
+
+    private fun post(path: String, token: String, body: String, key: String?) = call(
         method = "POST",
-        path = "transfers",
+        path = path,
         token = token,
         body = body,
         headers = key?.let { mapOf("Idempotency-Key" to it) }.orEmpty()
     )
 }
+
+fun orderBody(symbol: String = "ANDM", side: String = "BUY", quantity: String = "2", account: String = "ACC-003") =
+    """{"symbol":"$symbol","side":"$side","quantity":$quantity,"accountId":"$account"}"""
+
+fun exchangeBody(
+    quoteId: String,
+    source: String = "ACC-003",
+    destination: String = "ACC-002",
+    value: String = "100.00",
+    currency: String = "USD"
+) = """{"quoteId":"$quoteId","sourceAccountId":"$source","destinationAccountId":"$destination",""" +
+    """"amount":{"value":"$value","currency":"$currency"}}"""
+
+fun BackendResponse.problemCode(): String = json().string("code")
+
+fun BackendResponse.errorFields(): List<String> =
+    json().getValue("errors").jsonArray.map { it.jsonObject.string("field") }
 
 fun BackendResponse.json(): JsonObject = Json.parseToJsonElement(requireNotNull(body)).jsonObject
 

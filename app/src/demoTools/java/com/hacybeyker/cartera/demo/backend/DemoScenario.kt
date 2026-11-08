@@ -12,12 +12,18 @@ enum class FailureMode(val wireName: String) {
     }
 }
 
-// El servidor solo honra lo que llega por cabecera: un valor ausente o inválido equivale a "sin efecto".
+// El servidor solo honra lo que llega por cabecera: un valor ausente o inválido equivale a "sin efecto", o al valor
+// que fija el contrato cuando la cabecera define un parámetro (ticks, corte del canal y vigencia de la cotización).
 data class DemoScenario(
     val latencyMs: Long = 0,
     val failureRate: Int = 0,
     val failureMode: FailureMode = FailureMode.HTTP_500,
-    val backendDown: Boolean = false
+    val backendDown: Boolean = false,
+    /** Milisegundos entre ticks del canal en vivo; 0 congela los precios. */
+    val tickMs: Int = DEFAULT_TICK_MS,
+    /** Segundos desde la conexión hasta que el servidor corta el canal; 0 = nunca. */
+    val streamDropSeconds: Int = 0,
+    val quoteTtlSeconds: Int = DEFAULT_QUOTE_TTL_SECONDS
 ) {
     companion object {
         const val LATENCY_HEADER = "X-Demo-Latency-Ms"
@@ -25,13 +31,22 @@ data class DemoScenario(
         const val FAILURE_MODE_HEADER = "X-Demo-Failure-Mode"
         const val SESSION_TTL_HEADER = "X-Demo-Session-Ttl"
         const val BACKEND_DOWN_HEADER = "X-Demo-Backend-Down"
+        const val TICK_MS_HEADER = "X-Demo-Tick-Ms"
+        const val STREAM_DROP_HEADER = "X-Demo-Stream-Drop-S"
+        const val QUOTE_TTL_HEADER = "X-Demo-Quote-Ttl-S"
+        const val DEFAULT_TICK_MS = 2000
+        const val DEFAULT_QUOTE_TTL_SECONDS = 30
         private const val MAX_RATE = 100
 
         fun from(request: BackendRequest): DemoScenario = DemoScenario(
             latencyMs = request.header(LATENCY_HEADER)?.toLongOrNull()?.coerceAtLeast(0) ?: 0,
             failureRate = request.header(FAILURE_RATE_HEADER)?.toIntOrNull()?.coerceIn(0, MAX_RATE) ?: 0,
             failureMode = FailureMode.fromWire(request.header(FAILURE_MODE_HEADER)),
-            backendDown = request.header(BACKEND_DOWN_HEADER).toBoolean()
+            backendDown = request.header(BACKEND_DOWN_HEADER).toBoolean(),
+            tickMs = request.header(TICK_MS_HEADER)?.toIntOrNull()?.takeIf { it >= 0 } ?: DEFAULT_TICK_MS,
+            streamDropSeconds = request.header(STREAM_DROP_HEADER)?.toIntOrNull()?.takeIf { it >= 0 } ?: 0,
+            quoteTtlSeconds = request.header(QUOTE_TTL_HEADER)?.toIntOrNull()?.takeIf { it > 0 }
+                ?: DEFAULT_QUOTE_TTL_SECONDS
         )
     }
 }

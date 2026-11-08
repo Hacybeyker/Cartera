@@ -20,6 +20,9 @@ object ScenarioParser {
         ScenarioKeys.FAILURE_MODE,
         ScenarioKeys.SESSION_TTL,
         ScenarioKeys.BACKEND_DOWN,
+        ScenarioKeys.TICK_MS,
+        ScenarioKeys.STREAM_DROP,
+        ScenarioKeys.QUOTE_TTL,
         ScenarioKeys.DEFAULTS
     ) + FeatureFlag.entries.map { it.key }
     private val ENDPOINT_IDS = Endpoint.entries.filter { it != Endpoint.DEMO_RESET }.map { it.id }.toSet()
@@ -50,10 +53,19 @@ object ScenarioParser {
                 raw.toString().trim().toLongOrNull()?.takeIf { it > 0 }
             },
             backendDown = field(ScenarioKeys.BACKEND_DOWN, base.backendDown, ::bool),
+            tickMs = field(ScenarioKeys.TICK_MS, base.tickMs) { raw -> integer(raw)?.takeIf { it >= 0 } },
+            streamDropSeconds = field(ScenarioKeys.STREAM_DROP, base.streamDropSeconds) { raw ->
+                integer(raw)?.takeIf { it >= 0 }
+            },
+            quoteTtlSeconds = field(ScenarioKeys.QUOTE_TTL, base.quoteTtlSeconds) { raw ->
+                integer(raw)?.takeIf { it > 0 }
+            },
             flags = FeatureFlag.entries.filter { flag -> field(flag.key, flag in base.flags, ::bool) }.toSet()
         )
         return ScenarioUpdate(scenario, rejected, values.keys - KNOWN_KEYS)
     }
+
+    private fun integer(raw: Any): Int? = raw.toString().trim().toIntOrNull()
 
     private fun latency(text: String): Long? = text.toLongOrNull()?.takeIf { it >= 0 }
 

@@ -20,7 +20,7 @@ class ScenarioTest {
     fun `defaults match the documented values`() {
         assertEquals(
             "latency=default=400 failure_rate=default=0 failure_mode=http_500 session_ttl=900 backend_down=false " +
-                "movements_full_page=false accounts_eager_refresh=false breakdown_rich_transition=false",
+                "tick_ms=2000 stream_drop_s=0 quote_ttl_s=30 movements_full_page=false accounts_eager_refresh=false breakdown_rich_transition=false",
             Scenario().describe()
         )
     }
@@ -104,6 +104,42 @@ class ScenarioTest {
         assertEquals(Scenario(), update.scenario)
         assertEquals(5, update.rejected.size)
         assertTrue(update.describe().contains("valores inválidos sin aplicar: latency=default=-1"))
+    }
+
+    @Test
+    fun `market keys arrive as adb integers or launch text`() {
+        val fromAdb = ScenarioParser.apply(Scenario(), mapOf("tick_ms" to 0, "stream_drop_s" to 15, "quote_ttl_s" to 5))
+        val fromLaunch = ScenarioParser.apply(Scenario(), mapOf("tick_ms" to "250", "quote_ttl_s" to " 60 "))
+
+        assertEquals(Scenario(tickMs = 0, streamDropSeconds = 15, quoteTtlSeconds = 5), fromAdb.scenario)
+        assertEquals(Scenario(tickMs = 250, quoteTtlSeconds = 60), fromLaunch.scenario)
+        assertTrue(fromAdb.rejected.isEmpty() && fromAdb.ignoredKeys.isEmpty())
+    }
+
+    @Test
+    fun `invalid market values are rejected and keep the previous one`() {
+        val current = Scenario(tickMs = 0, streamDropSeconds = 15, quoteTtlSeconds = 5)
+
+        val update = ScenarioParser.apply(
+            current,
+            mapOf("tick_ms" to -1, "stream_drop_s" to "nunca", "quote_ttl_s" to 0)
+        )
+
+        assertEquals(current, update.scenario)
+        assertEquals(listOf("tick_ms=-1", "stream_drop_s=nunca", "quote_ttl_s=0"), update.rejected)
+        assertEquals(Scenario(), ScenarioParser.apply(current, mapOf("defaults" to true)).scenario)
+    }
+
+    @Test
+    fun `market values are stored and read back`() {
+        val storage = FakeScenarioStorage()
+
+        ScenarioStore(storage).update(mapOf("tick_ms" to 0, "quote_ttl_s" to 5))
+
+        assertEquals("0", storage.values["tick_ms"])
+        assertEquals("0", storage.values["stream_drop_s"])
+        assertEquals("5", storage.values["quote_ttl_s"])
+        assertEquals(Scenario(tickMs = 0, quoteTtlSeconds = 5), ScenarioStore(storage).load())
     }
 
     @Test

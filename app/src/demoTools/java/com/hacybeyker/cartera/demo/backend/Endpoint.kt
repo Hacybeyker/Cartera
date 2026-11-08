@@ -1,6 +1,6 @@
 package com.hacybeyker.cartera.demo.backend
 
-enum class Endpoint(val id: String, val method: String, path: String, val authenticated: Boolean) {
+enum class Endpoint(val id: String, val method: String, val path: String, val authenticated: Boolean) {
     APP_CONFIG("app_config", "GET", "app/config", authenticated = false),
     LOGIN("login", "POST", "auth/login", authenticated = false),
     ME("me", "GET", "me", authenticated = true),
@@ -10,6 +10,17 @@ enum class Endpoint(val id: String, val method: String, path: String, val authen
     MOVEMENT("movement", "GET", "movements/{id}", authenticated = true),
     BREAKDOWN("breakdown", "GET", "movements/{id}/breakdown", authenticated = true),
     TRANSFERS("transfers", "POST", "transfers", authenticated = true),
+    MARKET_STOCKS("market_stocks", "GET", "market/stocks", authenticated = true),
+    MARKET_STOCK("market_stock", "GET", "market/stocks/{id}", authenticated = true),
+    MARKET_HISTORY("market_history", "GET", "market/stocks/{id}/history", authenticated = true),
+    MARKET_STREAM("market_stream", "GET", "market/stream", authenticated = true),
+    PORTFOLIO("portfolio", "GET", "portfolio", authenticated = true),
+    ORDERS("orders", "POST", "orders", authenticated = true),
+    FX_RATES("fx_rates", "GET", "fx/rates", authenticated = true),
+    FX_EXCHANGES("fx_exchanges", "POST", "fx/exchanges", authenticated = true),
+    BIOMETRIC_ENROLL("biometric_enroll", "POST", "auth/biometric/enroll", authenticated = true),
+    BIOMETRIC_LOGIN("biometric_login", "POST", "auth/biometric/login", authenticated = false),
+    BIOMETRIC_DELETE("biometric_delete", "DELETE", "auth/biometric", authenticated = true),
     DEMO_RESET("demo_reset", "POST", "_demo/reset", authenticated = false);
 
     private val segments = path.split('/')

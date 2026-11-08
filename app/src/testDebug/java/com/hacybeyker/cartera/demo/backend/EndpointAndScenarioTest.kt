@@ -20,6 +20,17 @@ class EndpointAndScenarioTest {
             ("GET" to "movements/MOV-1/") to Endpoint.Match(Endpoint.MOVEMENT, "MOV-1"),
             ("GET" to "movements/MOV-1/breakdown") to Endpoint.Match(Endpoint.BREAKDOWN, "MOV-1"),
             ("POST" to "transfers") to Endpoint.Match(Endpoint.TRANSFERS, ""),
+            ("GET" to "market/stocks") to Endpoint.Match(Endpoint.MARKET_STOCKS, ""),
+            ("GET" to "market/stocks/ANDM") to Endpoint.Match(Endpoint.MARKET_STOCK, "ANDM"),
+            ("GET" to "market/stocks/ANDM/history") to Endpoint.Match(Endpoint.MARKET_HISTORY, "ANDM"),
+            ("GET" to "market/stream") to Endpoint.Match(Endpoint.MARKET_STREAM, ""),
+            ("GET" to "portfolio") to Endpoint.Match(Endpoint.PORTFOLIO, ""),
+            ("POST" to "orders") to Endpoint.Match(Endpoint.ORDERS, ""),
+            ("GET" to "fx/rates") to Endpoint.Match(Endpoint.FX_RATES, ""),
+            ("POST" to "fx/exchanges") to Endpoint.Match(Endpoint.FX_EXCHANGES, ""),
+            ("POST" to "auth/biometric/enroll") to Endpoint.Match(Endpoint.BIOMETRIC_ENROLL, ""),
+            ("POST" to "auth/biometric/login") to Endpoint.Match(Endpoint.BIOMETRIC_LOGIN, ""),
+            ("DELETE" to "auth/biometric") to Endpoint.Match(Endpoint.BIOMETRIC_DELETE, ""),
             ("POST" to "_demo/reset") to Endpoint.Match(Endpoint.DEMO_RESET, "")
         )
 
@@ -33,13 +44,17 @@ class EndpointAndScenarioTest {
         assertNull(Endpoint.resolve("POST", "/api/v1/accounts"))
         assertNull(Endpoint.resolve("GET", "/api/v1/accounts/ACC-001/extra"))
         assertNull(Endpoint.resolve("GET", "/api/v2/accounts"))
+        assertNull(Endpoint.resolve("GET", "/api/v1/auth/biometric"))
+        assertNull(Endpoint.resolve("POST", "/api/v1/market/stocks/ANDM"))
     }
 
     @Test
     fun `endpoint ids match the scenario channel names`() {
         assertEquals(
             listOf(
-                "app_config", "login", "me", "accounts", "account", "movements", "movement", "breakdown", "transfers"
+                "app_config", "login", "me", "accounts", "account", "movements", "movement", "breakdown", "transfers",
+                "market_stocks", "market_stock", "market_history", "market_stream", "portfolio", "orders",
+                "fx_rates", "fx_exchanges", "biometric_enroll", "biometric_login", "biometric_delete"
             ),
             Endpoint.entries.filter { it != Endpoint.DEMO_RESET }.map { it.id }
         )
@@ -59,12 +74,23 @@ class EndpointAndScenarioTest {
                 "x-demo-latency-ms" to "2000",
                 "X-Demo-Failure-Rate" to "150",
                 "X-Demo-Failure-Mode" to "timeout",
-                "X-Demo-Backend-Down" to "true"
+                "X-Demo-Backend-Down" to "true",
+                "X-Demo-Tick-Ms" to "0",
+                "x-demo-stream-drop-s" to "15",
+                "X-Demo-Quote-Ttl-S" to "5"
             )
         )
 
         assertEquals(
-            DemoScenario(latencyMs = 2000, failureRate = 100, failureMode = FailureMode.TIMEOUT, backendDown = true),
+            DemoScenario(
+                latencyMs = 2000,
+                failureRate = 100,
+                failureMode = FailureMode.TIMEOUT,
+                backendDown = true,
+                tickMs = 0,
+                streamDropSeconds = 15,
+                quoteTtlSeconds = 5
+            ),
             DemoScenario.from(request)
         )
     }
@@ -78,11 +104,15 @@ class EndpointAndScenarioTest {
                 "X-Demo-Latency-Ms" to "-5",
                 "X-Demo-Failure-Rate" to "mucho",
                 "X-Demo-Failure-Mode" to "explode",
-                "X-Demo-Backend-Down" to "yes"
+                "X-Demo-Backend-Down" to "yes",
+                "X-Demo-Tick-Ms" to "-1",
+                "X-Demo-Stream-Drop-S" to "nunca",
+                "X-Demo-Quote-Ttl-S" to "0"
             )
         )
 
         assertEquals(DemoScenario(), DemoScenario.from(request))
+        assertEquals(DemoScenario(tickMs = 2000, streamDropSeconds = 0, quoteTtlSeconds = 30), DemoScenario())
         assertEquals(FailureMode.DISCONNECT, FailureMode.fromWire("disconnect"))
     }
 

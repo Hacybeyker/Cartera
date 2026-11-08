@@ -23,12 +23,17 @@ class SessionDesk(private val state: BackendState, private val jwt: JwtSigner) {
         }
         val user = state.userByUsername(username.orEmpty())?.takeIf { it.string("password") == password }
             ?: throw ProblemException(ProblemCode.INVALID_CREDENTIALS, "Usuario o contraseña incorrectos.")
+        return issue(user.string("id"), request)
+    }
+
+    /** La respuesta de un login correcto; `X-Demo-Session-Ttl` fija la vida del token. */
+    fun issue(userId: String, request: BackendRequest): BackendResponse {
         val ttl = request.header(DemoScenario.SESSION_TTL_HEADER)?.toLongOrNull()?.takeIf { it > 0 }
             ?: DEFAULT_SESSION_TTL
         return json(
             OK,
             buildJsonObject {
-                put("accessToken", jwt.issue(user.string("id"), ttl))
+                put("accessToken", jwt.issue(userId, ttl))
                 put("tokenType", "Bearer")
                 put("expiresIn", ttl)
             }

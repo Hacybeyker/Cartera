@@ -2,6 +2,7 @@ package com.hacybeyker.cartera.demo.backend
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 
 data class BackendRequest(
@@ -32,3 +33,5 @@ data class BackendResponse(
         const val PROBLEM_JSON = "application/problem+json"
     }
 }
+
+fun JsonObject.text(key: String): String? = (get(key) as? JsonPrimitive)?.takeIf { it.isString }?.content

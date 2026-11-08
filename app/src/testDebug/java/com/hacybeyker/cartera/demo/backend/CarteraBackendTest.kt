@@ -122,6 +122,20 @@ class CarteraBackendTest {
     }
 
     @Test
+    fun `new endpoints follow the same latency and failure rules`() {
+        val headers = mapOf("X-Demo-Failure-Rate" to "100", "X-Demo-Latency-Ms" to "250")
+
+        val orders = backend.handle(BackendRequest("POST", "/api/v1/orders", headers = headers))
+        val down = backend.handle(
+            BackendRequest("GET", "/api/v1/market/stocks", headers = mapOf("X-Demo-Backend-Down" to "true"))
+        )
+
+        assertEquals(500, (orders.outcome as Outcome.Respond).response.status)
+        assertEquals(250L, orders.latencyMs)
+        assertEquals(503, (down.outcome as Outcome.Respond).response.status)
+    }
+
+    @Test
     fun `reset makes injected failures repeat from the start`() {
         val headers = mapOf("X-Demo-Failure-Rate" to "50")
         val config = BackendRequest("GET", "/api/v1/app/config", headers = headers)

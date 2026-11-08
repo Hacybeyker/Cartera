@@ -49,27 +49,8 @@ fun ScenarioContent(
                 .padding(MaterialTheme.spacing.screen),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.md)
         ) {
-            ScenarioField(
-                value = uiState.latency,
-                label = R.string.scenario_latency,
-                testTag = ScenarioTestTags.LATENCY,
-                onValueChange = { onAction(ScenarioAction.LatencyChanged(it)) }
-            )
-            ScenarioField(
-                value = uiState.failureRate,
-                label = R.string.scenario_failure_rate,
-                testTag = ScenarioTestTags.FAILURE_RATE,
-                onValueChange = { onAction(ScenarioAction.FailureRateChanged(it)) }
-            )
-            FailureModeSelector(selected = uiState.failureMode, onAction = onAction)
-            ScenarioField(
-                value = uiState.sessionTtl,
-                label = R.string.scenario_session_ttl,
-                testTag = ScenarioTestTags.SESSION_TTL,
-                onValueChange = { onAction(ScenarioAction.SessionTtlChanged(it)) },
-                keyboardType = KeyboardType.Number
-            )
-            BackendDownSwitch(checked = uiState.backendDown, onAction = onAction)
+            NetworkFields(uiState = uiState, onAction = onAction)
+            MarketFields(uiState = uiState, onAction = onAction)
             Text(text = stringResource(R.string.scenario_flags), style = MaterialTheme.typography.titleSmall)
             FeatureFlag.entries.forEach { flag ->
                 LabeledSwitch(
@@ -94,6 +75,57 @@ fun ScenarioContent(
             }
         }
     }
+}
+
+@Composable
+private fun NetworkFields(uiState: ScenarioUiState, onAction: (ScenarioAction) -> Unit) {
+    ScenarioField(
+        value = uiState.latency,
+        label = R.string.scenario_latency,
+        testTag = ScenarioTestTags.LATENCY,
+        onValueChange = { onAction(ScenarioAction.LatencyChanged(it)) }
+    )
+    ScenarioField(
+        value = uiState.failureRate,
+        label = R.string.scenario_failure_rate,
+        testTag = ScenarioTestTags.FAILURE_RATE,
+        onValueChange = { onAction(ScenarioAction.FailureRateChanged(it)) }
+    )
+    FailureModeSelector(selected = uiState.failureMode, onAction = onAction)
+    ScenarioField(
+        value = uiState.sessionTtl,
+        label = R.string.scenario_session_ttl,
+        testTag = ScenarioTestTags.SESSION_TTL,
+        onValueChange = { onAction(ScenarioAction.SessionTtlChanged(it)) },
+        keyboardType = KeyboardType.Number
+    )
+    BackendDownSwitch(checked = uiState.backendDown, onAction = onAction)
+}
+
+@Composable
+private fun MarketFields(uiState: ScenarioUiState, onAction: (ScenarioAction) -> Unit) {
+    Text(text = stringResource(R.string.scenario_market), style = MaterialTheme.typography.titleSmall)
+    ScenarioField(
+        value = uiState.tickMs,
+        label = R.string.scenario_tick_ms,
+        testTag = ScenarioTestTags.TICK_MS,
+        onValueChange = { onAction(ScenarioAction.TickMsChanged(it)) },
+        keyboardType = KeyboardType.Number
+    )
+    ScenarioField(
+        value = uiState.streamDrop,
+        label = R.string.scenario_stream_drop,
+        testTag = ScenarioTestTags.STREAM_DROP,
+        onValueChange = { onAction(ScenarioAction.StreamDropChanged(it)) },
+        keyboardType = KeyboardType.Number
+    )
+    ScenarioField(
+        value = uiState.quoteTtl,
+        label = R.string.scenario_quote_ttl,
+        testTag = ScenarioTestTags.QUOTE_TTL,
+        onValueChange = { onAction(ScenarioAction.QuoteTtlChanged(it)) },
+        keyboardType = KeyboardType.Number
+    )
 }
 
 @Composable
@@ -208,6 +240,9 @@ private fun ScenarioContentPreview() {
                 latency = "default=400,movements=2000",
                 failureRate = "default=0",
                 sessionTtl = "900",
+                tickMs = "2000",
+                streamDrop = "0",
+                quoteTtl = "30",
                 message = ScenarioMessage.Saved
             ),
             onAction = {},

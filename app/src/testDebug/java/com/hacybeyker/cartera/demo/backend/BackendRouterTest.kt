@@ -201,6 +201,16 @@ class BackendRouterTest {
     }
 
     @Test
+    fun `every endpoint has a route`() {
+        val token = harness.login()
+
+        Endpoint.entries.forEach { endpoint ->
+            val response = harness.call(endpoint.method, endpoint.path.replace("{id}", "X"), token = token)
+            assertTrue(endpoint.id, response.status in 200..599)
+        }
+    }
+
+    @Test
     fun `demo reset answers no content and notifies`() {
         val response = harness.call("POST", "_demo/reset")
 

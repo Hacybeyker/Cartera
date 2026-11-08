@@ -28,12 +28,11 @@ class CarteraBackend(
     clock: Clock = Clock.systemDefaultZone(),
     private val log: (String) -> Unit = {}
 ) : Closeable {
-    private val state = BackendState(FixtureCatalog(fixtures))
+    private val state = BackendState(FixtureCatalog(fixtures), clock)
     private val failures = FailureInjector()
     private val router = BackendRouter(
         state = state,
-        sessions = SessionDesk(state, JwtSigner(clock)),
-        transfers = TransferDesk(state, clock),
+        desks = BackendDesks.create(state, JwtSigner(clock), clock),
         onReset = failures::reset
     )
     private val requestCounter = AtomicLong()

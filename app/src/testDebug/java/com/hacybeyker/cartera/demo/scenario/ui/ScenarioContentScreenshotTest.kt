@@ -22,7 +22,14 @@ class ScenarioContentScreenshotTest {
     @Test
     fun defaults() = compose.captureLightAndDark("escenario_valores_defecto") {
         ScenarioContent(
-            uiState = ScenarioUiState(latency = "default=400", failureRate = "default=0", sessionTtl = "900"),
+            uiState = ScenarioUiState(
+                latency = "default=400",
+                failureRate = "default=0",
+                sessionTtl = "900",
+                tickMs = "2000",
+                streamDrop = "0",
+                quoteTtl = "30"
+            ),
             onAction = {},
             onBack = {}
         )
@@ -37,6 +44,9 @@ class ScenarioContentScreenshotTest {
                 failureMode = FailureMode.TIMEOUT,
                 sessionTtl = "60",
                 backendDown = true,
+                tickMs = "0",
+                streamDrop = "15",
+                quoteTtl = "5",
                 flags = setOf(FeatureFlag.MOVEMENTS_FULL_PAGE),
                 message = ScenarioMessage.Rejected(listOf("session_ttl=0"))
             ),

@@ -18,9 +18,20 @@ class DemoScenarioInterceptor(private val store: ScenarioStore) : Interceptor {
             .header(DemoScenario.FAILURE_RATE_HEADER, scenario.failureRate.valueFor(endpoint.id).toString())
             .header(DemoScenario.FAILURE_MODE_HEADER, scenario.failureMode.wireName)
         if (scenario.backendDown) builder.header(DemoScenario.BACKEND_DOWN_HEADER, "true")
-        if (endpoint == Endpoint.LOGIN) {
-            builder.header(DemoScenario.SESSION_TTL_HEADER, scenario.sessionTtlSeconds.toString())
-        }
+        parameterHeaders(endpoint, scenario).forEach { (name, value) -> builder.header(name, value) }
         return chain.proceed(builder.build())
+    }
+
+    // Las cabeceras que fijan un parámetro viajan solo con el endpoint que las honra.
+    private fun parameterHeaders(endpoint: Endpoint, scenario: Scenario): Map<String, String> = when (endpoint) {
+        Endpoint.LOGIN, Endpoint.BIOMETRIC_LOGIN ->
+            mapOf(DemoScenario.SESSION_TTL_HEADER to scenario.sessionTtlSeconds.toString())
+        Endpoint.FX_RATES -> mapOf(DemoScenario.QUOTE_TTL_HEADER to scenario.quoteTtlSeconds.toString())
+        Endpoint.MARKET_STREAM -> mapOf(
+            DemoScenario.TICK_MS_HEADER to scenario.tickMs.toString(),
+            DemoScenario.STREAM_DROP_HEADER to scenario.streamDropSeconds.toString(),
+            DemoScenario.QUOTE_TTL_HEADER to scenario.quoteTtlSeconds.toString()
+        )
+        else -> emptyMap()
     }
 }

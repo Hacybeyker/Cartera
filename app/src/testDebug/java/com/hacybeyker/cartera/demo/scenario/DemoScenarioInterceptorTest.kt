@@ -56,6 +56,40 @@ class DemoScenarioInterceptorTest {
     }
 
     @Test
+    fun `biometric login also carries the session ttl`() {
+        ScenarioStore(storage).update(mapOf("session_ttl" to 60))
+
+        assertEquals("60", send("POST", "auth/biometric/login").headers["X-Demo-Session-Ttl"])
+        assertNull(send("POST", "auth/biometric/enroll").headers["X-Demo-Session-Ttl"])
+    }
+
+    @Test
+    fun `quote ttl travels with the rates and the stream handshake`() {
+        ScenarioStore(storage).update(mapOf("quote_ttl_s" to 5, "tick_ms" to 0, "stream_drop_s" to 15))
+
+        val rates = send("GET", "fx/rates")
+        val stream = send("GET", "market/stream")
+        val exchange = send("POST", "fx/exchanges")
+
+        assertEquals("5", rates.headers["X-Demo-Quote-Ttl-S"])
+        assertNull(rates.headers["X-Demo-Tick-Ms"])
+        assertEquals("0", stream.headers["X-Demo-Tick-Ms"])
+        assertEquals("15", stream.headers["X-Demo-Stream-Drop-S"])
+        assertEquals("5", stream.headers["X-Demo-Quote-Ttl-S"])
+        assertNull(exchange.headers["X-Demo-Quote-Ttl-S"])
+        assertEquals("400", stream.headers["X-Demo-Latency-Ms"])
+    }
+
+    @Test
+    fun `stream handshake gets the default market values`() {
+        val stream = send("GET", "market/stream")
+
+        assertEquals("2000", stream.headers["X-Demo-Tick-Ms"])
+        assertEquals("0", stream.headers["X-Demo-Stream-Drop-S"])
+        assertEquals("30", stream.headers["X-Demo-Quote-Ttl-S"])
+    }
+
+    @Test
     fun `backend down is sent only when on`() {
         assertNull(send("GET", "accounts").headers["X-Demo-Backend-Down"])
 

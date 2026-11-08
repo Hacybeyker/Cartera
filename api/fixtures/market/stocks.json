@@ -1,0 +1,90 @@
+[
+  {
+    "symbol": "ANDM",
+    "name": "Andina Minerals",
+    "currency": "USD",
+    "previousClose": "41.76",
+    "open": "41.54",
+    "high": "42.22",
+    "low": "41.12",
+    "volume": 3643000,
+    "description": "Minera de cobre y zinc con operaciones en la sierra central."
+  },
+  {
+    "symbol": "CUSC",
+    "name": "Cusco Telecom",
+    "currency": "USD",
+    "previousClose": "27.76",
+    "open": "28.10",
+    "high": "28.39",
+    "low": "27.02",
+    "volume": 4470000,
+    "description": "Telefonía móvil e internet de fibra en el sur del país."
+  },
+  {
+    "symbol": "INKA",
+    "name": "Inka Energy",
+    "currency": "USD",
+    "previousClose": "65.35",
+    "open": "64.53",
+    "high": "65.93",
+    "low": "62.52",
+    "volume": 2821000,
+    "description": "Generación hidroeléctrica y eólica conectada a la red nacional."
+  },
+  {
+    "symbol": "LIMA",
+    "name": "Lima Logistics",
+    "currency": "USD",
+    "previousClose": "10.13",
+    "open": "10.24",
+    "high": "10.24",
+    "low": "9.85",
+    "volume": 320000,
+    "description": "Almacenes y transporte de carga desde el puerto del Callao."
+  },
+  {
+    "symbol": "MOCH",
+    "name": "Moche Tech",
+    "currency": "USD",
+    "previousClose": "90.97",
+    "open": "89.85",
+    "high": "90.69",
+    "low": "88.45",
+    "volume": 1829000,
+    "description": "Software de pagos y servicios en la nube para empresas."
+  },
+  {
+    "symbol": "NAZC",
+    "name": "Nazca Retail",
+    "currency": "USD",
+    "previousClose": "12.49",
+    "open": "12.42",
+    "high": "12.59",
+    "low": "12.22",
+    "volume": 4258000,
+    "description": "Cadena de supermercados y tiendas de conveniencia."
+  },
+  {
+    "symbol": "PCFC",
+    "name": "Pacífico Foods",
+    "currency": "USD",
+    "previousClose": "18.89",
+    "open": "19.08",
+    "high": "19.31",
+    "low": "18.73",
+    "volume": 3471000,
+    "description": "Conservas de pescado y productos del mar para exportación."
+  },
+  {
+    "symbol": "QORI",
+    "name": "Qori Gold",
+    "currency": "USD",
+    "previousClose": "115.56",
+    "open": "116.52",
+    "high": "117.75",
+    "low": "112.88",
+    "volume": 2795000,
+    "description": "Exploración y producción de oro en el norte del país."
+  }
+]

@@ -40,6 +40,10 @@
 - Interruptores del cliente, apagados al inicio y con el mismo nombre en BuildConfig, en el escenario, adb, launchApp y la pantalla Escenario: página completa de movimientos (`movements_full_page`), refresco anticipado de cuentas (`accounts_eager_refresh`) y transición enriquecida del desglose (`breakdown_rich_transition`). Release no los puede encender.
 - Ilustraciones de categoría en `drawable-nodpi`, para la transición enriquecida del desglose.
 - Caché de cuentas en memoria: el formulario la reutiliza y una transferencia la invalida, así al volver al inicio se piden las cuentas una sola vez.
+- Contrato de mercado, portafolio, órdenes, cambio de divisas e ingreso con huella en `api/openapi.yaml`, con sus reglas de negocio, los códigos `INSUFFICIENT_HOLDINGS`, `QUOTE_EXPIRED` e `INVALID_DEVICE` y las cabeceras `X-Demo-Tick-Ms`, `X-Demo-Stream-Drop-S` y `X-Demo-Quote-Ttl-S`.
+- Fixtures de mercado con un generador de semilla fija (`api/tools/generate_market.py`): ocho acciones, sus ticks e historiales (1D, 1W, 1M y 1Y), el portafolio de Ana y el tipo de cambio USD/PEN con sus ticks.
+- Backend embebido: acciones con precio vigente, detalle e historial; portafolio valorizado; órdenes de compra y venta a mercado en la cuenta en dólares con `Idempotency-Key`; cotizaciones que vencen y cambio entre cuentas propias; registro, ingreso y revocación de huella.
+- Escenario: intervalo de ticks (`tick_ms`), corte del canal (`stream_drop_s`) y vigencia de la cotización (`quote_ttl_s`) por adb, launchApp y la pantalla Escenario.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -48,6 +52,8 @@
 - Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.
 - `hilt-lifecycle-viewmodel-compose` se declara en el catálogo en vez de llegar transitiva.
 - Gradle 9.9.0, AGP 9.5.1 y Navigation 3 1.2.1.
+- `POST /_demo/reset` también devuelve tenencias, precios, cotizaciones y dispositivos registrados a su estado inicial.
+- La `Idempotency-Key` vale por usuario y por operación: la misma clave en una transferencia y en una orden no se cruza.
 
 ### Removed
 - `hilt-navigation-compose`, que ningún import usaba.

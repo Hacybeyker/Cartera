@@ -11,6 +11,9 @@ data class ScenarioUiState(
     val failureMode: FailureMode = FailureMode.HTTP_500,
     val sessionTtl: String = "",
     val backendDown: Boolean = false,
+    val tickMs: String = "",
+    val streamDrop: String = "",
+    val quoteTtl: String = "",
     val flags: Set<FeatureFlag> = emptySet(),
     val isResettingData: Boolean = false,
     val message: ScenarioMessage? = null
@@ -21,6 +24,9 @@ data class ScenarioUiState(
         failureMode = scenario.failureMode,
         sessionTtl = scenario.sessionTtlSeconds.toString(),
         backendDown = scenario.backendDown,
+        tickMs = scenario.tickMs.toString(),
+        streamDrop = scenario.streamDropSeconds.toString(),
+        quoteTtl = scenario.quoteTtlSeconds.toString(),
         flags = scenario.flags
     )
 }
@@ -47,6 +53,12 @@ sealed interface ScenarioAction {
     data class SessionTtlChanged(val value: String) : ScenarioAction
 
     data class BackendDownChanged(val value: Boolean) : ScenarioAction
+
+    data class TickMsChanged(val value: String) : ScenarioAction
+
+    data class StreamDropChanged(val value: String) : ScenarioAction
+
+    data class QuoteTtlChanged(val value: String) : ScenarioAction
 
     data class FlagChanged(val flag: FeatureFlag, val enabled: Boolean) : ScenarioAction
 

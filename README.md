@@ -19,7 +19,7 @@
 ├── api/
 │   ├── openapi.yaml       # Contrato de la API (OpenAPI 3.1)
 │   ├── fixtures/          # Datos del backend embebido
-│   └── tools/             # Generador de movimientos (semilla fija)
+│   └── tools/             # Generadores de movimientos y de mercado (semilla fija)
 ├── app/src/main/java/com/hacybeyker/cartera/
 │   ├── core/              # Compartido: design system y componentes comunes, dominio y datos de sesión,
 │   │                      # configuración, primer uso, cuentas y movimientos, paginación, cliente HTTP
@@ -65,6 +65,40 @@ embebido. La sesión vive en memoria, así que cada arranque en frío pide login
 Destinos de transferencia: `999-0000001-0-01` (Luis Ramírez, PEN), `999-0000002-0-02` (Comercial
 Andina S.A.C., PEN) y `999-0000003-0-10` (María Quispe, USD). Cualquier otro número da
 `DESTINATION_NOT_FOUND`; enviar soles a la cuenta en dólares da `CURRENCY_MISMATCH`.
+
+### Mercado y cambio de demo
+
+Ocho acciones ficticias en dólares. Sus precios y el tipo de cambio avanzan por ticks pregenerados con
+semilla (`api/fixtures/market/` y `api/fixtures/fx/`): el primero es el precio inicial y, al agotarse,
+vuelven a empezar. Con `tick_ms 0` quedan congelados en estos valores:
+
+| Acción | Empresa | Precio inicial (US$) |
+|---|---|---|
+| ANDM | Andina Minerals | 42.10 |
+| CUSC | Cusco Telecom | 27.30 |
+| INKA | Inka Energy | 63.40 |
+| LIMA | Lima Logistics | 9.85 |
+| MOCH | Moche Tech | 88.60 |
+| NAZC | Nazca Retail | 12.45 |
+| PCFC | Pacífico Foods | 18.75 |
+| QORI | Qori Gold | 115.20 |
+
+| Portafolio de Ana | Cantidad | Precio promedio (US$) |
+|---|---|---|
+| ANDM | 10 | 40.00 |
+| MOCH | 5 | 80.00 |
+| QORI | 2 | 120.00 |
+
+- Las órdenes son a mercado, por cantidad entera, y se pagan y cobran en Cuenta Dólares (ACC-003).
+  Comprar 2 ANDM cuesta US$ 84.20: ACC-003 pasa a US$ 966.00 y ANDM queda en 12 a 40.35. Después,
+  vender 1 QORI acredita US$ 115.20: ACC-003 queda en US$ 1,081.20 y QORI en 1.
+- Tipo de cambio USD/PEN inicial: compra 3.742, venta 3.768. Cada consulta emite una cotización que
+  vence a los 30 s, o a lo que diga `quote_ttl_s`. Desde datos limpios, cambiar US$ 100.00 de ACC-003
+  a ACC-002 acredita S/ 374.20: ACC-003 queda en US$ 950.20 y ACC-002 en S/ 2,674.20.
+- Ingreso con huella: `POST /auth/biometric/enroll` entrega un `deviceToken` que luego se cambia por
+  una sesión en `POST /auth/biometric/login`; `DELETE /auth/biometric` lo revoca.
+- Si cambia `api/tools/generate_market.py`, los fixtures se regeneran con
+  `python3 -I api/tools/generate_market.py`.
 
 ---
 
@@ -204,13 +238,21 @@ devuelve a los valores por defecto. Release no tiene nada de esto.
 | Tipo de fallo | `--es failure_mode timeout` | `http_500` · `timeout` · `disconnect` | `http_500` |
 | TTL de la sesión | `--ei session_ttl 60` | segundos; rige desde el próximo login | 900 |
 | Backend caído | `--ez backend_down true` | 503 en todos los endpoints | `false` |
+| Intervalo de ticks | `--ei tick_ms 0` | ms entre ticks del canal en vivo; 0 = precios congelados | 2000 |
+| Corte del canal | `--ei stream_drop_s 15` | s desde la conexión hasta que el servidor corta el canal; 0 = nunca | 0 |
+| Vigencia de la cotización | `--ei quote_ttl_s 5` | s; rige desde la próxima cotización | 30 |
 | Página completa de movimientos | `--ez movements_full_page true` | los movimientos de una cuenta llegan en una sola página completa | `false` |
 | Refresco anticipado de cuentas | `--ez accounts_eager_refresh true` | al volver al inicio tras una transferencia, las cuentas se refrescan de forma anticipada | `false` |
 | Transición enriquecida del desglose | `--ez breakdown_rich_transition true` | el desglose entra con una transición enriquecida y su ilustración a tamaño completo | `false` |
 | Valores por defecto | `--ez defaults true` | restablece el escenario antes de aplicar el resto | — |
 
 Ids de endpoint: `app_config`, `login`, `me`, `accounts`, `account`, `movements`, `movement`,
-`breakdown`, `transfers`.
+`breakdown`, `transfers`, `market_stocks`, `market_stock`, `market_history`, `market_stream` (el
+handshake del canal en vivo), `portfolio`, `orders`, `fx_rates`, `fx_exchanges`, `biometric_enroll`,
+`biometric_login` y `biometric_delete`.
+
+- `tick_ms` y `stream_drop_s` viajan solo en el handshake del canal en vivo; `quote_ttl_s`, en
+  `GET /fx/rates` y en ese handshake. `session_ttl` rige también en el ingreso con huella.
 
 - Los tres últimos son interruptores del cliente: no viajan al backend y tienen el mismo nombre en
   BuildConfig (`MOVEMENTS_FULL_PAGE`, `ACCOUNTS_EAGER_REFRESH`, `BREAKDOWN_RICH_TRANSITION`), donde
@@ -228,7 +270,11 @@ adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
   -a com.hacybeyker.cartera.demo.SET_SCENARIO \
   --es latency "default=400,movements=2000" --ei session_ttl 60
 
-# Volver a los fixtures (saldos, movimientos e idempotencia)
+# Precios congelados y cotizaciones de 5 s
+adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
+  -a com.hacybeyker.cartera.demo.SET_SCENARIO --ei tick_ms 0 --ei quote_ttl_s 5
+
+# Volver a los fixtures (saldos, movimientos, tenencias, precios, cotizaciones, huella e idempotencia)
 adb shell am broadcast --include-stopped-packages -p com.hacybeyker.cartera \
   -a com.hacybeyker.cartera.demo.RESET_DATA
 
@@ -245,6 +291,7 @@ broadcast, así que cada flow lleva su escenario aunque use `clearState`:
     arguments:
       latency: "default=400,movements=2000"
       session_ttl: 60
+      tick_ms: 0
 ```
 
 Si un flow no usa argumentos, el orden es `pm clear` → broadcast → `launchApp` sin `clearState`.

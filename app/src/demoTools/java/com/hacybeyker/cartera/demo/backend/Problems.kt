@@ -1,5 +1,6 @@
 package com.hacybeyker.cartera.demo.backend
 
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -8,6 +9,7 @@ import kotlinx.serialization.json.putJsonArray
 
 enum class ProblemCode(val status: Int, val title: String) {
     INVALID_CREDENTIALS(401, "Credenciales inválidas"),
+    INVALID_DEVICE(401, "Dispositivo no registrado"),
     SESSION_EXPIRED(401, "Sesión expirada"),
     UNAUTHORIZED(401, "No autorizado"),
     NOT_FOUND(404, "Recurso no encontrado"),
@@ -15,21 +17,29 @@ enum class ProblemCode(val status: Int, val title: String) {
     INSUFFICIENT_FUNDS(422, "Saldo insuficiente"),
     DESTINATION_NOT_FOUND(422, "Cuenta de destino no encontrada"),
     CURRENCY_MISMATCH(422, "Las monedas no coinciden"),
+    INSUFFICIENT_HOLDINGS(422, "Tenencia insuficiente"),
+    QUOTE_EXPIRED(422, "Cotización vencida"),
     INTERNAL_ERROR(500, "Error interno"),
     SERVICE_UNAVAILABLE(503, "Servicio no disponible")
 }
 
 data class FieldError(val field: String, val code: String, val message: String)
 
-class ProblemException(val code: ProblemCode, val detail: String, val errors: List<FieldError> = emptyList()) :
-    RuntimeException(detail)
+// Las extensiones son miembros extra del problema (RFC 9457 §3.2), como la cotización nueva de QUOTE_EXPIRED.
+class ProblemException(
+    val code: ProblemCode,
+    val detail: String,
+    val errors: List<FieldError> = emptyList(),
+    val extensions: Map<String, JsonElement> = emptyMap()
+) : RuntimeException(detail)
 
 fun problem(
     code: ProblemCode,
     detail: String,
     traceId: String,
     errors: List<FieldError> = emptyList(),
-    headers: Map<String, String> = emptyMap()
+    headers: Map<String, String> = emptyMap(),
+    extensions: Map<String, JsonElement> = emptyMap()
 ): BackendResponse {
     val body = buildJsonObject {
         put("type", "https://cartera.invalid/problems/${code.name.lowercase().replace('_', '-')}")
@@ -49,6 +59,7 @@ fun problem(
                 }
             }
         }
+        extensions.forEach { (name, value) -> put(name, value) }
     }
     return BackendResponse(
         status = code.status,

@@ -1,0 +1,21 @@
+{
+  "userId": "USR-001",
+  "accountId": "ACC-003",
+  "holdings": [
+    {
+      "symbol": "ANDM",
+      "quantity": 10,
+      "averagePrice": "40.00"
+    },
+    {
+      "symbol": "MOCH",
+      "quantity": 5,
+      "averagePrice": "80.00"
+    },
+    {
+      "symbol": "QORI",
+      "quantity": 2,
+      "averagePrice": "120.00"
+    }
+  ]
+}
