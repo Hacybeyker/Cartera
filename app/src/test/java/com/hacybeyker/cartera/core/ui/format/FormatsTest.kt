@@ -26,4 +26,13 @@ class FormatsTest {
     fun `dates use a fixed numeric format`() {
         assertEquals("06/11/2026 14:32", OffsetDateTime.parse("2026-11-06T14:32:00-05:00").formatted())
     }
+
+    @Test
+    fun `price changes and percentages keep their sign`() {
+        assertEquals("+0.34", "0.34".toBigDecimal().formattedChange())
+        assertEquals("-1,250.00", "-1250".toBigDecimal().formattedChange())
+        assertEquals("0.00", "0.00".toBigDecimal().formattedChange())
+        assertEquals("+0.81 %", "0.81".toBigDecimal().formattedPercent())
+        assertEquals("-2.98 %", "-2.98".toBigDecimal().formattedPercent())
+    }
 }

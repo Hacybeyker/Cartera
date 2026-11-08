@@ -1,6 +1,7 @@
 package com.hacybeyker.cartera.core.ui.format
 
 import com.hacybeyker.cartera.core.domain.Money
+import java.math.BigDecimal
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.time.OffsetDateTime
@@ -18,13 +19,18 @@ private fun amountFormat() = DecimalFormat("#,##0.00", DecimalFormatSymbols(Loca
 fun Money.formatted(): String = "${symbol()} ${amountFormat().format(amount.abs())}"
 
 /** Monto de un movimiento con su signo: `-S/ 1,379.23` o `+US$ 201.29`. */
-fun Money.formattedSigned(): String {
-    val sign = when (amount.signum()) {
-        -1 -> "-"
-        1 -> "+"
-        else -> ""
-    }
-    return sign + formatted()
+fun Money.formattedSigned(): String = amount.sign() + formatted()
+
+/** Variación de un precio con su signo y 2 decimales, sin moneda: `+0.34`, `-1,250.00` o `0.00`. */
+fun BigDecimal.formattedChange(): String = sign() + amountFormat().format(abs())
+
+/** Porcentaje con su signo y 2 decimales: `+0.81 %`, `-1.20 %` o `0.00 %`. */
+fun BigDecimal.formattedPercent(): String = "${formattedChange()} %"
+
+private fun BigDecimal.sign(): String = when (signum()) {
+    -1 -> "-"
+    1 -> "+"
+    else -> ""
 }
 
 fun OffsetDateTime.formatted(): String = format(dateFormatter)

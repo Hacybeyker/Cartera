@@ -2,10 +2,12 @@ package com.hacybeyker.cartera.core.data.network.di
 
 import com.hacybeyker.cartera.BuildConfig
 import com.hacybeyker.cartera.core.data.network.AccessTokenProvider
+import com.hacybeyker.cartera.core.data.network.AccessTokenUpdates
 import com.hacybeyker.cartera.core.data.network.BearerInterceptor
 import com.hacybeyker.cartera.core.data.network.CarteraApi
 import com.hacybeyker.cartera.core.data.network.CarteraHttpClient
 import com.hacybeyker.cartera.core.data.network.ExtraInterceptors
+import com.hacybeyker.cartera.core.data.network.MarketApi
 import com.hacybeyker.cartera.core.data.session.InMemoryAccessTokenStore
 import dagger.Binds
 import dagger.Module
@@ -42,6 +44,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideCarteraApi(retrofit: Retrofit): CarteraApi = retrofit.create(CarteraApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideMarketApi(retrofit: Retrofit): MarketApi = retrofit.create(MarketApi::class.java)
 }
 
 @Module
@@ -50,6 +56,9 @@ abstract class NetworkBindingsModule {
 
     @Binds
     abstract fun bindAccessTokenProvider(store: InMemoryAccessTokenStore): AccessTokenProvider
+
+    @Binds
+    abstract fun bindAccessTokenUpdates(store: InMemoryAccessTokenStore): AccessTokenUpdates
 
     @Multibinds
     @ExtraInterceptors

@@ -3,7 +3,6 @@ package com.hacybeyker.cartera.feature.home.ui
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
-import com.hacybeyker.cartera.core.designsystem.component.ComingSoonState
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.domain.movement.Movement
 import com.hacybeyker.cartera.core.testing.captureLightAndDark
@@ -11,6 +10,12 @@ import com.hacybeyker.cartera.core.ui.movement.MovementListUiState
 import com.hacybeyker.cartera.core.ui.paging.PagedList
 import com.hacybeyker.cartera.core.ui.preview.previewAccounts
 import com.hacybeyker.cartera.core.ui.preview.previewMovements
+import com.hacybeyker.cartera.core.ui.preview.previewPortfolio
+import com.hacybeyker.cartera.core.ui.preview.previewQuotes
+import com.hacybeyker.cartera.feature.home.ui.market.MarketContent
+import com.hacybeyker.cartera.feature.home.ui.market.MarketUiState
+import com.hacybeyker.cartera.feature.home.ui.market.PortfolioHeader
+import com.hacybeyker.cartera.feature.home.ui.market.StockItem
 import com.hacybeyker.cartera.feature.home.ui.more.MoreContent
 import com.hacybeyker.cartera.feature.home.ui.more.MoreUiState
 import com.hacybeyker.cartera.feature.home.ui.overview.AccountsTabActions
@@ -32,11 +37,48 @@ class HomeScreenshotTest {
     val compose = createComposeRule()
 
     private val noActions = AccountsTabActions(onAccountClick = {}, onTransferClick = {})
+    private val loadedMarket = MarketUiState(
+        isLoading = false,
+        stocks = previewQuotes.map(StockItem::from),
+        portfolio = PortfolioHeader.from(previewPortfolio)
+    )
     private val loadedOverview = OverviewUiState(isLoading = false, firstName = "Ana", accounts = previewAccounts)
 
     @Test
-    fun homeComingSoonTab() = compose.captureLightAndDark("home_mercado") {
-        HomeContent(selectedTab = HomeTab.MARKET, onTabSelected = {}) { ComingSoonState(screen = HomeTestTags.MARKET) }
+    fun homeMarketTab() = compose.captureLightAndDark("home_mercado") {
+        HomeContent(selectedTab = HomeTab.MARKET, onTabSelected = {}) {
+            MarketContent(uiState = loadedMarket, onAction = {}, onStockClick = {}, onPortfolioClick = {})
+        }
+    }
+
+    @Test
+    fun marketLoaded() = compose.captureLightAndDark("mercado_contenido") {
+        MarketContent(uiState = loadedMarket, onAction = {}, onStockClick = {}, onPortfolioClick = {})
+    }
+
+    @Test
+    fun marketLoading() = compose.captureLightAndDark("mercado_cargando") {
+        MarketContent(uiState = MarketUiState(), onAction = {}, onStockClick = {}, onPortfolioClick = {})
+    }
+
+    @Test
+    fun marketReconnecting() = compose.captureLightAndDark("mercado_reconectando") {
+        MarketContent(
+            uiState = loadedMarket.copy(isReconnecting = true),
+            onAction = {},
+            onStockClick = {},
+            onPortfolioClick = {}
+        )
+    }
+
+    @Test
+    fun marketError() = compose.captureLightAndDark("mercado_error") {
+        MarketContent(
+            uiState = MarketUiState(isLoading = false, error = AppError.Network),
+            onAction = {},
+            onStockClick = {},
+            onPortfolioClick = {}
+        )
     }
 
     @Test

@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.hacybeyker.cartera.core.designsystem.component.ComingSoonState
 import com.hacybeyker.cartera.core.ui.marks.ReportContentVisible
+import com.hacybeyker.cartera.feature.home.ui.market.MarketScreen
 import com.hacybeyker.cartera.feature.home.ui.more.MoreScreen
 import com.hacybeyker.cartera.feature.home.ui.overview.AccountsTabActions
 import com.hacybeyker.cartera.feature.home.ui.overview.OverviewScreen
@@ -28,7 +29,10 @@ fun HomeScreen(actions: HomeActions, modifier: Modifier = Modifier) {
                     ),
                     onMovementClick = actions.onMovementClick
                 )
-                HomeTab.MARKET -> ComingSoonTab(screen = HomeTestTags.MARKET)
+                HomeTab.MARKET -> MarketScreen(
+                    onStockClick = actions.onStockClick,
+                    onPortfolioClick = actions.onPortfolioClick
+                )
                 HomeTab.EXCHANGE -> ComingSoonTab(screen = HomeTestTags.EXCHANGE)
                 HomeTab.MORE -> MoreScreen(
                     onLegacyClick = actions.onLegacyClick,

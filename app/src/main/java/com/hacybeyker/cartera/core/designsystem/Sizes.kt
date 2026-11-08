@@ -14,7 +14,10 @@ data class Sizes(
     val logo: Dp = 96.dp,
     val illustration: Dp = 120.dp,
     val pageIndicator: Dp = 8.dp,
-    val listIcon: Dp = 40.dp
+    val listIcon: Dp = 40.dp,
+    /** Progreso dentro de una línea de texto, como el aviso de reconexión. */
+    val inlineProgress: Dp = 16.dp,
+    val inlineProgressStroke: Dp = 2.dp
 )
 
 val LocalSizes = staticCompositionLocalOf { Sizes() }

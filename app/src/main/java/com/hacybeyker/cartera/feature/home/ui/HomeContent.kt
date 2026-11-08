@@ -15,7 +15,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.hacybeyker.cartera.core.designsystem.CarteraTheme
-import com.hacybeyker.cartera.core.designsystem.component.ComingSoonState
+import com.hacybeyker.cartera.core.ui.preview.previewPortfolio
+import com.hacybeyker.cartera.core.ui.preview.previewQuotes
+import com.hacybeyker.cartera.feature.home.ui.market.MarketContent
+import com.hacybeyker.cartera.feature.home.ui.market.MarketUiState
+import com.hacybeyker.cartera.feature.home.ui.market.PortfolioHeader
+import com.hacybeyker.cartera.feature.home.ui.market.StockItem
 
 /** Barra inferior de Home; [tabContent] dibuja el tab elegido. */
 @Composable
@@ -56,6 +61,17 @@ fun HomeContent(
 @Composable
 private fun HomeContentPreview() {
     CarteraTheme {
-        HomeContent(selectedTab = HomeTab.MARKET, onTabSelected = {}) { ComingSoonState(screen = HomeTestTags.MARKET) }
+        HomeContent(selectedTab = HomeTab.MARKET, onTabSelected = {}) {
+            MarketContent(
+                uiState = MarketUiState(
+                    isLoading = false,
+                    stocks = previewQuotes.map(StockItem::from),
+                    portfolio = PortfolioHeader.from(previewPortfolio)
+                ),
+                onAction = {},
+                onStockClick = {},
+                onPortfolioClick = {}
+            )
+        }
     }
 }

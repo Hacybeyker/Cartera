@@ -16,6 +16,9 @@ import com.hacybeyker.cartera.feature.legacy.ui.LegacyNavKey
 import com.hacybeyker.cartera.feature.legacy.ui.legacyEntry
 import com.hacybeyker.cartera.feature.login.ui.LoginNavKey
 import com.hacybeyker.cartera.feature.login.ui.loginEntry
+import com.hacybeyker.cartera.feature.market.ui.PortfolioNavKey
+import com.hacybeyker.cartera.feature.market.ui.StockDetailNavKey
+import com.hacybeyker.cartera.feature.market.ui.marketEntries
 import com.hacybeyker.cartera.feature.movements.ui.AccountMovementsNavKey
 import com.hacybeyker.cartera.feature.movements.ui.MovementBreakdownNavKey
 import com.hacybeyker.cartera.feature.movements.ui.MovementDetailNavKey
@@ -57,6 +60,8 @@ fun AppNavDisplay(
                     onAccountClick = { backStack.add(AccountMovementsNavKey(it)) },
                     onTransferClick = { backStack.add(TransferFormNavKey) },
                     onMovementClick = { backStack.add(MovementDetailNavKey(it)) },
+                    onStockClick = { backStack.add(StockDetailNavKey(it)) },
+                    onPortfolioClick = { backStack.add(PortfolioNavKey) },
                     onLegacyClick = { backStack.add(LegacyNavKey) },
                     onLoggedOut = { backStack.resetTo(LoginNavKey) },
                     // Sin pantalla oculta (release), los 7 toques no hacen nada.
@@ -68,6 +73,7 @@ fun AppNavDisplay(
                 onMovementClick = { backStack.add(MovementDetailNavKey(it)) },
                 onBreakdownClick = { backStack.add(MovementBreakdownNavKey(it)) }
             )
+            marketEntries(onBack = back)
             legacyEntry(onBack = back)
             // Volver al inicio reutiliza la entrada de Home (con su estado) en vez de crear otra: Inicio refresca
             // solo las cuentas, una vez, porque la transferencia las cambió.

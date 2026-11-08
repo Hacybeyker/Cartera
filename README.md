@@ -23,10 +23,11 @@
 │   └── tools/             # Generadores de movimientos y de mercado (semilla fija)
 ├── app/src/main/java/com/hacybeyker/cartera/
 │   ├── core/              # Compartido: design system y componentes comunes, dominio y datos de sesión,
-│   │                      # configuración, primer uso, cuentas y movimientos, paginación, cliente HTTP
-│   │                      # y marcas de contenido visible
+│   │                      # configuración, primer uso, cuentas y movimientos, mercado y portafolio,
+│   │                      # cliente del canal en vivo, paginación, cliente HTTP y marcas de contenido visible
 │   ├── navigation/        # CarteraApp (raíz), AppNavDisplay (Navigation 3) y la pila de entrada
-│   └── feature/<name>/    # splash, login, terms, onboarding, home, movements y legacy (domain / data / ui / di)
+│   └── feature/<name>/    # splash, login, terms, onboarding, home, movements, transfer, market y legacy
+│                          # (domain / data / ui / di)
 ├── app/src/demoTools/     # Backend embebido y escenarios (solo debug y demo)
 ├── AGENTS.md              # Reglas del proyecto para agentes de IA (CLAUDE.md lo importa)
 └── gradle/
@@ -178,7 +179,9 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
 │   ├─ Cuentas ──► Movimientos de cuenta ──► Detalle ──► Desglose
 │   │     └─ Transferir ──► Confirmación ──► Resultado ──► Home (Inicio · Cuentas)
 │   └─ Movimientos ──► Detalle ──► Desglose
-├─ Mercado · Cambio   (próximamente)
+├─ Mercado ──► Detalle de acción (próximamente)
+│     └─ Mi portafolio ──► Mi portafolio (próximamente)
+├─ Cambio   (próximamente)
 └─ Más ──► Servicios clásicos (próximamente) · Cerrar sesión · Versión
 ```
 
@@ -191,6 +194,28 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
   (`NOT_FOUND`) se muestra como error sin Reintentar.
 - **Cerrar sesión** pide confirmación y deja la pila en `[Login]`; el próximo login no repite
   Términos ni Onboarding.
+
+### Mercado
+
+- Carga al abrir el tab: `GET /market/stocks` y `GET /portfolio` en paralelo. Arriba, **Mi
+  portafolio** con el valor de mercado y la variación del día; debajo, las ocho acciones con su precio
+  y su variación contra el cierre anterior.
+- Mientras el tab se ve, los precios llegan por el canal en vivo y cambian solos, fila por fila; la
+  cabecera se recalcula en la app con las mismas reglas que `GET /portfolio`.
+- Si el canal se cae, aparece el aviso **"Reconectando…"** y los precios quedan en su último valor
+  hasta que vuelve.
+- Tocar una acción abre su detalle y tocar Mi portafolio abre Mi portafolio (por ahora, los dos en
+  "Próximamente").
+- El portafolio se guarda en memoria hasta que cambian las tenencias; al volver a Mercado tras ese
+  cambio se vuelve a pedir solo `GET /portfolio`.
+
+**El canal en la app.** Hay una sola conexión para toda la app, que se abre con la primera pantalla
+que sigue precios (hoy, Mercado) y se cierra 1 s después de que no queda ninguna: al cambiar de tab,
+al abrir otra pantalla sin precios, al pasar a segundo plano o al cerrar sesión. Si se cae, reconecta
+esperando 1, 2, 4 y 8 s (y 8 s desde ahí), vuelve a suscribir todo y reinicia la espera tras conectar.
+Un 401 en el handshake o un cierre 4401 abren "Tu sesión expiró" y no reconectan. Con
+`stream_drop_s 15` se ve el aviso unos instantes cada 15 s y, en `CarteraBackend`, un `WS#n cerrado
+code=1006 por=servidor` seguido de un `WS#n+1 abierto` alrededor de 1 s después.
 
 ### Transferir
 
@@ -236,7 +261,9 @@ en su ventana. La convención es snake_case en español, `<pantalla>_<elemento>`
 | Movimientos de cuenta | `cuenta_pantalla`, `cuenta_saldo`, `cuenta_movimientos_lista`, `cuenta_movimientos_item_<id>`, `cuenta_movimientos_mas_reintentar` y estados `cuenta_*` |
 | Detalle | `movimiento_detalle`, `movimiento_monto`, `movimiento_ver_desglose` y estados `movimiento_*` |
 | Desglose | `movimiento_desglose`, `desglose_ilustracion`, `desglose_linea_<n>` (desde 1) y estados `desglose_*` |
-| Mercado / Cambio | `mercado_proximamente` / `cambio_proximamente` |
+| Mercado | `mercado_portafolio`, `mercado_lista`, `mercado_item_<symbol>`, `mercado_reconectando` y estados `mercado_*` |
+| Cambio | `cambio_proximamente` |
+| Detalle de acción / Mi portafolio | `accion_detalle_proximamente` / `portafolio_proximamente` (por ahora) |
 | Más | `mas_pantalla`, `mas_nombre`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
 | Servicios clásicos | `legacy_proximamente` |
 | Transferir · formulario | `transferir_pantalla`, `transferir_origen`, `transferir_origen_item_<id>`, `transferir_destino`, `transferir_monto`, `transferir_descripcion`, `transferir_continuar`, `<campo>_error` y estados `transferir_*` |
@@ -253,7 +280,8 @@ páginas. Rotar o volver a una pantalla sin datos nuevos no repite la marca. Mar
 `terminos`, `onboarding`, `inicio_cuentas`, `inicio_movimientos`, `cuenta_movimientos`,
 `movimiento_detalle`, `movimiento_desglose`, `mercado`, `cambio`, `mas`, `transferir_formulario`,
 `transferir_confirmacion` y `transferir_resultado`. Tras una transferencia, `inicio_cuentas` se
-dispara otra vez cuando llegan las cuentas refrescadas. Por defecto nadie escucha. Para
+dispara otra vez cuando llegan las cuentas refrescadas. Los precios en vivo no repiten `mercado`: solo
+la carga y el refresco del portafolio. Por defecto nadie escucha. Para
 recibirlas, agrega un `VisibleContentMarker` al conjunto desde un módulo de Hilt propio, sin tocar las
 pantallas:
 

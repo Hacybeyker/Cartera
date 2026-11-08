@@ -7,7 +7,6 @@ object HomeTestTags {
     const val TAB_EXCHANGE = "home_tab_cambio"
     const val TAB_MORE = "home_tab_mas"
 
-    /** Prefijo de testTags y marca de los tabs de próximamente. */
-    const val MARKET = "mercado"
+    /** Prefijo de testTags y marca del tab de próximamente. */
     const val EXCHANGE = "cambio"
 }

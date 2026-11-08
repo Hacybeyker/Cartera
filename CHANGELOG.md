@@ -45,10 +45,14 @@
 - Backend embebido: acciones con precio vigente, detalle e historial; portafolio valorizado; órdenes de compra y venta a mercado en la cuenta en dólares con `Idempotency-Key`; cotizaciones que vencen y cambio entre cuentas propias; registro, ingreso y revocación de huella.
 - Escenario: intervalo de ticks (`tick_ms`), corte del canal (`stream_drop_s`) y vigencia de la cotización (`quote_ttl_s`) por adb, launchApp y la pantalla Escenario.
 - Canal en vivo `WS /market/stream` en el backend embebido, con su contrato en `api/asyncapi.yaml` (AsyncAPI 3.0): suscripción por símbolo y por par con el valor actual al suscribirse, `quote` y `fx` en cada tick de un reloj de mercado global, cierre 4401 al vencer la sesión, corte de demo con `stream_drop_s` y logs de apertura, suscripción, ticks, corte y cierre en `CarteraBackend`.
+- Tab Mercado: cabecera de Mi portafolio con su valor y la variación del día, y las ocho acciones con precio y variación que se actualizan solos por el canal en vivo, fila por fila. Si el canal se cae, aviso "Reconectando…" y los precios quedan en su último valor.
+- Cliente del canal en vivo: una sola conexión compartida con suscripciones por símbolo y por par, abierta solo mientras una pantalla con precios se ve, reconexión con espera de 1, 2, 4 y 8 s y modal de sesión expirada ante un 401 en el handshake o un cierre 4401.
+- Datos de mercado y portafolio en la app (acciones, detalle, historial por rango y portafolio), con el portafolio recalculado en el cliente con los precios en vivo.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
 - Inicio y Movimientos vuelven a pedir sus datos al mostrarse solo si una transferencia los cambió; Inicio refresca solo las cuentas.
+- El tab Mercado deja de ser "Próximamente"; tocar una acción o Mi portafolio lleva a sus pantallas, por ahora "Próximamente".
 - `ApiCaller` ya no trata cualquier `IllegalArgumentException` como respuesta inválida, solo los errores de lectura de la respuesta.
 - Las marcas de contenido visible avisan una vez por cada carga o refresco, no una vez por pantalla.
 - `hilt-lifecycle-viewmodel-compose` se declara en el catálogo en vez de llegar transitiva.

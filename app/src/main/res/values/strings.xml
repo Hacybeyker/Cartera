@@ -54,6 +54,14 @@
     <string name="home_tab_exchange">Cambio</string>
     <string name="home_tab_more">Más</string>
 
+    <string name="market_portfolio_title">Mi portafolio</string>
+    <string name="market_portfolio_day_change">%1$s (%2$s) hoy</string>
+    <string name="market_change">%1$s (%2$s)</string>
+    <string name="market_reconnecting">Reconectando…</string>
+    <string name="market_empty">No hay acciones disponibles.</string>
+
+    <string name="portfolio_title">Mi portafolio</string>
+
     <string name="overview_greeting">Hola, %1$s</string>
     <string name="overview_tab_accounts">Cuentas</string>
     <string name="overview_tab_movements">Movimientos</string>
