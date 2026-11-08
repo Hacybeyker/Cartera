@@ -24,10 +24,10 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.hacybeyker.cartera.R
 import com.hacybeyker.cartera.core.designsystem.CarteraTheme
 import com.hacybeyker.cartera.core.designsystem.component.CommonTestTags
-import com.hacybeyker.cartera.core.designsystem.component.ConfirmationDialog
 import com.hacybeyker.cartera.core.designsystem.spacing
 import com.hacybeyker.cartera.core.domain.AppError
 import com.hacybeyker.cartera.core.ui.messageRes
+import com.hacybeyker.cartera.feature.home.ui.LogOutConfirmationDialog
 
 /** Más: el menú se puede usar aunque falle `GET /me`; solo la cabecera con el nombre depende de esa carga. */
 @Composable
@@ -70,10 +70,7 @@ fun MoreContent(
         )
     }
     if (uiState.isLogoutConfirmationVisible) {
-        ConfirmationDialog(
-            title = stringResource(R.string.more_log_out_title),
-            message = stringResource(R.string.more_log_out_message),
-            confirmLabel = stringResource(R.string.more_log_out),
+        LogOutConfirmationDialog(
             onConfirm = { onAction(MoreAction.LogoutConfirmed) },
             onCancel = { onAction(MoreAction.LogoutCancelled) }
         )

@@ -19,7 +19,10 @@ data class Sizes(
     val inlineProgress: Dp = 16.dp,
     val inlineProgressStroke: Dp = 2.dp,
     val chartHeight: Dp = 200.dp,
-    val chartStroke: Dp = 2.dp
+    val chartStroke: Dp = 2.dp,
+    /** Borde y esquinas del hueco que resalta un elemento bajo los coach marks. */
+    val highlightStroke: Dp = 2.dp,
+    val highlightCorner: Dp = 12.dp
 )
 
 val LocalSizes = staticCompositionLocalOf { Sizes() }

@@ -37,10 +37,19 @@ class SharedPreferencesFirstRunRepository @Inject constructor(
         preferences.edit { putBoolean(KEY_BIOMETRIC_OFFER_RESOLVED, true) }
     }
 
+    override suspend fun isCoachMarksSeen(): Boolean = withContext(io) {
+        preferences.getBoolean(KEY_COACH_MARKS_SEEN, false)
+    }
+
+    override suspend fun markCoachMarksSeen() = withContext(io) {
+        preferences.edit { putBoolean(KEY_COACH_MARKS_SEEN, true) }
+    }
+
     companion object {
         const val FILE_NAME = "cartera_first_run"
         private const val KEY_ACCEPTED_TERMS_VERSION = "accepted_terms_version"
         private const val KEY_ONBOARDING_SEEN = "onboarding_seen"
         private const val KEY_BIOMETRIC_OFFER_RESOLVED = "biometric_offer_resolved"
+        private const val KEY_COACH_MARKS_SEEN = "coach_marks_seen"
     }
 }

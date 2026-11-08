@@ -27,7 +27,7 @@
 │   │                      # cliente del canal en vivo, paginación, cliente HTTP y marcas de contenido visible
 │   ├── navigation/        # CarteraApp (raíz), AppNavDisplay (Navigation 3) y la pila de entrada
 │   └── feature/<name>/    # splash, login, terms, onboarding, biometric, home, movements, transfer,
-│                          # market, order, exchange y legacy
+│                          # market, order, exchange, help y legacy
 │                          # (domain / data / ui / di)
 ├── app/src/demoTools/     # Backend embebido y escenarios (solo debug y demo)
 ├── AGENTS.md              # Reglas del proyecto para agentes de IA (CLAUDE.md lo importa)
@@ -152,7 +152,7 @@ adb logcat -d -s CarteraBackend | grep -E 'WS#[0-9]+ cerrado code=4401'
 ## 🚪 Recorrido de entrada
 
 ```
-Splash ──► Login [Ingresar con huella*] ──► Términos* ──► Onboarding* ──► Oferta de huella* ──► Home
+Splash ──► Login [Ingresar con huella*] ──► Términos* ──► Onboarding* ──► Oferta de huella* ──► Home [coach marks*]
 ```
 
 - **Splash** pide `GET /app/config`. Si falla o el backend está caído, muestra el error y Reintentar
@@ -168,10 +168,12 @@ Splash ──► Login [Ingresar con huella*] ──► Términos* ──► Onb
 - **Oferta de huella** (\*) aparece después del onboarding (o del login, si el onboarding ya se vio)
   solo si el dispositivo tiene una huella registrada y todavía no está registrado para ingresar con
   ella. Se resuelve una vez por instalación, con Activar u Omitir.
+- **Coach marks** (\*) aparecen la primera vez que se entra a Home, después de la oferta de huella si
+  la hubo (ver [Coach marks](#coach-marks)).
 - Al terminar, la pila queda en `[Home]` y Atrás sale de la app.
 
-Los términos aceptados y el onboarding visto se guardan en SharedPreferences: `pm clear` (o
-`clearState` en Maestro) los vuelve a mostrar. El token vive solo en memoria. Si una llamada
+Los términos aceptados, el onboarding visto, la oferta de huella resuelta y los coach marks vistos se
+guardan en SharedPreferences: `pm clear` (o `clearState` en Maestro) los vuelve a mostrar. El token vive solo en memoria. Si una llamada
 autenticada responde `SESSION_EXPIRED` o `UNAUTHORIZED` (por ejemplo, con `session_ttl` corto o tras
 la muerte del proceso), aparece el modal "Tu sesión expiró"; Ingresar deja la pila en `[Login]` y,
 tras el nuevo login, no se repiten Términos ni Onboarding.
@@ -213,8 +215,8 @@ adb -e emu finger touch 1
 ## 🏠 Home y movimientos
 
 ```
-Home  [barra inferior: Inicio · Mercado · Cambio · Más]
-├─ Inicio  [tabs: Cuentas · Movimientos]
+Home  [barra inferior: Inicio · Mercado · Cambio · Más; coach marks la primera vez]
+├─ Inicio  [botón de menú ──► Menú lateral; tabs: Cuentas · Movimientos]
 │   ├─ Cuentas ──► Movimientos de cuenta ──► Detalle ──► Desglose
 │   │     └─ Transferir ──► Confirmación ──► Resultado ──► Home (Inicio · Cuentas)
 │   └─ Movimientos ──► Detalle ──► Desglose
@@ -222,6 +224,7 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
 │     └─ Mi portafolio ──► Detalle de acción
 ├─ Cambio ──► Confirmación ──► Resultado ──► Home (Cambio)
 └─ Más ──► Seguridad · Servicios clásicos (próximamente) · Cerrar sesión · Versión
+Menú lateral ──► Mi portafolio · Cambio (tab) · Seguridad · Ayuda (próximamente) · Cerrar sesión
 ```
 
 - Cada tab de Home conserva su estado (scroll y tab superior) mientras se usa otro.
@@ -233,6 +236,29 @@ Home  [barra inferior: Inicio · Mercado · Cambio · Más]
   (`NOT_FOUND`) se muestra como error sin Reintentar.
 - **Cerrar sesión** pide confirmación y deja la pila en `[Login]`; el próximo login no repite
   Términos ni Onboarding.
+
+### Menú lateral
+
+- Lo abre solo el botón `home_menu` de la barra de Inicio (no está en los otros tabs). Deslizar no lo
+  abre, solo lo cierra; también se cierra con Atrás o tocando fuera.
+- **Mi portafolio** y **Seguridad** abren su pantalla cuando el menú terminó de cerrarse; Atrás vuelve
+  a Inicio con el menú cerrado. **Cambio** cierra el menú y elige el tab Cambio. **Ayuda** muestra
+  "Próximamente" en el menú y abre una pantalla reservada, como Servicios clásicos.
+- **Cerrar sesión** cierra el menú y pide la misma confirmación que Más, con el mismo resultado: la
+  pila queda en `[Login]`.
+
+### Coach marks
+
+- La primera vez que se entra a Home (una vez por instalación), una capa oscurece la pantalla y
+  resalta, uno por paso, Transferir, el tab Mercado y el botón del menú, con su texto, **Siguiente**
+  (**Entendido** en el último paso) y **Omitir**. La capa no deja tocar lo de abajo.
+- Omitir o Entendido la resuelven para siempre: no reaparece al volver a Home, tras cerrar sesión ni
+  tras un arranque en frío. Si se cierra la app a mitad de camino, vuelve a empezar en el paso 1.
+- Mientras Inicio carga, el paso 1 se ve sin resaltado (Transferir todavía no está en pantalla).
+- Las marcas de contenido visible de Inicio salen igual con la capa encima.
+- **Para los flows de testigo:** tras un `pm clear` (o `clearState`), la capa `coach_capa` aparece al
+  entrar a Home; ciérrala con `coach_omitir` antes de seguir (o recorre los pasos con
+  `coach_siguiente`, que en el último dice "Entendido").
 
 ### Mercado
 
@@ -390,7 +416,9 @@ en su ventana (también los bottom sheets). La convención es snake_case en espa
 | Términos | sin testTags: "Términos y condiciones", "He leído y acepto…", "Aceptar", "Rechazar" |
 | Onboarding | sin testTags: "Siguiente", "Omitir", "Empezar" |
 | Oferta de huella | `biometria_oferta`, `biometria_activar`, `biometria_omitir` (el diálogo del sistema no tiene testTags) |
-| Home | `home_pantalla`, `home_tab_inicio`, `home_tab_mercado`, `home_tab_cambio`, `home_tab_mas` |
+| Home | `home_pantalla`, `home_tab_inicio`, `home_tab_mercado`, `home_tab_cambio`, `home_tab_mas`, `home_menu` (botón de la barra de Inicio) |
+| Menú lateral | `menu_lateral`, `menu_portafolio`, `menu_cambio`, `menu_seguridad`, `menu_ayuda`, `menu_cerrar_sesion` |
+| Coach marks | `coach_capa`, `coach_paso_<n>` (1 a 3), `coach_siguiente` (también en el último paso, donde dice "Entendido"), `coach_omitir` |
 | Inicio | `inicio_pantalla`, `inicio_saludo`, `inicio_tab_cuentas`, `inicio_tab_movimientos` |
 | Inicio · Cuentas | `cuentas_lista`, `cuentas_item_<id>`, `cuentas_transferir` y estados `cuentas_*` |
 | Inicio · Movimientos | `movimientos_lista`, `movimientos_item_<id>`, `movimientos_mas_cargando`, `movimientos_mas_reintentar` y estados `movimientos_*` |
@@ -412,6 +440,7 @@ en su ventana (también los bottom sheets). La convención es snake_case en espa
 | Más | `mas_pantalla`, `mas_nombre`, `mas_seguridad`, `mas_servicios_clasicos`, `mas_cerrar_sesion`, `mas_version` y estados `mas_*` |
 | Seguridad | `seguridad_pantalla`, `seguridad_huella` (interruptor) |
 | Servicios clásicos | `legacy_proximamente` |
+| Ayuda | `ayuda_proximamente` |
 | Transferir · formulario | `transferir_pantalla`, `transferir_origen`, `transferir_origen_item_<id>`, `transferir_destino`, `transferir_monto`, `transferir_descripcion`, `transferir_continuar`, `<campo>_error` y estados `transferir_*` |
 | Transferir · confirmación | `transferir_confirmacion`, `transferir_confirmar`, `transferir_cancelar`, `<campo>_error`, `modal_fondos_insuficientes`, `modal_destino_inexistente`, `modal_moneda_distinta` (cada uno con `_aceptar`) |
 | Transferir · resultado | `transferir_resultado`, `transferir_resultado_operacion`, `transferir_resultado_saldo`, `transferir_resultado_error`, `transferir_volver_inicio` |

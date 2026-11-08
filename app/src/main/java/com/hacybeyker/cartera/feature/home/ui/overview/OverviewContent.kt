@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -34,25 +38,26 @@ import com.hacybeyker.cartera.core.ui.format.formatted
 import com.hacybeyker.cartera.core.ui.isRetryable
 import com.hacybeyker.cartera.core.ui.messageRes
 import com.hacybeyker.cartera.core.ui.preview.previewAccounts
+import com.hacybeyker.cartera.feature.home.domain.model.CoachMark
+import com.hacybeyker.cartera.feature.home.ui.HomeTestTags
+import com.hacybeyker.cartera.feature.home.ui.coach.coachMarkTarget
 
-/** Inicio: saludo y tabs Cuentas · Movimientos. [movementsTab] dibuja el tab de movimientos, que tiene su estado. */
+/**
+ * Inicio: barra con el botón del menú lateral y el saludo, y tabs Cuentas · Movimientos. [movementsTab] dibuja el tab
+ * de movimientos, que tiene su estado.
+ */
 @Composable
 fun OverviewContent(
     uiState: OverviewUiState,
     onAction: (OverviewAction) -> Unit,
     accountsActions: AccountsTabActions,
+    onMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
     movementsTab: @Composable () -> Unit
 ) {
     val tabStates = rememberSaveableStateHolder()
     Column(modifier = modifier.fillMaxSize().testTag(OverviewTestTags.SCREEN)) {
-        Text(
-            text = uiState.firstName?.let { stringResource(R.string.overview_greeting, it) }.orEmpty(),
-            modifier = Modifier
-                .padding(horizontal = MaterialTheme.spacing.screen, vertical = MaterialTheme.spacing.md)
-                .testTag(OverviewTestTags.GREETING),
-            style = MaterialTheme.typography.headlineSmall
-        )
+        OverviewTopBar(firstName = uiState.firstName, onMenuClick = onMenuClick)
         PrimaryTabRow(selectedTabIndex = uiState.selectedTab.ordinal) {
             OverviewTab.entries.forEach { tab ->
                 Tab(
@@ -71,6 +76,36 @@ fun OverviewContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun OverviewTopBar(firstName: String?, onMenuClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = MaterialTheme.spacing.xs,
+                end = MaterialTheme.spacing.screen,
+                top = MaterialTheme.spacing.sm,
+                bottom = MaterialTheme.spacing.sm
+            ),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = onMenuClick,
+            modifier = Modifier
+                .coachMarkTarget(CoachMark.MENU)
+                .testTag(HomeTestTags.MENU)
+        ) {
+            Icon(imageVector = Icons.Filled.Menu, contentDescription = stringResource(R.string.home_menu_open))
+        }
+        Text(
+            text = firstName?.let { stringResource(R.string.overview_greeting, it) }.orEmpty(),
+            modifier = Modifier.testTag(OverviewTestTags.GREETING),
+            style = MaterialTheme.typography.headlineSmall
+        )
     }
 }
 
@@ -117,6 +152,7 @@ private fun AccountList(accounts: List<Account>, actions: AccountsTabActions) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(MaterialTheme.spacing.screen)
+                    .coachMarkTarget(CoachMark.TRANSFER)
                     .testTag(OverviewTestTags.TRANSFER)
             ) {
                 Text(text = stringResource(R.string.overview_transfer))
@@ -162,7 +198,8 @@ private fun OverviewContentPreview() {
         OverviewContent(
             uiState = OverviewUiState(isLoading = false, firstName = "Ana", accounts = previewAccounts),
             onAction = {},
-            accountsActions = AccountsTabActions(onAccountClick = {}, onTransferClick = {})
+            accountsActions = AccountsTabActions(onAccountClick = {}, onTransferClick = {}),
+            onMenuClick = {}
         ) {}
     }
 }

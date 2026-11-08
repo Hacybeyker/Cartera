@@ -83,12 +83,12 @@ class HomeScreenshotTest {
 
     @Test
     fun overviewAccounts() = compose.captureLightAndDark("inicio_cuentas") {
-        OverviewContent(uiState = loadedOverview, onAction = {}, accountsActions = noActions) {}
+        OverviewContent(uiState = loadedOverview, onAction = {}, accountsActions = noActions, onMenuClick = {}) {}
     }
 
     @Test
     fun overviewLoading() = compose.captureLightAndDark("inicio_cargando") {
-        OverviewContent(uiState = OverviewUiState(), onAction = {}, accountsActions = noActions) {}
+        OverviewContent(uiState = OverviewUiState(), onAction = {}, accountsActions = noActions, onMenuClick = {}) {}
     }
 
     @Test
@@ -96,7 +96,8 @@ class HomeScreenshotTest {
         OverviewContent(
             uiState = OverviewUiState(isLoading = false, error = AppError.Network),
             onAction = {},
-            accountsActions = noActions
+            accountsActions = noActions,
+            onMenuClick = {}
         ) {}
     }
 
@@ -105,7 +106,8 @@ class HomeScreenshotTest {
         OverviewContent(
             uiState = loadedOverview.copy(selectedTab = OverviewTab.MOVEMENTS),
             onAction = {},
-            accountsActions = noActions
+            accountsActions = noActions,
+            onMenuClick = {}
         ) {
             AllMovementsContent(uiState = movements(PagedList(previewMovements)), onAction = {}, onMovementClick = {})
         }

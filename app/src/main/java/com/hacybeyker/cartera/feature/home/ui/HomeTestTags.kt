@@ -6,4 +6,7 @@ object HomeTestTags {
     const val TAB_MARKET = "home_tab_mercado"
     const val TAB_EXCHANGE = "home_tab_cambio"
     const val TAB_MORE = "home_tab_mas"
+
+    /** Botón de la barra de Inicio que abre el menú lateral. */
+    const val MENU = "home_menu"
 }

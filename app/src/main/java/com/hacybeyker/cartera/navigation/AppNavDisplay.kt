@@ -16,6 +16,8 @@ import com.hacybeyker.cartera.feature.biometric.ui.biometricEntries
 import com.hacybeyker.cartera.feature.exchange.ui.FxConfirmNavKey
 import com.hacybeyker.cartera.feature.exchange.ui.exchangeEntries
 import com.hacybeyker.cartera.feature.exchange.ui.toArgs
+import com.hacybeyker.cartera.feature.help.ui.HelpNavKey
+import com.hacybeyker.cartera.feature.help.ui.helpEntry
 import com.hacybeyker.cartera.feature.home.ui.HomeActions
 import com.hacybeyker.cartera.feature.home.ui.HomeNavKey
 import com.hacybeyker.cartera.feature.home.ui.HomeTab
@@ -80,6 +82,7 @@ fun AppNavDisplay(
                 onTrade = { symbol, side -> backStack.add(OrderFormNavKey(symbol, side)) }
             )
             legacyEntry(onBack = back)
+            helpEntry(onBack = back)
             // Volver al inicio reutiliza la entrada de Home (con su estado) en vez de crear otra: Inicio refresca
             // solo las cuentas, una vez, porque la transferencia las cambió.
             transferEntries(
@@ -122,6 +125,7 @@ private fun NavBackStack<NavKey>.homeActions(hiddenScreens: Set<HiddenScreen>) =
     onExchangeContinue = { add(FxConfirmNavKey(it.toArgs())) },
     onLegacyClick = { add(LegacyNavKey) },
     onSecurityClick = { add(SecurityNavKey) },
+    onHelpClick = { add(HelpNavKey) },
     onLoggedOut = { resetTo(LoginNavKey) },
     // Sin pantalla oculta (release), los 7 toques no hacen nada.
     onHiddenScreenRequested = { hiddenScreens.firstOrNull()?.let { add(it.navKey()) } }

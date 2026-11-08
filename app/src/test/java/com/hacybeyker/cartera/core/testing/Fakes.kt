@@ -27,7 +27,8 @@ class FakeAppConfigRepository(var config: AppConfig = TestAppConfig, var error: 
 class FakeFirstRunRepository(
     var acceptedTermsVersion: String? = null,
     var onboardingSeen: Boolean = false,
-    var biometricOfferResolved: Boolean = false
+    var biometricOfferResolved: Boolean = false,
+    var coachMarksSeen: Boolean = false
 ) : FirstRunRepository {
     override suspend fun acceptedTermsVersion(): String? = acceptedTermsVersion
 
@@ -45,6 +46,12 @@ class FakeFirstRunRepository(
 
     override suspend fun markBiometricOfferResolved() {
         biometricOfferResolved = true
+    }
+
+    override suspend fun isCoachMarksSeen(): Boolean = coachMarksSeen
+
+    override suspend fun markCoachMarksSeen() {
+        coachMarksSeen = true
     }
 }
 

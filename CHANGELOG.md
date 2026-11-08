@@ -64,6 +64,8 @@
 - "Ingresar con huella" en Login cuando el dispositivo está registrado: la misma sesión en memoria que el login con clave, con Términos y Onboarding si corresponden. Si el servidor ya no reconoce el dispositivo (`INVALID_DEVICE`) o se registró una huella nueva, se borra lo guardado, se oculta el botón y se explica bajo el formulario.
 - El backend embebido guarda los dispositivos registrados para ingresar con huella en el dispositivo, así el ingreso con huella funciona tras un arranque en frío; RESET_DATA y `DELETE /auth/biometric` también los borran.
 - Pantalla Seguridad, desde Más, con el interruptor "Ingresar con huella": activarlo registra el dispositivo y desactivarlo lo revoca (`DELETE /auth/biometric`) y borra el token y la clave; sin huella en el dispositivo queda deshabilitado con su explicación.
+- Menú lateral en Home, abierto con el botón de la barra de Inicio: Mi portafolio, Cambio (elige el tab), Seguridad, Ayuda (próximamente) y Cerrar sesión con la misma confirmación que Más. Se cierra deslizando, tocando fuera o con Atrás.
+- Coach marks la primera vez que se entra a Home: tres pasos (Transferir, el tab Mercado y el botón del menú) que resaltan cada elemento, con Siguiente, Entendido en el último y Omitir. Se ven una vez por instalación.
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -77,6 +79,8 @@
 - Login avisa su marca `login` cuando ya sabe si muestra "Ingresar con huella".
 - Tras el onboarding (o tras el login, si ya se vio) puede seguir la oferta de ingreso con huella en vez de Home.
 - `MainActivity` pasa a ser una `FragmentActivity`, que `BiometricPrompt` exige.
+- El tab Más usa el ícono de tres puntos, para no repetir el del botón del menú lateral.
+- Al volver a Home en un tab pedido (tras una orden o un cambio), ese tab se ve desde el primer frame.
 - `POST /_demo/reset` también devuelve tenencias, precios, cotizaciones y dispositivos registrados a su estado inicial; con el canal en vivo abierto, no lo cierra y le envía los valores iniciales de lo suscrito.
 - La `Idempotency-Key` vale por usuario y por operación: la misma clave en una transferencia y en una orden no se cruza.
 - Una orden confirmada, o que terminó sin respuesta o con un error del servidor, invalida las cuentas y el portafolio: Mercado, Mi portafolio y el Detalle de acción vuelven a pedir solo el portafolio al mostrarse, e Inicio solo las cuentas.

@@ -12,6 +12,7 @@ import com.hacybeyker.cartera.core.ui.marks.ReportContentVisible
 fun OverviewScreen(
     accountsActions: AccountsTabActions,
     onMovementClick: (String) -> Unit,
+    onMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: OverviewViewModel = hiltViewModel()
 ) {
@@ -25,6 +26,7 @@ fun OverviewScreen(
         uiState = uiState,
         onAction = viewModel::onAction,
         accountsActions = accountsActions,
+        onMenuClick = onMenuClick,
         modifier = modifier
     ) {
         AllMovementsTab(onMovementClick = onMovementClick)

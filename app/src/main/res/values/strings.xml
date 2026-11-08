@@ -58,6 +58,19 @@
     <string name="home_tab_market">Mercado</string>
     <string name="home_tab_exchange">Cambio</string>
     <string name="home_tab_more">Más</string>
+    <string name="home_menu_open">Abrir menú</string>
+    <string name="menu_portfolio">Mi portafolio</string>
+    <string name="menu_help">Ayuda</string>
+    <string name="coach_step_count">Paso %1$d de %2$d</string>
+    <string name="coach_next">Siguiente</string>
+    <string name="coach_done">Entendido</string>
+    <string name="coach_skip">Omitir</string>
+    <string name="coach_transfer_title">Transfiere entre tus cuentas</string>
+    <string name="coach_transfer_body">Con Transferir mueves dinero entre tus cuentas en pocos pasos.</string>
+    <string name="coach_market_title">Invierte en Mercado</string>
+    <string name="coach_market_body">Sigue los precios de las acciones en vivo y compra o vende desde aquí.</string>
+    <string name="coach_menu_title">Todo a mano en el menú</string>
+    <string name="coach_menu_body">Abre el menú para ir a Mi portafolio, Cambio, Seguridad y Ayuda, o para cerrar sesión.</string>
 
     <string name="market_portfolio_title">Mi portafolio</string>
     <string name="market_portfolio_day_change">%1$s (%2$s) hoy</string>
