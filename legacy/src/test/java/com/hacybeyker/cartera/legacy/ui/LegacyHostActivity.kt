@@ -49,7 +49,9 @@ internal class LegacyHostActivity :
         super.onCreate(savedInstanceState)
         binding = LegacyActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        supportFragmentManager.commit { replace(R.id.legacy_actividad_contenedor, HostEnvironment.screen()) }
+        if (savedInstanceState == null) {
+            supportFragmentManager.commit { replace(R.id.legacy_actividad_contenedor, HostEnvironment.screen()) }
+        }
     }
 
     override fun navigateTo(screen: LegacyScreen) {
