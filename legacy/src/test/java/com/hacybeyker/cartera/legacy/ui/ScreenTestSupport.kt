@@ -11,7 +11,10 @@ import org.robolectric.android.controller.ActivityController
 private const val SCREEN_WIDTH = 1080
 private const val SCREEN_HEIGHT = 1920
 
-internal fun launchScreen(presenters: TestPresenters, screen: () -> Fragment): ActivityController<LegacyHostActivity> {
+internal fun launchScreen(
+    presenters: LegacyPresenterSource,
+    screen: () -> Fragment
+): ActivityController<LegacyHostActivity> {
     HostEnvironment.reset(presenters, screen)
     val controller = Robolectric.buildActivity(LegacyHostActivity::class.java).setup()
     shadowOf(Looper.getMainLooper()).idle()
