@@ -3,10 +3,27 @@ info:
   title: Cartera API
   version: 1.0.0
   summary: Billetera digital de demo.
+  contact:
+    name: Hacybeyker
+    url: https://github.com/Hacybeyker/Cartera
+    email: contacto@cartera.invalid
+  license:
+    name: MIT
+    identifier: MIT
   description: |
     Contrato del backend de Cartera. En debug y demo lo sirve un backend embebido en la app
-    (`http://127.0.0.1:8765/api/v1/`); en release apunta a un marcador que no resuelve, así que
-    migrar a un servidor real es cambiar solo `BASE_URL`.
+    (`http://127.0.0.1:8765/api/v1/`); en release apunta a un marcador que no resuelve
+    (`https://cartera.invalid/api/v1/`), así que migrar a un servidor real es cambiar solo `BASE_URL`.
+    La guía para implementarlo (NestJS, Spring o Node) es `docs/CONTRATO.md`.
+
+    **Versión.** SemVer, ver `api/CHANGELOG.md`: un cambio que rompe a los clientes existentes sube la
+    MAJOR; un endpoint, un campo opcional o un código de error nuevos, la MINOR; una corrección de
+    texto o de ejemplos, la PATCH.
+
+    **Ejemplos.** Cada respuesta trae ejemplos con nombre tomados de los fixtures (`api/fixtures/`); el
+    primero es el que devuelve un mock generado desde este archivo (por ejemplo, Prism). Un test de la app
+    comprueba que los ejemplos de éxito coinciden con lo que responde el backend embebido desde datos
+    limpios (los recortados lo dicen en su resumen).
 
     **Convenciones**
     - JSON en camelCase. Ids como texto.
@@ -70,8 +87,8 @@ info:
 servers:
   - url: http://127.0.0.1:8765/api/v1
     description: Backend embebido (debug y demo)
-  - url: https://cartera.invalid/api/v1
-    description: Marcador de release (no resuelve)
+  - url: https://api.cartera.example/api/v1
+    description: Servidor de ejemplo, sin desplegar
 security:
   - bearer: []
 tags:
@@ -94,6 +111,10 @@ paths:
       tags: [app]
       operationId: getAppConfig
       summary: Configuración que lee la splash.
+      description: |
+        No pide token. La splash la lee al arrancar: `minSupportedVersion` es la versión mínima de la app que
+        el servidor acepta y `termsVersion` identifica los términos y condiciones vigentes; si cambia, la app
+        los vuelve a mostrar.
       security: []
       responses:
         "200":
@@ -103,6 +124,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AppConfig" }
+              examples:
+                configuracion:
+                  summary: "La configuración vigente."
+                  value: { minSupportedVersion: "0.1.0", termsVersion: "2026-11-01" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/login:
@@ -110,6 +135,11 @@ paths:
       tags: [auth]
       operationId: login
       summary: Inicia sesión y devuelve un JWT.
+      description: |
+        Valida usuario y contraseña, ambos obligatorios (`VALIDATION_ERROR` por campo si faltan o vienen
+        vacíos). Un par que no coincide da `INVALID_CREDENTIALS`, sin decir cuál de los dos falló. Devuelve un JWT
+        HS256 con los claims `sub`, `iat` y `exp` y `expiresIn` en segundos (900 por defecto). No hay refresh
+        token: al vencer, hay que volver a iniciar sesión.
       security: []
       parameters:
         - $ref: "#/components/parameters/DemoSessionTtl"
@@ -118,6 +148,10 @@ paths:
         content:
           application/json:
             schema: { $ref: "#/components/schemas/LoginRequest" }
+            examples:
+              ana:
+                summary: "La usuaria de prueba."
+                value: { username: "ana.torres", password: "Cartera2026" }
       responses:
         "200":
           description: Sesión iniciada.
@@ -126,12 +160,46 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LoginResponse" }
+              examples:
+                sesion:
+                  summary: "Token de 900 s para Ana Torres."
+                  value:
+                    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU1ItMDAxIiwiaWF0IjoxNzk0MDYzNjAwLCJleHAiOjE3OTQwNjQ1MDB9.ZTHmmPDY0J0Oh53Tvhrp4fnRUEiYRh0b2aurJ1CyrVQ"
+                    tokenType: "Bearer"
+                    expiresIn: 900
         "401":
           description: "`INVALID_CREDENTIALS`: usuario o contraseña incorrectos."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
-        "422": { $ref: "#/components/responses/ValidationError" }
+              examples:
+                credencialesInvalidas:
+                  summary: "Usuario o contraseña incorrectos."
+                  value:
+                    type: "https://cartera.invalid/problems/invalid-credentials"
+                    title: "Credenciales inválidas"
+                    status: 401
+                    detail: "Usuario o contraseña incorrectos."
+                    code: "INVALID_CREDENTIALS"
+                    traceId: "req-000001"
+        "422":
+          description: "`VALIDATION_ERROR`, con un elemento en `errors[]` por campo."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                camposObligatorios:
+                  summary: "Faltan el usuario y la contraseña."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "Faltan datos para iniciar sesión."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors:
+                      - { field: "username", code: "REQUIRED", message: "El campo es obligatorio." }
+                      - { field: "password", code: "REQUIRED", message: "El campo es obligatorio." }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /me:
@@ -139,6 +207,8 @@ paths:
       tags: [profile]
       operationId: getMe
       summary: Perfil de la persona autenticada.
+      description: |
+        Datos de la persona a la que pertenece el token (`sub`). El documento viaja enmascarado.
       responses:
         "200":
           description: Perfil.
@@ -147,6 +217,14 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Me" }
+              examples:
+                ana:
+                  summary: "El perfil de la usuaria de prueba."
+                  value:
+                    id: "USR-001"
+                    fullName: "Ana Torres"
+                    documentMasked: "*****678"
+                    email: "ana.torres@cartera.invalid"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
@@ -155,6 +233,10 @@ paths:
       tags: [accounts]
       operationId: listAccounts
       summary: Cuentas propias.
+      description: |
+        Las cuentas de la persona, con su saldo disponible y contable al momento de la llamada. Una
+        transferencia, una orden, un cambio o un pago de servicios cambia el saldo disponible de la cuenta
+        afectada.
       responses:
         "200":
           description: Cuentas.
@@ -163,6 +245,32 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AccountList" }
+              examples:
+                cuentas:
+                  summary: "Las tres cuentas de Ana, con los saldos iniciales."
+                  value:
+                    items:
+                      - id: "ACC-001"
+                        alias: "Cuenta Sueldo"
+                        type: "SAVINGS"
+                        currency: "PEN"
+                        numberMasked: "****4821"
+                        availableBalance: { value: "8450.75", currency: "PEN" }
+                        accountingBalance: { value: "8450.75", currency: "PEN" }
+                      - id: "ACC-002"
+                        alias: "Cuenta Gastos"
+                        type: "CHECKING"
+                        currency: "PEN"
+                        numberMasked: "****9034"
+                        availableBalance: { value: "2300.00", currency: "PEN" }
+                        accountingBalance: { value: "2300.00", currency: "PEN" }
+                      - id: "ACC-003"
+                        alias: "Cuenta Dólares"
+                        type: "SAVINGS"
+                        currency: "USD"
+                        numberMasked: "****1177"
+                        availableBalance: { value: "1050.20", currency: "USD" }
+                        accountingBalance: { value: "1050.20", currency: "USD" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
@@ -171,6 +279,8 @@ paths:
       tags: [accounts]
       operationId: getAccount
       summary: Una cuenta propia.
+      description: |
+        Una cuenta de la persona. Si el id no existe o es de otra persona, responde 404 `NOT_FOUND`.
       parameters:
         - name: accountId
           in: path
@@ -184,8 +294,33 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Account" }
+              examples:
+                cuentaSueldo:
+                  summary: "Cuenta Sueldo."
+                  value:
+                    id: "ACC-001"
+                    alias: "Cuenta Sueldo"
+                    type: "SAVINGS"
+                    currency: "PEN"
+                    numberMasked: "****4821"
+                    availableBalance: { value: "8450.75", currency: "PEN" }
+                    accountingBalance: { value: "8450.75", currency: "PEN" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "404":
+          description: "`NOT_FOUND`: el id no existe o no es de la persona."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                cuentaNoExiste:
+                  summary: "La cuenta no existe o no es de la persona."
+                  value:
+                    type: "https://cartera.invalid/problems/not-found"
+                    title: "Recurso no encontrado"
+                    status: 404
+                    detail: "No se encontró la cuenta ACC-999."
+                    code: "NOT_FOUND"
+                    traceId: "req-000001"
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /movements:
@@ -193,6 +328,12 @@ paths:
       tags: [movements]
       operationId: listMovements
       summary: Movimientos paginados, de una cuenta o de todas.
+      description: |
+        Paginación por cursor, en orden de fecha descendente (con el id como desempate). Sin `accountId` trae
+        los movimientos de todas las cuentas propias. `limit` va de 1 a 1000 (20 por defecto). El cursor es el
+        `nextCursor` de la página anterior y apunta al último movimiento entregado, no a una posición; un
+        cursor que no corresponde a la lista da 422 `VALIDATION_ERROR` en el campo `cursor`. Una cuenta que no
+        es de la persona da 422 en el campo `accountId`.
       parameters:
         - name: accountId
           in: query
@@ -213,8 +354,138 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MovementPage" }
+              examples:
+                sinMasPaginas:
+                  summary: "Los movimientos más recientes de ACC-001, sin más páginas."
+                  value:
+                    items:
+                      - id: "MOV-001-0001"
+                        accountId: "ACC-001"
+                        date: "2026-11-06T18:45:00-05:00"
+                        description: "Compra Fibra Hogar Internet"
+                        category: "SERVICES"
+                        amount: { value: "-169.61", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0002"
+                        accountId: "ACC-001"
+                        date: "2026-11-06T09:43:00-05:00"
+                        description: "Compra Cine Estelar"
+                        category: "ENTERTAINMENT"
+                        amount: { value: "-36.55", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0003"
+                        accountId: "ACC-001"
+                        date: "2026-11-05T21:51:00-05:00"
+                        description: "Compra Taxi Seguro"
+                        category: "TRANSPORT"
+                        amount: { value: "-43.64", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0004"
+                        accountId: "ACC-001"
+                        date: "2026-11-05T19:08:00-05:00"
+                        description: "Compra Agua Clara"
+                        category: "SERVICES"
+                        amount: { value: "-66.17", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0005"
+                        accountId: "ACC-001"
+                        date: "2026-11-05T15:04:00-05:00"
+                        description: "Compra Pollería La Brasa"
+                        category: "RESTAURANTS"
+                        amount: { value: "-30.29", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0006"
+                        accountId: "ACC-001"
+                        date: "2026-11-05T08:45:00-05:00"
+                        description: "Compra Cine Estelar"
+                        category: "ENTERTAINMENT"
+                        amount: { value: "-66.26", currency: "PEN" }
+                        type: "DEBIT"
+                    nextCursor: null
+                conMasPaginas:
+                  summary: "Una primera página (`limit=6`) con el cursor de la siguiente."
+                  value:
+                    items:
+                      - id: "MOV-001-0001"
+                        accountId: "ACC-001"
+                        date: "2026-11-06T18:45:00-05:00"
+                        description: "Compra Fibra Hogar Internet"
+                        category: "SERVICES"
+                        amount: { value: "-169.61", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0002"
+                        accountId: "ACC-001"
+                        date: "2026-11-06T09:43:00-05:00"
+                        description: "Compra Cine Estelar"
+                        category: "ENTERTAINMENT"
+                        amount: { value: "-36.55", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0003"
+                        accountId: "ACC-001"
+                        date: "2026-11-05T21:51:00-05:00"
+                        description: "Compra Taxi Seguro"
+                        category: "TRANSPORT"
+                        amount: { value: "-43.64", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0004"
+                        accountId: "ACC-001"
+                        date: "2026-11-05T19:08:00-05:00"
+                        description: "Compra Agua Clara"
+                        category: "SERVICES"
+                        amount: { value: "-66.17", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0005"
+                        accountId: "ACC-001"
+                        date: "2026-11-05T15:04:00-05:00"
+                        description: "Compra Pollería La Brasa"
+                        category: "RESTAURANTS"
+                        amount: { value: "-30.29", currency: "PEN" }
+                        type: "DEBIT"
+                      - id: "MOV-001-0006"
+                        accountId: "ACC-001"
+                        date: "2026-11-05T08:45:00-05:00"
+                        description: "Compra Cine Estelar"
+                        category: "ENTERTAINMENT"
+                        amount: { value: "-66.26", currency: "PEN" }
+                        type: "DEBIT"
+                    nextCursor: "TU9WLTAwMS0wMDA2"
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "422": { $ref: "#/components/responses/ValidationError" }
+        "422":
+          description: "`VALIDATION_ERROR`, con un elemento en `errors[]` por campo."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                limiteFueraDeRango:
+                  summary: "`limit` fuera de 1 a 1000."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "Usa un valor entre 1 y 1000."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors: [{ field: "limit", code: "OUT_OF_RANGE", message: "Usa un valor entre 1 y 1000." }]
+                cursorInvalido:
+                  summary: "El cursor no corresponde a la lista."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "El cursor no corresponde a esta lista."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors: [{ field: "cursor", code: "INVALID", message: "Cursor inválido o vencido." }]
+                cuentaAjena:
+                  summary: "`accountId` no es una cuenta propia."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "La cuenta no existe o no es tuya."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors: [{ field: "accountId", code: "NOT_OWNED", message: "La cuenta no existe o no es tuya." }]
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /movements/{movementId}:
@@ -222,6 +493,9 @@ paths:
       tags: [movements]
       operationId: getMovement
       summary: Detalle de un movimiento.
+      description: |
+        El movimiento con su número de operación, canal, estado y contraparte. Si no existe o es de una cuenta
+        de otra persona, responde 404 `NOT_FOUND`.
       parameters:
         - $ref: "#/components/parameters/MovementId"
       responses:
@@ -232,8 +506,37 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MovementDetail" }
+              examples:
+                detalle:
+                  summary: "Detalle del movimiento más reciente de ACC-001."
+                  value:
+                    id: "MOV-001-0001"
+                    accountId: "ACC-001"
+                    date: "2026-11-06T18:45:00-05:00"
+                    description: "Compra Fibra Hogar Internet"
+                    category: "SERVICES"
+                    amount: { value: "-169.61", currency: "PEN" }
+                    type: "DEBIT"
+                    operationNumber: "10000001"
+                    channel: "APP"
+                    status: "COMPLETED"
+                    counterparty: { name: "Fibra Hogar Internet", reference: "VISA ****4821" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "404":
+          description: "`NOT_FOUND`: el id no existe o no es de la persona."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                movimientoNoExiste:
+                  summary: "El movimiento no existe o no es de la persona."
+                  value:
+                    type: "https://cartera.invalid/problems/not-found"
+                    title: "Recurso no encontrado"
+                    status: 404
+                    detail: "No se encontró el movimiento MOV-999."
+                    code: "NOT_FOUND"
+                    traceId: "req-000001"
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /movements/{movementId}/breakdown:
@@ -241,6 +544,10 @@ paths:
       tags: [movements]
       operationId: getMovementBreakdown
       summary: Desglose de un movimiento.
+      description: |
+        Líneas, comisiones, impuestos, comercio y categoría del movimiento. `exchangeRate` solo viaja en los
+        movimientos de un cambio de moneda. Si el movimiento no existe o no es de la persona, responde
+        404 `NOT_FOUND`.
       parameters:
         - $ref: "#/components/parameters/MovementId"
       responses:
@@ -251,8 +558,31 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Breakdown" }
+              examples:
+                desglose:
+                  summary: "Desglose del mismo movimiento."
+                  value:
+                    lines: [{ concept: "Consumo", amount: { value: "143.74", currency: "PEN" } }]
+                    fees: { value: "0.00", currency: "PEN" }
+                    taxes: { value: "25.87", currency: "PEN" }
+                    merchant: { name: "Fibra Hogar Internet", city: "Lima" }
+                    category: "SERVICES"
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "404":
+          description: "`NOT_FOUND`: el id no existe o no es de la persona."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                movimientoNoExiste:
+                  summary: "El movimiento no existe o no es de la persona."
+                  value:
+                    type: "https://cartera.invalid/problems/not-found"
+                    title: "Recurso no encontrado"
+                    status: 404
+                    detail: "No se encontró el movimiento MOV-999."
+                    code: "NOT_FOUND"
+                    traceId: "req-000001"
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /transfers:
@@ -284,6 +614,13 @@ paths:
         content:
           application/json:
             schema: { $ref: "#/components/schemas/TransferRequest" }
+            examples:
+              aTerceros:
+                summary: "150.00 soles de Cuenta Gastos a Luis Ramírez."
+                value:
+                  sourceAccountId: "ACC-002"
+                  destinationAccountNumber: "999-0000001-0-01"
+                  amount: { value: "150.00", currency: "PEN" }
       responses:
         "201":
           description: Transferencia hecha.
@@ -292,6 +629,16 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/TransferResponse" }
+              examples:
+                transferencia:
+                  summary: "La primera transferencia desde datos limpios."
+                  value:
+                    transferId: "TRF-000001"
+                    operationNumber: "90000001"
+                    createdAt: "2026-11-07T10:00:00-05:00"
+                    sourceAccountId: "ACC-002"
+                    sourceAvailableBalance: { value: "2150.00", currency: "PEN" }
+                    movementId: "MOV-002-T0001"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "422":
           description: |
@@ -300,6 +647,57 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                saldoInsuficiente:
+                  summary: "El monto supera el saldo disponible."
+                  value:
+                    type: "https://cartera.invalid/problems/insufficient-funds"
+                    title: "Saldo insuficiente"
+                    status: 422
+                    detail: "El monto supera el saldo disponible."
+                    code: "INSUFFICIENT_FUNDS"
+                    traceId: "req-000001"
+                datosInvalidos:
+                  summary: "Monto en cero."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "La transferencia tiene datos inválidos."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors:
+                      - field: "amount.value"
+                        code: "MUST_BE_POSITIVE"
+                        message: "El monto debe ser mayor que cero."
+                sinClaveDeIdempotencia:
+                  summary: "Falta la cabecera `Idempotency-Key`."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "La transferencia tiene datos inválidos."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors: [{ field: "Idempotency-Key", code: "REQUIRED", message: "La cabecera es obligatoria." }]
+                destinoNoExiste:
+                  summary: "No hay una cuenta con ese número."
+                  value:
+                    type: "https://cartera.invalid/problems/destination-not-found"
+                    title: "Cuenta de destino no encontrada"
+                    status: 422
+                    detail: "No existe una cuenta con ese número."
+                    code: "DESTINATION_NOT_FOUND"
+                    traceId: "req-000001"
+                monedasDistintas:
+                  summary: "Soles hacia una cuenta en dólares."
+                  value:
+                    type: "https://cartera.invalid/problems/currency-mismatch"
+                    title: "Las monedas no coinciden"
+                    status: 422
+                    detail: "El origen, el destino y el monto deben usar PEN."
+                    code: "CURRENCY_MISMATCH"
+                    traceId: "req-000001"
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /market/stocks:
@@ -307,6 +705,10 @@ paths:
       tags: [market]
       operationId: listStocks
       summary: Las acciones con su precio vigente.
+      description: |
+        Las acciones con su último precio, su variación contra el cierre anterior y la hora del último cambio.
+        Los precios avanzan por el canal en vivo (`asyncapi.yaml`) y estos mismos valores son los que usan las
+        órdenes y el portafolio.
       responses:
         "200":
           description: Acciones, por símbolo.
@@ -315,6 +717,67 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StockList" }
+              examples:
+                acciones:
+                  summary: "Las ocho acciones con su precio inicial."
+                  value:
+                    items:
+                      - symbol: "ANDM"
+                        name: "Andina Minerals"
+                        currency: "USD"
+                        last: "42.10"
+                        change: "0.34"
+                        changePct: "0.81"
+                        ts: "2026-11-07T10:00:00-05:00"
+                      - symbol: "CUSC"
+                        name: "Cusco Telecom"
+                        currency: "USD"
+                        last: "27.30"
+                        change: "-0.46"
+                        changePct: "-1.66"
+                        ts: "2026-11-07T10:00:00-05:00"
+                      - symbol: "INKA"
+                        name: "Inka Energy"
+                        currency: "USD"
+                        last: "63.40"
+                        change: "-1.95"
+                        changePct: "-2.98"
+                        ts: "2026-11-07T10:00:00-05:00"
+                      - symbol: "LIMA"
+                        name: "Lima Logistics"
+                        currency: "USD"
+                        last: "9.85"
+                        change: "-0.28"
+                        changePct: "-2.76"
+                        ts: "2026-11-07T10:00:00-05:00"
+                      - symbol: "MOCH"
+                        name: "Moche Tech"
+                        currency: "USD"
+                        last: "88.60"
+                        change: "-2.37"
+                        changePct: "-2.61"
+                        ts: "2026-11-07T10:00:00-05:00"
+                      - symbol: "NAZC"
+                        name: "Nazca Retail"
+                        currency: "USD"
+                        last: "12.45"
+                        change: "-0.04"
+                        changePct: "-0.32"
+                        ts: "2026-11-07T10:00:00-05:00"
+                      - symbol: "PCFC"
+                        name: "Pacífico Foods"
+                        currency: "USD"
+                        last: "18.75"
+                        change: "-0.14"
+                        changePct: "-0.74"
+                        ts: "2026-11-07T10:00:00-05:00"
+                      - symbol: "QORI"
+                        name: "Qori Gold"
+                        currency: "USD"
+                        last: "115.20"
+                        change: "-0.36"
+                        changePct: "-0.31"
+                        ts: "2026-11-07T10:00:00-05:00"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
@@ -334,8 +797,39 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StockDetail" }
+              examples:
+                andm:
+                  summary: "Andina Minerals, con los datos del día."
+                  value:
+                    symbol: "ANDM"
+                    name: "Andina Minerals"
+                    currency: "USD"
+                    last: "42.10"
+                    change: "0.34"
+                    changePct: "0.81"
+                    ts: "2026-11-07T10:00:00-05:00"
+                    open: "41.54"
+                    high: "42.22"
+                    low: "41.12"
+                    previousClose: "41.76"
+                    volume: 3643000
+                    description: "Minera de cobre y zinc con operaciones en la sierra central."
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "404":
+          description: "`NOT_FOUND`: el id no existe o no es de la persona."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                accionNoExiste:
+                  summary: "El símbolo no existe."
+                  value:
+                    type: "https://cartera.invalid/problems/not-found"
+                    title: "Recurso no encontrado"
+                    status: 404
+                    detail: "No se encontró la acción ZZZZ."
+                    code: "NOT_FOUND"
+                    traceId: "req-000001"
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /market/stocks/{symbol}/history:
@@ -361,13 +855,52 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PriceHistory" }
+              examples:
+                ultimosPuntos1D:
+                  summary: "Los últimos seis puntos del rango 1D (el real trae 390)."
+                  value:
+                    symbol: "ANDM"
+                    range: "1D"
+                    currency: "USD"
+                    points:
+                      - { ts: "2026-11-07T09:55:00-05:00", price: "42.15" }
+                      - { ts: "2026-11-07T09:56:00-05:00", price: "42.22" }
+                      - { ts: "2026-11-07T09:57:00-05:00", price: "42.17" }
+                      - { ts: "2026-11-07T09:58:00-05:00", price: "42.16" }
+                      - { ts: "2026-11-07T09:59:00-05:00", price: "42.17" }
+                      - { ts: "2026-11-07T10:00:00-05:00", price: "42.10" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "404":
+          description: "`NOT_FOUND`: el id no existe o no es de la persona."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                accionNoExiste:
+                  summary: "El símbolo no existe."
+                  value:
+                    type: "https://cartera.invalid/problems/not-found"
+                    title: "Recurso no encontrado"
+                    status: 404
+                    detail: "No se encontró la acción ZZZZ."
+                    code: "NOT_FOUND"
+                    traceId: "req-000001"
         "422":
           description: "`VALIDATION_ERROR` (campo `range`) si falta o no es uno de los cuatro rangos."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                rangoInvalido:
+                  summary: "`range` no es uno de los cuatro rangos."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "Usa 1D, 1W, 1M o 1Y."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors: [{ field: "range", code: "INVALID_VALUE", message: "Usa 1D, 1W, 1M o 1Y." }]
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /portfolio:
@@ -388,6 +921,50 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Portfolio" }
+              examples:
+                portafolio:
+                  summary: "Las tres tenencias de Ana al precio inicial."
+                  value:
+                    accountId: "ACC-003"
+                    currency: "USD"
+                    holdings:
+                      - symbol: "ANDM"
+                        name: "Andina Minerals"
+                        quantity: 10
+                        averagePrice: { value: "40.00", currency: "USD" }
+                        lastPrice: { value: "42.10", currency: "USD" }
+                        marketValue: { value: "421.00", currency: "USD" }
+                        cost: { value: "400.00", currency: "USD" }
+                        gain: { value: "21.00", currency: "USD" }
+                        gainPct: "5.25"
+                        dayChange: { value: "3.40", currency: "USD" }
+                      - symbol: "MOCH"
+                        name: "Moche Tech"
+                        quantity: 5
+                        averagePrice: { value: "80.00", currency: "USD" }
+                        lastPrice: { value: "88.60", currency: "USD" }
+                        marketValue: { value: "443.00", currency: "USD" }
+                        cost: { value: "400.00", currency: "USD" }
+                        gain: { value: "43.00", currency: "USD" }
+                        gainPct: "10.75"
+                        dayChange: { value: "-11.85", currency: "USD" }
+                      - symbol: "QORI"
+                        name: "Qori Gold"
+                        quantity: 2
+                        averagePrice: { value: "120.00", currency: "USD" }
+                        lastPrice: { value: "115.20", currency: "USD" }
+                        marketValue: { value: "230.40", currency: "USD" }
+                        cost: { value: "240.00", currency: "USD" }
+                        gain: { value: "-9.60", currency: "USD" }
+                        gainPct: "-4.00"
+                        dayChange: { value: "-0.72", currency: "USD" }
+                    totals:
+                      marketValue: { value: "1094.40", currency: "USD" }
+                      cost: { value: "1040.00", currency: "USD" }
+                      gain: { value: "54.40", currency: "USD" }
+                      gainPct: "5.23"
+                      dayChange: { value: "-9.17", currency: "USD" }
+                      dayChangePct: "-0.83"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
@@ -419,6 +996,10 @@ paths:
         content:
           application/json:
             schema: { $ref: "#/components/schemas/OrderRequest" }
+            examples:
+              compra:
+                summary: "Comprar 2 ANDM desde Cuenta Dólares."
+                value: { symbol: "ANDM", side: "BUY", quantity: 2, accountId: "ACC-003" }
       responses:
         "201":
           description: Orden ejecutada.
@@ -427,12 +1008,60 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/OrderResponse" }
+              examples:
+                compra:
+                  summary: "La primera orden desde datos limpios."
+                  value:
+                    orderId: "ORD-000001"
+                    operationNumber: "70000001"
+                    createdAt: "2026-11-07T10:00:00-05:00"
+                    side: "BUY"
+                    symbol: "ANDM"
+                    quantity: 2
+                    executedPrice: { value: "42.10", currency: "USD" }
+                    total: { value: "84.20", currency: "USD" }
+                    accountId: "ACC-003"
+                    accountAvailableBalance: { value: "966.00", currency: "USD" }
+                    movementId: "MOV-003-O0001"
+                    holding: { symbol: "ANDM", quantity: 12, averagePrice: { value: "40.35", currency: "USD" } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "422":
           description: "`VALIDATION_ERROR` (con `errors[]`), `INSUFFICIENT_FUNDS` o `INSUFFICIENT_HOLDINGS`."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                saldoInsuficiente:
+                  summary: "El total supera el saldo disponible."
+                  value:
+                    type: "https://cartera.invalid/problems/insufficient-funds"
+                    title: "Saldo insuficiente"
+                    status: 422
+                    detail: "El total supera el saldo disponible."
+                    code: "INSUFFICIENT_FUNDS"
+                    traceId: "req-000001"
+                tenenciaInsuficiente:
+                  summary: "Se vende más de lo que se tiene."
+                  value:
+                    type: "https://cartera.invalid/problems/insufficient-holdings"
+                    title: "Tenencia insuficiente"
+                    status: 422
+                    detail: "Tienes 10 acciones de ANDM."
+                    code: "INSUFFICIENT_HOLDINGS"
+                    traceId: "req-000001"
+                datosInvalidos:
+                  summary: "Cantidad en cero."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "La orden tiene datos inválidos."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors:
+                      - field: "quantity"
+                        code: "MUST_BE_POSITIVE"
+                        message: "La cantidad debe ser mayor que cero."
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /fx/rates:
@@ -454,6 +1083,16 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/FxQuote" }
+              examples:
+                cotizacion:
+                  summary: "La cotización inicial, vigente 30 s."
+                  value:
+                    pair: "USD/PEN"
+                    buy: "3.742"
+                    sell: "3.768"
+                    quoteId: "QTE-000001"
+                    expiresAt: "2026-11-07T10:00:30-05:00"
+                    ts: "2026-11-07T10:00:00-05:00"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
@@ -487,6 +1126,14 @@ paths:
         content:
           application/json:
             schema: { $ref: "#/components/schemas/ExchangeRequest" }
+            examples:
+              dolaresASoles:
+                summary: "Cambiar US$ 100.00 a soles."
+                value:
+                  quoteId: "QTE-000001"
+                  sourceAccountId: "ACC-003"
+                  destinationAccountId: "ACC-002"
+                  amount: { value: "100.00", currency: "USD" }
       responses:
         "201":
           description: Cambio hecho.
@@ -495,6 +1142,22 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ExchangeResponse" }
+              examples:
+                cambio:
+                  summary: "El primer cambio desde datos limpios."
+                  value:
+                    exchangeId: "FX-000001"
+                    operationNumber: "80000001"
+                    createdAt: "2026-11-07T10:00:00-05:00"
+                    quoteId: "QTE-000001"
+                    rate: "3.742"
+                    debited: { value: "100.00", currency: "USD" }
+                    credited: { value: "374.20", currency: "PEN" }
+                    sourceAccountId: "ACC-003"
+                    sourceAvailableBalance: { value: "950.20", currency: "USD" }
+                    destinationAccountId: "ACC-002"
+                    destinationAvailableBalance: { value: "2674.20", currency: "PEN" }
+                    movementIds: ["MOV-003-X0001", "MOV-002-X0001"]
         "401": { $ref: "#/components/responses/Unauthorized" }
         "422":
           description: |
@@ -503,6 +1166,54 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                cotizacionVencida:
+                  summary: "La cotización venció; el problema trae una nueva en `quote`."
+                  value:
+                    type: "https://cartera.invalid/problems/quote-expired"
+                    title: "Cotización vencida"
+                    status: 422
+                    detail: "La cotización venció. Revisa la nueva antes de confirmar."
+                    code: "QUOTE_EXPIRED"
+                    traceId: "req-000001"
+                    quote:
+                      pair: "USD/PEN"
+                      buy: "3.742"
+                      sell: "3.768"
+                      quoteId: "QTE-000003"
+                      expiresAt: "2026-11-07T10:00:15-05:00"
+                      ts: "2026-11-07T10:00:10-05:00"
+                saldoInsuficiente:
+                  summary: "El monto supera el saldo disponible."
+                  value:
+                    type: "https://cartera.invalid/problems/insufficient-funds"
+                    title: "Saldo insuficiente"
+                    status: 422
+                    detail: "El monto supera el saldo disponible."
+                    code: "INSUFFICIENT_FUNDS"
+                    traceId: "req-000001"
+                monedasDistintas:
+                  summary: "Origen y destino no forman el par USD/PEN."
+                  value:
+                    type: "https://cartera.invalid/problems/currency-mismatch"
+                    title: "Las monedas no coinciden"
+                    status: 422
+                    detail: "El cambio es solo entre una cuenta en soles y una en dólares."
+                    code: "CURRENCY_MISMATCH"
+                    traceId: "req-000001"
+                datosInvalidos:
+                  summary: "Monto en cero."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "El cambio tiene datos inválidos."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors:
+                      - field: "amount.value"
+                        code: "MUST_BE_POSITIVE"
+                        message: "El monto debe ser mayor que cero."
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /billers:
@@ -526,6 +1237,61 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/BillerList" }
+              examples:
+                empresas:
+                  summary: "Las veinte empresas, por rubro."
+                  value:
+                    items:
+                      - id: "BIL-LUZ"
+                        name: "Luz del Norte"
+                        category: "Electricidad"
+                        customerCodeFormat: "^\\d{6}$"
+                      - id: "BIL-ESI"
+                        name: "Electro Sierra"
+                        category: "Electricidad"
+                        customerCodeFormat: "^\\d{8}$"
+                      - id: "BIL-ECO"
+                        name: "Energía Costa"
+                        category: "Electricidad"
+                        customerCodeFormat: "^\\d{7}$"
+                      - { id: "BIL-AGUA", name: "Agua Trujillo", category: "Agua", customerCodeFormat: "^\\d{6}$" }
+                      - { id: "BIL-AVA", name: "Agua del Valle", category: "Agua", customerCodeFormat: "^\\d{8}$" }
+                      - { id: "BIL-APA", name: "Aguas Pacífico", category: "Agua", customerCodeFormat: "^\\d{10}$" }
+                      - { id: "BIL-GAN", name: "Gas Andino", category: "Gas", customerCodeFormat: "^\\d{8}$" }
+                      - { id: "BIL-GCO", name: "Gas Costa Norte", category: "Gas", customerCodeFormat: "^\\d{6}$" }
+                      - id: "BIL-TEL"
+                        name: "Telefonía Andina"
+                        category: "Telefonía"
+                        customerCodeFormat: "^\\d{6}$"
+                      - { id: "BIL-MSO", name: "Móvil Sol", category: "Telefonía", customerCodeFormat: "^\\d{9}$" }
+                      - id: "BIL-TVA"
+                        name: "Telecom Valle"
+                        category: "Telefonía"
+                        customerCodeFormat: "^\\d{9}$"
+                      - id: "BIL-NET"
+                        name: "Internet Moche"
+                        category: "Internet"
+                        customerCodeFormat: "^\\d{6}$"
+                      - { id: "BIL-FNO", name: "Fibra Norte", category: "Internet", customerCodeFormat: "^\\d{8}$" }
+                      - { id: "BIL-RHO", name: "Red Hogar", category: "Internet", customerCodeFormat: "^\\d{10}$" }
+                      - { id: "BIL-CVS", name: "Cable Visión Sur", category: "Cable", customerCodeFormat: "^\\d{8}$" }
+                      - { id: "BIL-TVC", name: "TV Andina Cable", category: "Cable", customerCodeFormat: "^\\d{6}$" }
+                      - id: "BIL-SHO"
+                        name: "Seguros Horizonte"
+                        category: "Seguros"
+                        customerCodeFormat: "^\\d{10}$"
+                      - id: "BIL-PFA"
+                        name: "Protección Familiar"
+                        category: "Seguros"
+                        customerCodeFormat: "^\\d{8}$"
+                      - id: "BIL-IAN"
+                        name: "Instituto Andino"
+                        category: "Educación"
+                        customerCodeFormat: "^\\d{7}$"
+                      - id: "BIL-AHO"
+                        name: "Academia Horizonte"
+                        category: "Educación"
+                        customerCodeFormat: "^\\d{6}$"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
@@ -566,17 +1332,68 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/BillerDebts" }
+              examples:
+                luzDelNorte:
+                  summary: "Dos recibos pendientes de Luz del Norte (código 100200)."
+                  value:
+                    customerName: "Ana Torres"
+                    debts:
+                      - id: "DEB-LUZ-202610"
+                        period: "2026-10"
+                        dueDate: "2026-11-12"
+                        amount: { value: "85.40", currency: "PEN" }
+                      - id: "DEB-LUZ-202611"
+                        period: "2026-11"
+                        dueDate: "2026-12-12"
+                        amount: { value: "92.10", currency: "PEN" }
+                sinRecibos:
+                  summary: "Internet Moche (código 700800), sin recibos pendientes."
+                  value: { customerName: "Ana Torres", debts: [] }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404":
           description: "`BILLER_NOT_FOUND` o `CUSTOMER_NOT_FOUND` (el código no existe en esa empresa)."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                clienteNoExiste:
+                  summary: "El código no existe en la empresa."
+                  value:
+                    type: "https://cartera.invalid/problems/customer-not-found"
+                    title: "Cliente no encontrado"
+                    status: 404
+                    detail: "No existe el código 999999 en Luz del Norte."
+                    code: "CUSTOMER_NOT_FOUND"
+                    traceId: "req-000001"
+                empresaNoExiste:
+                  summary: "La empresa no existe."
+                  value:
+                    type: "https://cartera.invalid/problems/biller-not-found"
+                    title: "Empresa no encontrada"
+                    status: 404
+                    detail: "No existe la empresa BIL-XXX."
+                    code: "BILLER_NOT_FOUND"
+                    traceId: "req-000001"
         "422":
           description: "`VALIDATION_ERROR` (con `errors[]`): campos `customerCode` e `includeHistory`."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                datosInvalidos:
+                  summary: "Código con otro formato e `includeHistory` inválido."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "La consulta tiene datos inválidos."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors:
+                      - field: "customerCode"
+                        code: "INVALID_FORMAT"
+                        message: "El código no cumple el formato de la empresa."
+                      - { field: "includeHistory", code: "INVALID_VALUE", message: "Usa true o false." }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /bill-payments:
@@ -609,6 +1426,15 @@ paths:
         content:
           application/json:
             schema: { $ref: "#/components/schemas/BillPaymentRequest" }
+            examples:
+              pagoDeReferencia:
+                summary: "Los dos recibos de Luz del Norte desde Cuenta Gastos."
+                value:
+                  billerId: "BIL-LUZ"
+                  customerCode: "100200"
+                  debtIds: ["DEB-LUZ-202610", "DEB-LUZ-202611"]
+                  accountId: "ACC-002"
+                  pin: "1234"
       responses:
         "201":
           description: Pago hecho.
@@ -617,6 +1443,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/BillPaymentResponse" }
+              examples:
+                pagoDeReferencia:
+                  summary: "El primer pago desde datos limpios: operación 80000001 y saldo 2122.50."
+                  value:
+                    paymentId: "PAY-000001"
+                    operationNumber: "80000001"
+                    createdAt: "2026-11-07T10:00:00-05:00"
+                    paidDebts:
+                      - { id: "DEB-LUZ-202610", period: "2026-10", amount: { value: "85.40", currency: "PEN" } }
+                      - { id: "DEB-LUZ-202611", period: "2026-11", amount: { value: "92.10", currency: "PEN" } }
+                    total: { value: "177.50", currency: "PEN" }
+                    accountId: "ACC-002"
+                    accountAvailableBalance: { value: "2122.50", currency: "PEN" }
+                    movementId: "MOV-002-P0001"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "422":
           description: |
@@ -625,6 +1465,55 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                claveInvalida:
+                  summary: "La clave de operaciones no es la de la persona."
+                  value:
+                    type: "https://cartera.invalid/problems/invalid-pin"
+                    title: "Clave de operaciones inválida"
+                    status: 422
+                    detail: "La clave de operaciones es incorrecta."
+                    code: "INVALID_PIN"
+                    traceId: "req-000001"
+                reciboYaPagado:
+                  summary: "Alguno de los recibos ya está pagado; no se cobra ninguno."
+                  value:
+                    type: "https://cartera.invalid/problems/debt-already-paid"
+                    title: "Recibo ya pagado"
+                    status: 422
+                    detail: "Ya se pagó: DEB-LUZ-202610, DEB-LUZ-202611."
+                    code: "DEBT_ALREADY_PAID"
+                    traceId: "req-000001"
+                saldoInsuficiente:
+                  summary: "El total supera el saldo disponible."
+                  value:
+                    type: "https://cartera.invalid/problems/insufficient-funds"
+                    title: "Saldo insuficiente"
+                    status: 422
+                    detail: "El total supera el saldo disponible."
+                    code: "INSUFFICIENT_FUNDS"
+                    traceId: "req-000001"
+                monedasDistintas:
+                  summary: "La cuenta de cargo está en dólares."
+                  value:
+                    type: "https://cartera.invalid/problems/currency-mismatch"
+                    title: "Las monedas no coinciden"
+                    status: 422
+                    detail: "Los recibos se pagan con una cuenta en soles."
+                    code: "CURRENCY_MISMATCH"
+                    traceId: "req-000001"
+                datosInvalidos:
+                  summary: "Sin recibos y con una clave de menos de 4 dígitos."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "El pago tiene datos inválidos."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors:
+                      - { field: "debtIds", code: "MIN_ITEMS", message: "Elige al menos un recibo." }
+                      - { field: "pin", code: "INVALID_FORMAT", message: "Usa 4 dígitos." }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /bill-payments/{paymentId}/voucher:
@@ -647,12 +1536,63 @@ paths:
           content:
             text/html:
               schema: { type: string }
+              examples:
+                constancia:
+                  summary: "La constancia del pago de referencia."
+                  value: |
+                    <!DOCTYPE html>
+                    <html lang="es">
+                    <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+                    <title>Constancia de pago</title>
+                    <style>:root{color-scheme:light dark}body{font-family:sans-serif;margin:16px;line-height:1.4}h1{font-size:1.25rem;margin:0 0 16px}dl{margin:0 0 16px}dt{font-size:.8rem;opacity:.7;margin-top:12px}dd{margin:2px 0 0}table{width:100%;border-collapse:collapse}caption{text-align:left;font-weight:bold;padding-bottom:8px}th,td{padding:8px 0;border-bottom:1px solid rgba(128,128,128,.4);text-align:left}td:last-child,th:last-child{text-align:right}</style>
+                    </head>
+                    <body>
+                    <main>
+                    <h1>Constancia de pago</h1>
+                    <dl>
+                    <dt>Número de operación</dt><dd>80000001</dd>
+                    <dt>Fecha y hora</dt><dd>07/11/2026 10:00</dd>
+                    <dt>Empresa</dt><dd>Luz del Norte</dd>
+                    <dt>Cliente</dt><dd>Ana Torres</dd>
+                    <dt>Código de cliente</dt><dd>100200</dd>
+                    <dt>Cuenta de cargo</dt><dd>Cuenta Gastos ****9034</dd>
+                    </dl>
+                    <table>
+                    <caption>Recibos pagados</caption>
+                    <thead><tr><th scope="col">Período</th><th scope="col">Importe</th></tr></thead>
+                    <tbody>
+                    <tr><td>Octubre 2026</td><td>S/ 85.40</td></tr>
+                    <tr><td>Noviembre 2026</td><td>S/ 92.10</td></tr>
+                    </tbody>
+                    <tfoot>
+                    <tr><th scope="row">Total pagado</th><td>S/ 177.50</td></tr>
+                    </tfoot>
+                    </table>
+                    <dl>
+                    <dt>Nuevo saldo disponible</dt><dd>S/ 2,122.50</dd>
+                    </dl>
+                    </main>
+                    </body>
+                    </html>
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404":
           description: "`PAYMENT_NOT_FOUND`: el pago no existe o no es de la persona."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                pagoNoExiste:
+                  summary: "El pago no existe o no es de la persona."
+                  value:
+                    type: "https://cartera.invalid/problems/payment-not-found"
+                    title: "Pago no encontrado"
+                    status: 404
+                    detail: "No existe el pago PAY-999999."
+                    code: "PAYMENT_NOT_FOUND"
+                    traceId: "req-000001"
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/biometric/enroll:
@@ -671,6 +1611,10 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/BiometricEnrollResponse" }
+              examples:
+                dispositivo:
+                  summary: "El token opaco del dispositivo."
+                  value: { deviceToken: "dvc_ehQmzxWS8oJ2E8sLKbzQyV3xFhypUXuoTFwe19wbbmc" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
@@ -688,6 +1632,10 @@ paths:
         content:
           application/json:
             schema: { $ref: "#/components/schemas/BiometricLoginRequest" }
+            examples:
+              dispositivo:
+                summary: "El token que entregó el registro."
+                value: { deviceToken: "dvc_ehQmzxWS8oJ2E8sLKbzQyV3xFhypUXuoTFwe19wbbmc" }
       responses:
         "200":
           description: Sesión iniciada.
@@ -696,12 +1644,44 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LoginResponse" }
+              examples:
+                sesion:
+                  summary: "Misma forma que el login."
+                  value:
+                    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU1ItMDAxIiwiaWF0IjoxNzk0MDYzNjAwLCJleHAiOjE3OTQwNjQ1MDB9.ZTHmmPDY0J0Oh53Tvhrp4fnRUEiYRh0b2aurJ1CyrVQ"
+                    tokenType: "Bearer"
+                    expiresIn: 900
         "401":
           description: "`INVALID_DEVICE`: el token no existe o fue revocado."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
-        "422": { $ref: "#/components/responses/ValidationError" }
+              examples:
+                dispositivoInvalido:
+                  summary: "El token no existe o fue revocado."
+                  value:
+                    type: "https://cartera.invalid/problems/invalid-device"
+                    title: "Dispositivo no registrado"
+                    status: 401
+                    detail: "El dispositivo no está registrado. Ingresa con tu clave."
+                    code: "INVALID_DEVICE"
+                    traceId: "req-000001"
+        "422":
+          description: "`VALIDATION_ERROR`, con un elemento en `errors[]` por campo."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                tokenObligatorio:
+                  summary: "Falta `deviceToken`."
+                  value:
+                    type: "https://cartera.invalid/problems/validation-error"
+                    title: "Datos inválidos"
+                    status: 422
+                    detail: "Falta el token del dispositivo."
+                    code: "VALIDATION_ERROR"
+                    traceId: "req-000001"
+                    errors: [{ field: "deviceToken", code: "REQUIRED", message: "El campo es obligatorio." }]
         "500": { $ref: "#/components/responses/InternalError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /auth/biometric:
@@ -709,6 +1689,9 @@ paths:
       tags: [biometric]
       operationId: deleteBiometric
       summary: Revoca todos los dispositivos registrados de la persona.
+      description: |
+        Borra todos los dispositivos registrados de la persona, no solo el de quien llama. Después, el
+        `deviceToken` de cualquiera de ellos da `INVALID_DEVICE` en `POST /auth/biometric/login`.
       responses:
         "204":
           description: Dispositivos revocados.
@@ -720,6 +1703,10 @@ paths:
       tags: [demo]
       operationId: resetDemo
       summary: Vuelve el estado a los fixtures. Solo existe en entornos de demo.
+      description: |
+        Solo para entornos de demo: borra lo que el servidor guardó (saldos, movimientos nuevos, tenencias,
+        cotizaciones, pagos, idempotencia y dispositivos) y vuelve a los fixtures. Un servidor real no debe
+        implementarlo. No pide token ni aplica ninguna cabecera `X-Demo-*`.
       security: []
       responses:
         "204":
@@ -777,21 +1764,40 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
-    NotFound:
-      description: "`NOT_FOUND`: el id no existe o no es de la persona."
-      content:
-        application/problem+json:
-          schema: { $ref: "#/components/schemas/Problem" }
-    ValidationError:
-      description: "`VALIDATION_ERROR`, con un elemento en `errors[]` por campo."
-      content:
-        application/problem+json:
-          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            sesionExpirada:
+              summary: "El token venció."
+              value:
+                type: "https://cartera.invalid/problems/session-expired"
+                title: "Sesión expirada"
+                status: 401
+                detail: "La sesión expiró. Vuelve a ingresar."
+                code: "SESSION_EXPIRED"
+                traceId: "req-000001"
+            sinToken:
+              summary: "Falta el token o no es válido."
+              value:
+                type: "https://cartera.invalid/problems/unauthorized"
+                title: "No autorizado"
+                status: 401
+                detail: "Falta un token válido."
+                code: "UNAUTHORIZED"
+                traceId: "req-000001"
     InternalError:
       description: "`INTERNAL_ERROR`."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            errorInterno:
+              summary: "Fallo del servidor."
+              value:
+                type: "https://cartera.invalid/problems/internal-error"
+                title: "Error interno"
+                status: 500
+                detail: "Ocurrió un error inesperado. Reintenta en unos instantes."
+                code: "INTERNAL_ERROR"
+                traceId: "req-000001"
     ServiceUnavailable:
       description: "`SERVICE_UNAVAILABLE`: backend caído."
       headers:
@@ -800,6 +1806,16 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            servicioCaido:
+              summary: "Backend caído; trae `Retry-After`."
+              value:
+                type: "https://cartera.invalid/problems/service-unavailable"
+                title: "Servicio no disponible"
+                status: 503
+                detail: "El servicio no está disponible."
+                code: "SERVICE_UNAVAILABLE"
+                traceId: "req-000001"
   schemas:
     Money:
       type: object

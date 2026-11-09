@@ -22,8 +22,10 @@ permissions:
 
 # Estrategia de jobs:
 #   quality ──> android
+#   contract
 # `quality` actúa como gate: es el job más rápido y barato. Si falla,
 # no se gasta cómputo en el build/tests.
+# `contract` no depende de ninguno ni lo espera nadie: solo lee api/ y corre en paralelo.
 jobs:
   quality:
     name: Code Quality (ktlint + detekt + Lint)
@@ -69,6 +71,19 @@ jobs:
             **/build/reports/lint-results-*.sarif
           if-no-files-found: ignore
           retention-days: 7
+
+  contract:
+    name: Contract (Spectral)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Node ya viene en el runner, así que no hace falta setup-node. La versión de Spectral va fijada: con
+      # `--fail-severity=hint` cualquier problema (error, aviso, info o sugerencia) rompe el job.
+      - name: Lint openapi.yaml and asyncapi.yaml
+        run: npx --yes @stoplight/spectral-cli@6.17.1 lint api/openapi.yaml api/asyncapi.yaml --ruleset .spectral.yaml --fail-severity=hint
 
   android:
     name: Android — Build, Test & Analysis

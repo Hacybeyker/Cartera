@@ -1,0 +1,5 @@
+# Lint de los dos contratos de api/ (job `contract` del CI). Sin reglas desactivadas: el contrato queda en 0 problemas.
+# Local: npx @stoplight/spectral-cli@6.17.1 lint api/openapi.yaml api/asyncapi.yaml --fail-severity=hint
+extends:
+  - spectral:oas
+  - spectral:asyncapi

@@ -1,7 +1,17 @@
-asyncapi: 3.0.0
+asyncapi: 3.1.0
 info:
   title: Cartera · canal en vivo
   version: 1.0.0
+  contact:
+    name: Hacybeyker
+    url: https://github.com/Hacybeyker/Cartera
+    email: contacto@cartera.invalid
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  tags:
+    - name: market
+      description: Precios de acciones y tipo de cambio en vivo.
   description: |
     Canal en vivo de precios de Cartera (`WS /market/stream`). Complementa a `openapi.yaml`, que
     fija las convenciones comunes: autenticación, fechas, precios como texto decimal, errores RFC 9457
@@ -125,6 +135,10 @@ operations:
     action: receive
     title: Suscribirse
     summary: El cliente se suscribe a símbolos y pares; el servidor contesta con su valor actual.
+    description: |
+      Mensaje de texto con `type: subscribe` y las listas `symbols` y `pairs`. Cada elemento se responde enseguida
+      con el valor actual (un `quote` por símbolo y un `fx` por par) y después, en cada tick. Suscribirse otra vez
+      a lo mismo vuelve a enviar el valor actual. Los símbolos o pares desconocidos se ignoran.
     channel:
       $ref: "#/channels/marketStream"
     messages:
@@ -132,6 +146,9 @@ operations:
   unsubscribe:
     action: receive
     title: Desuscribirse
+    description: |
+      Mensaje de texto con `type: unsubscribe` y las listas `symbols` y `pairs` a dejar de recibir. No tiene
+      respuesta.
     channel:
       $ref: "#/channels/marketStream"
     messages:
@@ -140,6 +157,9 @@ operations:
     action: send
     title: Precio de una acción
     summary: Al suscribirse y en cada tick, por cada símbolo suscrito.
+    description: |
+      El servidor publica un `quote` por cada símbolo suscrito: al suscribirse y en cada tick del reloj de
+      mercado. Es la misma forma que cada elemento de `GET /market/stocks`, con `type`.
     channel:
       $ref: "#/channels/marketStream"
     messages:
@@ -148,6 +168,9 @@ operations:
     action: send
     title: Cotización USD/PEN
     summary: Al suscribirse y en cada tick, si el par está suscrito.
+    description: |
+      El servidor publica un `fx` si el par `USD/PEN` está suscrito: al suscribirse y en cada tick. Cada `fx` es
+      una cotización nueva, válida en `POST /fx/exchanges` hasta `expiresAt`.
     channel:
       $ref: "#/channels/marketStream"
     messages:

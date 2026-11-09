@@ -17,10 +17,13 @@
 ```
 .
 ├── api/
-│   ├── openapi.yaml       # Contrato de la API (OpenAPI 3.1)
-│   ├── asyncapi.yaml      # Contrato del canal en vivo /market/stream (AsyncAPI 3.0)
-│   ├── fixtures/          # Datos del backend embebido
-│   └── tools/             # Generadores de movimientos y de mercado (semilla fija)
+│   ├── openapi.yaml       # Contrato de la API (OpenAPI 3.1), con ejemplos tomados de los fixtures
+│   ├── asyncapi.yaml      # Contrato del canal en vivo /market/stream (AsyncAPI 3.1)
+│   ├── CHANGELOG.md       # Versión del contrato (SemVer) y qué cambió en cada una
+│   ├── fixtures/          # Datos del backend embebido: la semilla de cualquier servidor
+│   └── tools/             # Generadores de movimientos, mercado y pago de servicios (semilla fija)
+├── docs/CONTRATO.md       # Guía para implementar el servidor (NestJS, Spring o Node)
+├── .spectral.yaml         # Reglas del lint de los dos contratos (job `contract` del CI)
 ├── legacy/                # Módulo :legacy (Android library): Fragments, XML con ViewBinding, MVP y RxJava 3
 │   └── src/main/java/com/hacybeyker/cartera/legacy/
 │       ├── integration/   # Lo único que ve `app`: LegacyContract y las interfaces que `app` implementa
@@ -38,6 +41,7 @@
 │                          # market, order, exchange, help y legacy
 │                          # (domain / data / ui / di)
 ├── app/src/demoTools/     # Backend embebido y escenarios (solo debug y demo)
+├── app/src/debug/res/xml/ # Tráfico sin TLS en debug: 127.0.0.1 y 10.0.2.2 (la variante demo tiene el suyo, solo con 127.0.0.1)
 ├── AGENTS.md              # Reglas del proyecto para agentes de IA (CLAUDE.md lo importa)
 └── gradle/
     └── libs.versions.toml # Catálogo centralizado de versiones
@@ -55,7 +59,43 @@
 Debug y demo traen un backend embebido que escucha en `http://127.0.0.1:8765/api/v1/` y sirve los
 datos de `api/fixtures/` según el contrato de `api/openapi.yaml`, y el canal en vivo
 `ws://127.0.0.1:8765/api/v1/market/stream` según `api/asyncapi.yaml`. Release apunta a
-`https://cartera.invalid/api/v1/`, un marcador que no resuelve.
+`https://cartera.invalid/api/v1/`, un marcador que no resuelve. En debug, `-Pcartera.baseUrl=<url con / final>` lo
+cambia (ver [Contrato y servidor externo](#-contrato-y-servidor-externo)).
+
+---
+
+## 📜 Contrato y servidor externo
+
+El contrato (`api/openapi.yaml`, versión `1.0.0`, con su `api/CHANGELOG.md`) está pensado para que un servidor externo
+lo implemente y la app funcione cambiando solo `BASE_URL`. La guía para hacerlo (JWT, errores RFC 9457, cursores,
+idempotencia, reglas de negocio, el canal en vivo, qué es solo de demo y cómo sembrar el servidor con `api/fixtures/`)
+es [`docs/CONTRATO.md`](./docs/CONTRATO.md). No se despliega ningún servidor.
+
+- **Ejemplos.** Cada respuesta del contrato trae ejemplos con nombre tomados de los fixtures; los de éxito son lo que
+  responde el backend embebido desde datos limpios (un test lo comprueba).
+- **Lint.** Spectral revisa los dos archivos con cero problemas, localmente y en el job `contract` del CI:
+
+  ```bash
+  cd ~/StudioProjects/Cartera && npx @stoplight/spectral-cli@6.17.1 lint api/openapi.yaml api/asyncapi.yaml --fail-severity=hint
+  ```
+
+- **Tests de contrato.** En la JVM (`app/src/testDebug/.../demo/contract/`, parte de `./gradlew test`): las respuestas
+  reales del backend embebido y los ejemplos se validan contra los esquemas de `openapi.yaml` con
+  swagger-request-validator.
+- **La app contra un mock del contrato.** Prism sirve los ejemplos sin escribir un servidor. Sirve las rutas sin el
+  prefijo `/api/v1`, así que en debug se apunta la app a `http://10.0.2.2:4010/` (la máquina anfitriona desde el
+  emulador) con la propiedad de Gradle `cartera.baseUrl`:
+
+  ```bash
+  cd ~/StudioProjects/Cartera && npx @stoplight/prism-cli@5.16.0 mock api/openapi.yaml
+  cd ~/StudioProjects/Cartera && ./gradlew installDebug -Pcartera.baseUrl=http://10.0.2.2:4010/
+  ```
+
+  `cartera.baseUrl` cambia `BuildConfig.BASE_URL` solo en **debug** (demo y release no la leen) y debe ser una URL
+  `http` o `https` que termine en `/`; si no, el build falla. Se pasa con `-P` o en `~/.gradle/gradle.properties`.
+  El tráfico sin TLS hacia `10.0.2.2` solo está permitido en debug; el backend embebido sigue arrancando, pero la
+  app no lo usa. Con Prism se recorren el login, las cuentas, los movimientos y el pago de servicios; el canal en
+  vivo y la lógica con estado (saldos, rechazos) quedan fuera, porque Prism no los tiene.
 
 ---
 
@@ -692,7 +732,9 @@ dispositivo. Los comandos se ejecutan desde la raíz y corren en los dos módulo
 ```
 
 El CI encadena `test koverVerifyDebug verifyRoborazziDebug` en una sola invocación: los tests corren
-una vez y los tres gates reutilizan esa corrida.
+una vez y los tres gates reutilizan esa corrida. Aparte, el job `contract` corre Spectral sobre
+`api/openapi.yaml` y `api/asyncapi.yaml` (cero problemas), sin depender de los demás. Los tests de contrato
+(`demo/contract/`) validan las respuestas del backend embebido y los ejemplos contra el esquema; Kover no los mide.
 
 ---
 

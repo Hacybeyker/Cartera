@@ -10,6 +10,18 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
+// Solo debug: `-Pcartera.baseUrl=http://10.0.2.2:4010/` (o esa misma línea en ~/.gradle/gradle.properties) apunta la
+// app a otro servidor, por ejemplo un mock del contrato en la máquina anfitriona. Demo y release no la leen.
+val debugBaseUrl: String =
+    providers.gradleProperty("cartera.baseUrl").orNull?.trim()?.also { url ->
+        if (!Regex("""https?://[^\s"\\]+/""").matches(url)) {
+            throw GradleException(
+                "cartera.baseUrl debe ser una URL http(s) que termine en '/' (por ejemplo http://10.0.2.2:4010/); " +
+                    "se recibió '$url'."
+            )
+        }
+    } ?: "http://127.0.0.1:8765/api/v1/"
+
 android {
     namespace = "com.hacybeyker.cartera"
     compileSdk {
@@ -39,7 +51,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_URL", "\"http://127.0.0.1:8765/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"$debugBaseUrl\"")
         }
         release {
             optimization {
@@ -115,6 +127,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    testImplementation(libs.openapi.request.validator.core)
     testImplementation(libs.okhttp.mockwebserver3)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
@@ -131,6 +144,11 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     systemProperty("cartera.fixturesDir", "$rootDir/api/fixtures")
+    systemProperty("cartera.rootDir", "$rootDir")
+    // Los tests leen estos archivos por ruta: sin declararlos, Gradle daría por buena una corrida vieja.
+    inputs.dir("$rootDir/api").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(fileTree("src") { include("**/res/xml/network_security_config.xml") })
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 detekt {

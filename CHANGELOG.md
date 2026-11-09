@@ -83,6 +83,12 @@
 - Constancia en `:legacy`: la constancia HTML del pago en un `WebView` sin id (sin JavaScript, archivos, contenido, red ni zoom) con su marca `legacy_constancia` tras `onPageFinished`, y Finalizar; Atrás equivale a Finalizar y la Constancia queda como única pantalla.
 - `LegacyResult.Paid`: al volver de un pago, Servicios clásicos invalida las cuentas (`AccountChanges`) y Más, Inicio y las pantallas con saldos vuelven a pedirlas una sola vez.
 - Goldens de la Clave (orden fijo, con dos dígitos, con la semilla 7, con error y teclado reordenado, enviando) y de la Constancia (cargando, con Finalizar y sin constancia).
+- Contrato `1.0.0` en SemVer para `openapi.yaml` y `asyncapi.yaml`, con `api/CHANGELOG.md` (qué es MAJOR, MINOR y PATCH para este contrato y qué trae la primera versión), `servers` con el backend embebido y un servidor de ejemplo sin desplegar, contacto y licencia, y una descripción en cada operación.
+- Ejemplos con nombre en cada respuesta del contrato (de éxito y de error), tomados de los fixtures: un mock generado solo desde el contrato (Prism) devuelve los mismos datos que el backend embebido.
+- `docs/CONTRATO.md`: guía para implementar el servidor en NestJS, Spring o Node (JWT, errores RFC 9457, cursores, idempotencia, reglas de negocio, canal en vivo, qué es solo de demo, `api/fixtures/` como semilla y cómo probar con Prism).
+- Lint de los contratos con Spectral (`.spectral.yaml`, `spectral:oas` y `spectral:asyncapi`, cero problemas) en un job `contract` del CI, independiente de los demás.
+- Tests de contrato en la JVM (`demo/contract/`, con `openapi-request-validator-core` 3.0.0, solo en tests): validan las respuestas del backend embebido y los ejemplos contra los esquemas de `openapi.yaml`, incluida la constancia `text/html`, y los campos que el esquema no declara.
+- Propiedad de Gradle `cartera.baseUrl`: cambia `BASE_URL` solo en debug (la URL debe terminar en `/`, o el build falla) para correr la app contra un mock del contrato desde el emulador (`http://10.0.2.2:4010/`).
 
 ### Changed
 - El desglose usa un Crossfade entre sus estados (carga, error y contenido).
@@ -109,6 +115,9 @@
 - Los gates (ktlint, detekt, Lint, Kover y Roborazzi) y el DoD cubren `:app` y `:legacy`; la configuración común vive en el `build.gradle.kts` raíz.
 - Sonar y el CI analizan y publican los reportes de los dos módulos.
 - Fragment 1.9.1 llega a `app` por `:legacy`.
+- `asyncapi.yaml` pasa a AsyncAPI 3.1.0.
+- El `network_security_config` pasa a ser un recurso por variante (`src/main`, `src/demo` y `src/debug`) en vez de uno compartido por debug y demo.
+- Las respuestas 404 y 422 del contrato se documentan en línea en cada operación, con su ejemplo, en vez de por una respuesta compartida.
 
 ### Removed
 - `hilt-navigation-compose`, que ningún import usaba.
@@ -122,7 +131,7 @@
 - Un monto o una fecha mal formados en una respuesta se muestran como error del servicio en vez de cerrar la app.
 
 ### Security
-- Configuración de seguridad de red: sin tráfico en claro, salvo hacia `127.0.0.1` en debug y demo.
+- Configuración de seguridad de red: sin tráfico en claro, salvo hacia `127.0.0.1` en debug y demo, y hacia `10.0.2.2` (la máquina anfitriona desde el emulador) solo en debug.
 - El `deviceToken` cifrado del ingreso con huella queda fuera de los backups y de la transferencia entre dispositivos; el token de sesión sigue solo en memoria y cerrar sesión no borra el `deviceToken`.
 
 ---
