@@ -415,6 +415,7 @@ Prism escucha en `http://127.0.0.1:4010` y sirve las rutas **sin** el prefijo `/
 
 ```bash
 cd ~/StudioProjects/Cartera && ./gradlew installDebug -Pcartera.baseUrl=http://10.0.2.2:4010/
+cd ~/StudioProjects/Cartera && adb shell pm grant com.hacybeyker.cartera android.permission.ACCESS_LOCAL_NETWORK
 ```
 
 `cartera.baseUrl` es una propiedad de Gradle que solo cambia `BuildConfig.BASE_URL` en **debug** (demo y release no la

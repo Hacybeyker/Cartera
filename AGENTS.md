@@ -151,5 +151,5 @@ Sigue el perfil (Clean Architecture + MVVM con UDF, por features). Particularida
 ## Seguridad
 
 - Sigue el perfil (OWASP MASVS). Ningún secreto en el repo: van en `local.properties` o en los secretos de CI (por ejemplo `SONAR_TOKEN`).
-- Tráfico sin TLS prohibido (`network_security_config`), salvo hacia `127.0.0.1` en debug y demo, y hacia `10.0.2.2` (la máquina anfitriona desde el emulador) solo en debug.
+- Tráfico sin TLS prohibido (`network_security_config`), salvo hacia `127.0.0.1` en debug y demo, y hacia `10.0.2.2` (la máquina anfitriona desde el emulador) solo en debug. En Android 17 esa dirección exige el permiso `ACCESS_LOCAL_NETWORK`, que declara el manifest que comparten debug y demo (`demoTools`: un `src/debug/AndroidManifest.xml` se ignora); en el emulador se concede con `adb shell pm grant com.hacybeyker.cartera android.permission.ACCESS_LOCAL_NETWORK`. Un `AndroidManifest.xml` nuevo en un source set exige construir una vez con `--no-configuration-cache`.
 - La clave JWT del backend embebido y las credenciales del usuario de prueba son de demo y públicas a propósito: viven solo en `api/` y `demoTools`, nunca en `main`.

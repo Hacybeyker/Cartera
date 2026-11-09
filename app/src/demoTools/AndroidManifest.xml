@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Desde Android 17 una app que apunta a la API 37 no llega a una dirección de la red local, como 10.0.2.2 (la
+         máquina anfitriona desde el emulador), sin este permiso. Solo debug permite esa dirección en su
+         network_security_config; en demo el permiso no se usa. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+
     <application>
         <!-- initOrder alto: el backend debe escuchar antes de que la app haga su primera llamada. -->
         <provider

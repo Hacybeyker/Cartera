@@ -89,6 +89,7 @@ es [`docs/CONTRATO.md`](./docs/CONTRATO.md). No se despliega ningún servidor.
   ```bash
   cd ~/StudioProjects/Cartera && npx @stoplight/prism-cli@5.16.0 mock api/openapi.yaml
   cd ~/StudioProjects/Cartera && ./gradlew installDebug -Pcartera.baseUrl=http://10.0.2.2:4010/
+cd ~/StudioProjects/Cartera && adb shell pm grant com.hacybeyker.cartera android.permission.ACCESS_LOCAL_NETWORK
   ```
 
   `cartera.baseUrl` cambia `BuildConfig.BASE_URL` solo en **debug** (demo y release no la leen) y debe ser una URL

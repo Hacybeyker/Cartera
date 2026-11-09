@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+### Corregido
+
+- Debug alcanza `10.0.2.2` en Android 17: el manifest compartido declara `ACCESS_LOCAL_NETWORK` (se concede con `adb shell pm grant`), necesario para apuntar la app a un mock del contrato en la máquina anfitriona.
+
 ### Added
 - Proyecto inicializado a partir de [ScaffoldingAndroidCompose](https://github.com/hacybeyker/ScaffoldingAndroidCompose)
 - Documento de alcance de la fase 1 (`docs/ALCANCE-FASE-1.md`).
