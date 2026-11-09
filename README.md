@@ -64,6 +64,22 @@ cambia (ver [Contrato y servidor externo](#-contrato-y-servidor-externo)).
 
 ---
 
+## 🧭 Cartera como base de pruebas
+
+Cartera es una billetera digital de demo y, sobre todo, un banco de pruebas: sirve para ejercitar las skills de
+`agent-skills` y las pruebas E2E con testigo. Importa el comportamiento, no el diseño visual.
+
+- **Qué ofrece:** un backend embebido determinista (fixtures y reset), escenarios que se cambian por adb, por argumentos
+  de arranque o desde la pantalla Escenario, un contrato OpenAPI/AsyncAPI, testTags e ids estables, marcas de contenido
+  visible (sección «testTags y marcas») y dos stacks de UI a propósito: Compose (`:app`) y Views con
+  MVP y RxJava (`:legacy`).
+- **Qué hay dentro de `docs/`:** `docs/CONTRATO.md` es la guía para implementar el servidor; los `docs/ALCANCE-*`
+  documentan el alcance de cada fase y contienen el mapeo de los casos sembrados, con sus datos de referencia y los
+  identificadores que usan los flows.
+- **Pruebas a ciegas:** quien deba investigar la app sin conocer sus casos sembrados (por ejemplo una skill de
+  rendimiento o de diagnóstico) no debe leer los `docs/ALCANCE-*`: el mapeo contiene justo lo que esa prueba quiere
+  descubrir. Los identificadores se descubren por la app y por esta sección de testTags.
+
 ## 📜 Contrato y servidor externo
 
 El contrato (`api/openapi.yaml`, versión `1.0.0`, con su `api/CHANGELOG.md`) está pensado para que un servidor externo

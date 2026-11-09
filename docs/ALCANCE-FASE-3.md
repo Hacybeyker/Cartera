@@ -89,7 +89,7 @@ Más ──► Servicios clásicos ──► LegacyActivity
   - Cómo usar `api/fixtures/` como semilla.
 - Lint con Spectral y tests de contrato (R4).
 - Prueba con un servidor externo (R5):
-  - La app en debug apunta a Prism (`http://10.0.2.2:4010/api/v1/`).
+  - La app en debug apunta a Prism (`http://10.0.2.2:4010/`): Prism sirve las rutas sin el prefijo `/api/v1`.
   - Se recorren login, cuentas, movimientos y pago de servicios con los ejemplos del contrato.
   - El canal en vivo y la lógica con estado quedan fuera: Prism no la tiene.
 
@@ -127,6 +127,27 @@ Para que el caso 7 se note, el fixture de Luz del Norte trae, en el camino encen
 - **Sin ids (S2):** los ítems de Empresas (por texto), el teclado de la clave (cada dígito es un nodo virtual de accesibilidad con su texto) y la Constancia (texto del WebView).
 - Marcas de contenido visible, por la interfaz propia de `:legacy` que `app` conecta a `VisibleContentMarker`: `legacy_empresas`, `legacy_recibos` y `legacy_constancia` (tras `onPageFinished`).
 - Goldens de Roborazzi de cada Fragment, en claro y oscuro.
+
+**Ids de `:legacy`** (`android:id`, los que existen en los layouts)
+
+| Pantalla | Ids |
+|---|---|
+| Actividad | `legacy_actividad_barra`, `legacy_actividad_contenedor` |
+| Empresas | `legacy_empresas_buscar`, `legacy_empresas_cargando`, `legacy_empresas_lista`, `legacy_empresas_vacio` |
+| Código de cliente | `legacy_codigo_empresa`, `legacy_codigo_indicacion`, `legacy_codigo_contenedor`, `legacy_codigo_campo`, `legacy_codigo_continuar` |
+| Recibos pendientes | `legacy_recibos_cliente`, `legacy_recibos_lista`, `legacy_recibos_vacio`, `legacy_recibos_cargando`, `legacy_recibos_pie`, `legacy_recibos_total`, `legacy_recibos_continuar`; en cada fila `legacy_recibos_casilla`, `legacy_recibos_vencimiento` y `legacy_recibos_importe` |
+| Cuenta y resumen | `legacy_cuenta_empresa`, `legacy_cuenta_resumen_titulo`, `legacy_cuenta_resumen`, `legacy_cuenta_total`, `legacy_cuenta_cargando`, `legacy_cuenta_grupo`, `legacy_cuenta_vacio`, `legacy_cuenta_aviso`, `legacy_cuenta_continuar`; en cada línea del resumen `legacy_cuenta_resumen_periodo` y `legacy_cuenta_resumen_importe` |
+| Clave | `legacy_clave_titulo`, `legacy_clave_puntos`, `legacy_clave_mensaje`, `legacy_clave_cargando`; el teclado no tiene id (S2) |
+| Constancia | `legacy_constancia_contenedor`, `legacy_constancia_cargando`, `legacy_constancia_mensaje`, `legacy_constancia_finalizar`; el WebView no tiene id (S2) |
+
+**Del lado de Compose** (`:app`, resource-id por testTag)
+
+| Pantalla | Ids |
+|---|---|
+| Más | `mas_servicios_clasicos` (abre `:legacy`) y `mas_pantalla` (a donde vuelve al cerrarse) |
+| Servicios clásicos | `legacy_cargando`, mientras `LegacyActivity` está al frente |
+| Sesión vencida | `modal_sesion_expirada` y `modal_sesion_expirada_aceptar` |
+| Ayuda | `ayuda_proximamente` |
 
 **Datos de referencia**
 

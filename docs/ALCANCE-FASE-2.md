@@ -154,6 +154,28 @@ Igual que en la fase 1: apagados por defecto, release no los puede encender y no
 | Seguridad | `seguridad_pantalla` | `seguridad_huella` | `seguridad` |
 | Coach marks | `coach_capa` | `coach_paso_<n>`, `coach_siguiente`, `coach_omitir` | — |
 
+**Identificadores que también existen en el código** (se suman a la tabla anterior; los nombres salen de los `*TestTags` y de los helpers de `core/designsystem/component/`)
+
+| Pantalla | Identificadores |
+|---|---|
+| Más | `mas_seguridad` (entrada a Seguridad) |
+| Ayuda | `ayuda_proximamente` |
+| Mercado, Detalle, Orden, Cambio y Mi portafolio | `accion_reconectando`, `orden_reconectando`, `cambio_reconectando`, `portafolio_reconectando`: el aviso "Reconectando…" de cada pantalla con precios, además de `mercado_reconectando` |
+| Detalle de acción | `accion_tenencia` (cabecera de la tenencia), `sheet_accion_vender_no_disponible` (Vender cuando no hay tenencia) |
+| Orden · formulario | `orden_accion`, `orden_lado`, `orden_precio`; los errores de campo son `<campo>_error` (`orden_cantidad_error`, `orden_cuenta_error`...) |
+| Orden · resultado | `orden_resultado_operacion`, `orden_resultado_total`, `orden_resultado_tenencia`, `orden_resultado_error` |
+| Orden · rechazos (modal, con `_aceptar`) | `modal_fondos_insuficientes`, `modal_tenencia_insuficiente`, `modal_orden_rechazada` |
+| Cambio | `cambio_estimado`, `sheet_como_calculamos` (con `sheet_como_calculamos_entendido` para cerrarlo) |
+| Cambio · confirmación | `cambio_confirmacion_debito`, `cambio_confirmacion_credito`, `cambio_confirmacion_tasa`, `cambio_vencimiento` |
+| Cambio · cotización vencida | `modal_cotizacion_vencida` con `modal_cotizacion_vencida_aceptar` y `modal_cotizacion_vencida_salir` |
+| Cambio · rechazos (modal, con `_aceptar`) | `modal_fondos_insuficientes`, `modal_moneda_distinta`, `modal_cambio_rechazado` |
+| Cambio · resultado | `cambio_resultado_operacion`, `cambio_resultado_tasa`, `cambio_resultado_saldo_origen`, `cambio_resultado_saldo_destino`, `cambio_resultado_error` |
+| Transferir | `transferir_resultado_error`; modales `modal_destino_inexistente` y `modal_transferencia_rechazada` (con `_aceptar`) |
+| Modales comunes | `modal_sesion_expirada_aceptar`, `modal_error_reintentar`, `modal_error_cancelar`, `modal_confirmacion_aceptar`, `modal_confirmacion_cancelar` |
+
+- Los estados genéricos de una pantalla siguen la forma `<pantalla>_cargando`, `<pantalla>_error`, `<pantalla>_reintentar`, `<pantalla>_vacio` y `<pantalla>_proximamente` (`CommonTestTags`).
+- Un diálogo o un sheet vive en otra ventana: su contenedor y sus botones llevan el testTag como resource-id por su cuenta.
+
 **Datos de referencia** (definitivos para los flows de testigo; si alguno cambia, cambia primero aquí)
 
 | Acción | Empresa | Precio inicial (US$) |
