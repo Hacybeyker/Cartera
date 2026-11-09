@@ -7,11 +7,14 @@ import com.hacybeyker.cartera.core.data.pinpad.PinPadSeedSource
 import com.hacybeyker.cartera.core.data.pinpad.SourcedPinPadSeed
 import com.hacybeyker.cartera.core.data.session.InMemoryAccessTokenStore
 import com.hacybeyker.cartera.core.data.session.InMemorySessionRepository
+import com.hacybeyker.cartera.core.domain.flags.FeatureFlag
+import com.hacybeyker.cartera.core.testing.FakeFeatureFlags
 import com.hacybeyker.cartera.core.ui.marks.VisibleContentMarker
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.Request
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -100,5 +103,22 @@ class LegacyBridgeTest {
         assertEquals(7, legacy.current())
         seed = 12
         assertEquals(12, legacy.current())
+    }
+
+    @Test
+    fun `the flags of the module follow the client flags at every use`() {
+        val client = FakeFeatureFlags()
+        val legacy = ClientFlagsLegacyFeatureFlags(client)
+        assertFalse(legacy.billersFullRebind())
+        assertFalse(legacy.debtsMainDecode())
+
+        client.enabled += FeatureFlag.BILLERS_FULL_REBIND
+        assertTrue(legacy.billersFullRebind())
+        assertFalse(legacy.debtsMainDecode())
+
+        client.enabled += FeatureFlag.DEBTS_MAIN_DECODE
+        client.enabled -= FeatureFlag.BILLERS_FULL_REBIND
+        assertFalse(legacy.billersFullRebind())
+        assertTrue(legacy.debtsMainDecode())
     }
 }

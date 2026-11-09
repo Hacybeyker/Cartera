@@ -11,6 +11,7 @@ import com.hacybeyker.cartera.legacy.pin.PinPresenter
 import com.hacybeyker.cartera.legacy.testing.FakeAccountRepository
 import com.hacybeyker.cartera.legacy.testing.FakeBillerRepository
 import com.hacybeyker.cartera.legacy.testing.FakeDebtRepository
+import com.hacybeyker.cartera.legacy.testing.FakeLegacyFeatureFlags
 import com.hacybeyker.cartera.legacy.testing.FakePaymentRepository
 import com.hacybeyker.cartera.legacy.testing.FakePinPadSeed
 import com.hacybeyker.cartera.legacy.testing.ImmediateSchedulerProvider
@@ -28,7 +29,8 @@ internal class TestPresenters(
     val padSeed: FakePinPadSeed = FakePinPadSeed(),
     val idempotencyKeys: SequenceIdempotencyKeys = SequenceIdempotencyKeys(),
     val schedulers: ImmediateSchedulerProvider = ImmediateSchedulerProvider(),
-    val marker: RecordingMarker = RecordingMarker()
+    val marker: RecordingMarker = RecordingMarker(),
+    val flags: FakeLegacyFeatureFlags = FakeLegacyFeatureFlags()
 ) : LegacyPresenterSource {
 
     var onBillersPresenter: (BillersPresenter) -> Unit = {}
@@ -38,7 +40,7 @@ internal class TestPresenters(
     var onPinPresenter: (PinPresenter) -> Unit = {}
     var onVoucherPresenter: (VoucherPresenter) -> Unit = {}
 
-    override fun billers() = BillersPresenter(billers, flow, marker, schedulers).also(onBillersPresenter)
+    override fun billers() = BillersPresenter(billers, flow, marker, flags, schedulers).also(onBillersPresenter)
 
     override fun customerCode() = CustomerCodePresenter(flow, ValidateCustomerCodeUseCase())
         .also(onCustomerCodePresenter)

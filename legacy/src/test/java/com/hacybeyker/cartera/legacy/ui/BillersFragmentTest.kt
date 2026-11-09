@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.android.material.appbar.MaterialToolbar
@@ -44,6 +45,12 @@ class BillersFragmentTest {
     }
 
     private fun texts(root: View) = rows(root).map { (it as TextView).text.toString() }
+
+    private fun textViews(view: View): List<TextView> = allViews(view).filterIsInstance<TextView>()
+
+    private fun rowTexts(root: View) = rows(root).map { textViews(it).single().text.toString() }
+
+    private fun rowText(row: View): TextView = textViews(row).single()
 
     private fun allViews(view: View): List<View> {
         val children = (view as? ViewGroup)?.let { group -> (0 until group.childCount).map(group::getChildAt) }
@@ -215,6 +222,158 @@ class BillersFragmentTest {
         launch()
 
         assertEquals(1, HostEnvironment.closes)
+    }
+
+    @Test
+    fun `with the flag on the list shows the same rows in the same order`() {
+        val plain = rowTexts(launch().get().window.decorView)
+        presenters.flags.billersFullRebind = true
+
+        val activity = launch().get()
+        val list = activity.findViewById<RecyclerView>(R.id.legacy_empresas_lista)
+
+        assertFalse(list.adapter is ListAdapter<*, *>)
+        assertEquals(plain, rowTexts(activity.window.decorView))
+        assertEquals(7, rows(activity.window.decorView).size)
+    }
+
+    @Test
+    fun `with the flag on the rows keep no id and no content description, and the headings stay headings`() {
+        presenters.flags.billersFullRebind = true
+        val activity = launch().get()
+
+        val rowViews = rows(activity.window.decorView).flatMap(::allViews)
+
+        assertTrue(rowViews.isNotEmpty())
+        rowViews.forEach { view ->
+            assertEquals(View.NO_ID, view.id)
+            assertEquals(null, view.contentDescription)
+        }
+        val rows = rows(activity.window.decorView)
+        assertTrue(ViewCompat.isAccessibilityHeading(rows[0]))
+        assertFalse(rowText(rows[0]).isClickable)
+        assertTrue(rowText(rows[1]).isClickable)
+    }
+
+    @Test
+    fun `with the flag on tapping the text of a biller keeps it and opens the customer code`() {
+        presenters.flags.billersFullRebind = true
+        val activity = launch().get()
+
+        rowText(rows(activity.window.decorView)[4]).performClick()
+
+        assertEquals(Samples.agua, presenters.flow.biller)
+        assertEquals(listOf(LegacyScreen.CUSTOMER_CODE), HostEnvironment.navigated)
+    }
+
+    @Test
+    fun `with the flag on each key has its own search`() {
+        presenters.flags.billersFullRebind = true
+        val activity = launch().get()
+        presenters.billers.respond = { Single.just(listOf(Samples.agua)) }
+
+        listOf("a", "ag", "agu").forEach { text ->
+            activity.findViewById<TextView>(R.id.legacy_empresas_buscar).text = text
+            idle()
+        }
+        layoutNow(activity.window.decorView)
+
+        assertEquals(listOf("", "a", "ag", "agu"), presenters.billers.requests)
+        assertEquals(listOf("Agua", "Agua Trujillo"), rowTexts(activity.window.decorView))
+    }
+
+    @Test
+    fun `with the flag off the same keys have a single search`() {
+        val activity = launch().get()
+        presenters.billers.respond = { Single.just(listOf(Samples.agua)) }
+
+        listOf("a", "ag", "agu").forEach { text ->
+            activity.findViewById<TextView>(R.id.legacy_empresas_buscar).text = text
+            idle()
+        }
+        presenters.schedulers.clock.advanceTimeBy(300, TimeUnit.MILLISECONDS)
+        idle()
+
+        assertEquals(listOf("", "agu"), presenters.billers.requests)
+    }
+
+    @Test
+    fun `with the flag on and no results the empty text shows and the list hides`() {
+        presenters.flags.billersFullRebind = true
+        val activity = launch().get()
+        presenters.billers.respond = { Single.just(emptyList()) }
+
+        activity.findViewById<TextView>(R.id.legacy_empresas_buscar).text = "zzz"
+        idle()
+
+        assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.legacy_empresas_vacio).visibility)
+        assertEquals(View.GONE, activity.findViewById<View>(R.id.legacy_empresas_lista).visibility)
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h300dp")
+    fun `with the flag on clearing the search shows the whole list again from its first row`() {
+        presenters.flags.billersFullRebind = true
+        val all = fixtureBillers()
+        presenters.billers.respond = { query ->
+            Single.just(if (query.isEmpty()) all else all.filter { it.name.contains(query, ignoreCase = true) })
+        }
+        val activity = launchInWindow().get()
+        awaitRows(activity, ALL_ROWS)
+        activity.findViewById<RecyclerView>(R.id.legacy_empresas_lista).scrollToPosition(ALL_ROWS - 1)
+        idle()
+
+        searchNow(activity, "agua")
+        awaitRows(activity, WATER_ROWS)
+        searchNow(activity, "")
+        awaitRows(activity, ALL_ROWS)
+
+        assertEquals(0, firstVisiblePosition(activity))
+        assertEquals("Electricidad", rowTexts(activity.window.decorView).first())
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h300dp")
+    fun `with the flag on reloading the same query keeps the scroll of the list`() {
+        presenters.flags.billersFullRebind = true
+        presenters.billers.respond = { Single.just(fixtureBillers()) }
+        lateinit var presenter: BillersPresenter
+        presenters.onBillersPresenter = { presenter = it }
+        val activity = launchInWindow().get()
+        awaitRows(activity, ALL_ROWS)
+        activity.findViewById<RecyclerView>(R.id.legacy_empresas_lista).scrollToPosition(ALL_ROWS - 1)
+        idle()
+        val scrolledTo = firstVisiblePosition(activity)
+
+        presenter.onRetry()
+        idle()
+        idle()
+
+        assertNotEquals(0, scrolledTo)
+        assertEquals(scrolledTo, firstVisiblePosition(activity))
+    }
+
+    @Test
+    fun `turning the flag off again brings the list back to its own adapter`() {
+        presenters.flags.billersFullRebind = true
+        val activity = launch().get()
+        val list = activity.findViewById<RecyclerView>(R.id.legacy_empresas_lista)
+        assertFalse(list.adapter is ListAdapter<*, *>)
+        presenters.flags.billersFullRebind = false
+        presenters.billers.respond = { Single.just(listOf(Samples.agua)) }
+
+        activity.findViewById<TextView>(R.id.legacy_empresas_buscar).text = "agua"
+        presenters.schedulers.clock.advanceTimeBy(300, TimeUnit.MILLISECONDS)
+        idle()
+        layoutNow(activity.window.decorView)
+
+        assertTrue(list.adapter is ListAdapter<*, *>)
+        assertEquals(listOf("Agua", "Agua Trujillo"), texts(activity.window.decorView))
+    }
+
+    private fun searchNow(activity: LegacyHostActivity, text: String) {
+        activity.findViewById<TextView>(R.id.legacy_empresas_buscar).text = text
+        idle()
     }
 
     private fun launchInWindow(): ActivityController<LegacyHostActivity> {

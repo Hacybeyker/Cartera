@@ -10,6 +10,7 @@ import com.hacybeyker.cartera.legacy.core.mvp.BasePresenter
 import com.hacybeyker.cartera.legacy.core.mvp.LoadPhase
 import com.hacybeyker.cartera.legacy.flow.domain.PaymentFlow
 import com.hacybeyker.cartera.legacy.integration.LegacyContentMarker
+import com.hacybeyker.cartera.legacy.integration.LegacyFeatureFlags
 import com.hacybeyker.cartera.legacy.integration.LegacyMarks
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
@@ -23,10 +24,12 @@ class BillersPresenter @Inject constructor(
     private val repository: BillerRepository,
     private val flow: PaymentFlow,
     private val marker: LegacyContentMarker,
+    private val flags: LegacyFeatureFlags,
     private val schedulers: SchedulerProvider
 ) : BasePresenter<BillersView, BillersViewState>(BillersViewState()) {
 
     private val typed = PublishSubject.create<String>()
+    private val typedFullRebind = PublishSubject.create<String>()
     private val reloads = PublishSubject.create<String>()
     private var billers: List<Biller> = emptyList()
     private var requestedQuery: String? = null
@@ -38,6 +41,7 @@ class BillersPresenter @Inject constructor(
                 typed.debounce(SEARCH_DEBOUNCE_MILLIS, TimeUnit.MILLISECONDS, schedulers.computation())
                     .observeOn(schedulers.main())
                     .filter { it != requestedQuery },
+                typedFullRebind.filter { it != requestedQuery },
                 reloads
             )
                 .doOnNext {
@@ -59,8 +63,9 @@ class BillersPresenter @Inject constructor(
 
     fun onQueryChanged(text: String) {
         if (text == state.query) return
-        update { it.copy(query = text) }
-        typed.onNext(text.trim())
+        val fullRebind = flags.billersFullRebind()
+        update { it.copy(query = text, fullRebind = fullRebind) }
+        if (fullRebind) typedFullRebind.onNext(text.trim()) else typed.onNext(text.trim())
     }
 
     fun onBillerSelected(id: String) {
@@ -87,11 +92,13 @@ class BillersPresenter @Inject constructor(
         is RemoteResult.Success -> {
             billers = result.value
             val rows = result.value.toRows()
+            val fullRebind = flags.billersFullRebind()
             update {
                 it.copy(
                     phase = if (rows.isEmpty()) LoadPhase.EMPTY else LoadPhase.CONTENT,
                     rows = rows,
-                    resultsFor = requestedQuery
+                    resultsFor = requestedQuery,
+                    fullRebind = fullRebind
                 )
             }
         }

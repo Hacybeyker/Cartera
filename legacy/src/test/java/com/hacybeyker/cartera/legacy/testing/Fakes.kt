@@ -10,6 +10,7 @@ import com.hacybeyker.cartera.legacy.core.domain.SchedulerProvider
 import com.hacybeyker.cartera.legacy.debts.domain.CustomerDebts
 import com.hacybeyker.cartera.legacy.debts.domain.DebtRepository
 import com.hacybeyker.cartera.legacy.integration.LegacyContentMarker
+import com.hacybeyker.cartera.legacy.integration.LegacyFeatureFlags
 import com.hacybeyker.cartera.legacy.integration.LegacyPinPadSeed
 import com.hacybeyker.cartera.legacy.integration.LegacySessionExpiry
 import com.hacybeyker.cartera.legacy.payment.domain.BillPayment
@@ -20,6 +21,7 @@ import io.reactivex.rxjava3.core.Scheduler
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.schedulers.TestScheduler
+import java.util.concurrent.CopyOnWriteArrayList
 
 /** Todos los hilos son el mismo reloj virtual: el test decide cuándo corre cada tarea. */
 class TestSchedulerProvider(val scheduler: TestScheduler = TestScheduler()) : SchedulerProvider {
@@ -40,11 +42,18 @@ class ImmediateSchedulerProvider(val clock: TestScheduler = TestScheduler()) : S
 }
 
 class RecordingMarker : LegacyContentMarker {
-    val marks = mutableListOf<String>()
+    val marks = CopyOnWriteArrayList<String>()
 
     override fun onContentVisible(mark: String) {
         marks += mark
     }
+}
+
+class FakeLegacyFeatureFlags(var billersFullRebind: Boolean = false, var debtsMainDecode: Boolean = false) :
+    LegacyFeatureFlags {
+    override fun billersFullRebind(): Boolean = billersFullRebind
+
+    override fun debtsMainDecode(): Boolean = debtsMainDecode
 }
 
 class RecordingSessionExpiry : LegacySessionExpiry {

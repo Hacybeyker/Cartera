@@ -5,6 +5,8 @@ import com.hacybeyker.cartera.legacy.billers.data.BillersApi
 import com.hacybeyker.cartera.legacy.core.data.LegacyApiCaller
 import com.hacybeyker.cartera.legacy.core.data.LegacyJson
 import com.hacybeyker.cartera.legacy.debts.data.DebtsApi
+import com.hacybeyker.cartera.legacy.debts.data.DebtsBodyDecoder
+import com.hacybeyker.cartera.legacy.debts.data.JsonDebtsBodyDecoder
 import com.hacybeyker.cartera.legacy.integration.LegacyApiConfig
 import com.hacybeyker.cartera.legacy.integration.LegacyHttpClient
 import com.hacybeyker.cartera.legacy.integration.LegacySessionExpiry
@@ -38,6 +40,10 @@ object LegacyNetworkModule {
     @Singleton
     fun provideApiCaller(sessionExpiry: LegacySessionExpiry): LegacyApiCaller =
         LegacyApiCaller(LegacyJson.instance, sessionExpiry)
+
+    @Provides
+    @Singleton
+    fun provideDebtsBodyDecoder(): DebtsBodyDecoder = JsonDebtsBodyDecoder(LegacyJson.instance)
 
     @Provides
     @Singleton

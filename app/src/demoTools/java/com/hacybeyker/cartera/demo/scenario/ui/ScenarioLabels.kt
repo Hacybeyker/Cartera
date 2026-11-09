@@ -13,6 +13,8 @@ internal fun FeatureFlag.labelRes(): Int = when (this) {
     FeatureFlag.BREAKDOWN_RICH_TRANSITION -> R.string.scenario_breakdown_rich_transition
     FeatureFlag.QUOTES_FULL_REFRESH -> R.string.scenario_quotes_full_refresh
     FeatureFlag.CHART_LIVE_PATH -> R.string.scenario_chart_live_path
+    FeatureFlag.BILLERS_FULL_REBIND -> R.string.scenario_billers_full_rebind
+    FeatureFlag.DEBTS_MAIN_DECODE -> R.string.scenario_debts_main_decode
 }
 
 @Composable

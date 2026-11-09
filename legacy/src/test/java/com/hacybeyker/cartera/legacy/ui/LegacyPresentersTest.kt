@@ -11,6 +11,7 @@ import com.hacybeyker.cartera.legacy.pin.PinPresenter
 import com.hacybeyker.cartera.legacy.testing.FakeAccountRepository
 import com.hacybeyker.cartera.legacy.testing.FakeBillerRepository
 import com.hacybeyker.cartera.legacy.testing.FakeDebtRepository
+import com.hacybeyker.cartera.legacy.testing.FakeLegacyFeatureFlags
 import com.hacybeyker.cartera.legacy.testing.FakePaymentRepository
 import com.hacybeyker.cartera.legacy.testing.FakePinPadSeed
 import com.hacybeyker.cartera.legacy.testing.RecordingMarker
@@ -25,7 +26,7 @@ class LegacyPresentersTest {
     private val flow = PaymentFlow().apply { chooseBiller(Samples.luz) }
     private val schedulers = TestSchedulerProvider()
     private val presenters = LegacyPresenters(
-        { BillersPresenter(FakeBillerRepository(), flow, RecordingMarker(), schedulers) },
+        { BillersPresenter(FakeBillerRepository(), flow, RecordingMarker(), FakeLegacyFeatureFlags(), schedulers) },
         { CustomerCodePresenter(flow, ValidateCustomerCodeUseCase()) },
         { DebtsPresenter(FakeDebtRepository(), flow, RecordingMarker(), schedulers) },
         { AccountPresenter(LoadPayableAccountsUseCase(FakeAccountRepository()), flow, schedulers) },

@@ -18,5 +18,11 @@ enum class FeatureFlag(val key: String) {
     QUOTES_FULL_REFRESH("quotes_full_refresh"),
 
     /** Camino de dibujo del gráfico del Detalle de acción. */
-    CHART_LIVE_PATH("chart_live_path")
+    CHART_LIVE_PATH("chart_live_path"),
+
+    /** Camino del buscador de Empresas, en `:legacy`. */
+    BILLERS_FULL_REBIND("billers_full_rebind"),
+
+    /** Camino de carga de los Recibos pendientes, en `:legacy`. */
+    DEBTS_MAIN_DECODE("debts_main_decode")
 }

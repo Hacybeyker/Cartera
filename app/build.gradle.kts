@@ -43,7 +43,9 @@ android {
             "ACCOUNTS_EAGER_REFRESH",
             "BREAKDOWN_RICH_TRANSITION",
             "QUOTES_FULL_REFRESH",
-            "CHART_LIVE_PATH"
+            "CHART_LIVE_PATH",
+            "BILLERS_FULL_REBIND",
+            "DEBTS_MAIN_DECODE"
         ).forEach { flag ->
             buildConfigField("boolean", flag, "false")
         }

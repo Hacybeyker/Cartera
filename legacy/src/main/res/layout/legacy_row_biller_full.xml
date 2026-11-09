@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <FrameLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content">
+
+                                <TextView
+                                    style="@style/TextAppearance.MaterialComponents.Body1"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:background="?attr/selectableItemBackground"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    android:gravity="center_vertical"
+                                    android:minHeight="@dimen/legacy_row_min_height"
+                                    android:paddingStart="@dimen/legacy_spacing_medium"
+                                    android:paddingEnd="@dimen/legacy_spacing_medium" />
+                            </FrameLayout>
+                        </LinearLayout>
+                    </RelativeLayout>
+                </FrameLayout>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:importantForAccessibility="no"
+                    android:visibility="invisible" />
+            </LinearLayout>
+        </RelativeLayout>
+    </LinearLayout>
+</FrameLayout>

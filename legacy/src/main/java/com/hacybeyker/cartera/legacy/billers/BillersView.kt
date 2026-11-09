@@ -15,6 +15,7 @@ data class BillersViewState(
     val query: String = "",
     val rows: List<BillerRow> = emptyList(),
     val resultsFor: String? = null,
+    val fullRebind: Boolean = false,
     val error: LegacyError? = null
 )
 

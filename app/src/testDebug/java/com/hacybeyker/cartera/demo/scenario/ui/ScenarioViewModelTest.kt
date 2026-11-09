@@ -212,13 +212,17 @@ class ScenarioViewModelTest {
         viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.BREAKDOWN_RICH_TRANSITION, false))
         viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.QUOTES_FULL_REFRESH, true))
         viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.CHART_LIVE_PATH, true))
+        viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.BILLERS_FULL_REBIND, true))
+        viewModel.onAction(ScenarioAction.FlagChanged(FeatureFlag.DEBTS_MAIN_DECODE, true))
         viewModel.onAction(ScenarioAction.SaveClicked)
         advanceUntilIdle()
 
         val saved = setOf(
             FeatureFlag.ACCOUNTS_EAGER_REFRESH,
             FeatureFlag.QUOTES_FULL_REFRESH,
-            FeatureFlag.CHART_LIVE_PATH
+            FeatureFlag.CHART_LIVE_PATH,
+            FeatureFlag.BILLERS_FULL_REBIND,
+            FeatureFlag.DEBTS_MAIN_DECODE
         )
         assertEquals(saved, store.load().flags)
         assertEquals(saved, viewModel.uiState.value.flags)

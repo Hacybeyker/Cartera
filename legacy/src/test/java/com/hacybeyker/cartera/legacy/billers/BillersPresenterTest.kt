@@ -5,6 +5,7 @@ import com.hacybeyker.cartera.legacy.core.domain.LegacyError
 import com.hacybeyker.cartera.legacy.core.mvp.LoadPhase
 import com.hacybeyker.cartera.legacy.flow.domain.PaymentFlow
 import com.hacybeyker.cartera.legacy.testing.FakeBillerRepository
+import com.hacybeyker.cartera.legacy.testing.FakeLegacyFeatureFlags
 import com.hacybeyker.cartera.legacy.testing.RecordingBillersView
 import com.hacybeyker.cartera.legacy.testing.RecordingMarker
 import com.hacybeyker.cartera.legacy.testing.Samples
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BillersPresenterTest {
@@ -23,7 +25,8 @@ class BillersPresenterTest {
     private val repository = FakeBillerRepository().apply { respond = { Single.just(Samples.billers) } }
     private val flow = PaymentFlow()
     private val marker = RecordingMarker()
-    private val presenter = BillersPresenter(repository, flow, marker, schedulers)
+    private val flags = FakeLegacyFeatureFlags()
+    private val presenter = BillersPresenter(repository, flow, marker, flags, schedulers)
     private val view = RecordingBillersView()
 
     private fun settle() = schedulers.scheduler.triggerActions()
@@ -299,5 +302,104 @@ class BillersPresenterTest {
         presenter.destroy()
 
         assertFalse(pending.hasObservers())
+    }
+
+    @Test
+    fun `with the flag on each key has its own search`() {
+        flags.billersFullRebind = true
+        presenter.attach(view)
+        settle()
+
+        presenter.onQueryChanged("a")
+        settle()
+        presenter.onQueryChanged("ag")
+        settle()
+        presenter.onQueryChanged("agu")
+        settle()
+
+        assertEquals(listOf("", "a", "ag", "agu"), repository.requests)
+        assertEquals("agu", view.last.query)
+        assertEquals("agu", view.last.resultsFor)
+    }
+
+    @Test
+    fun `with the flag off a burst of keys has a single search`() {
+        presenter.attach(view)
+        settle()
+
+        presenter.onQueryChanged("a")
+        settle()
+        presenter.onQueryChanged("ag")
+        settle()
+        presenter.onQueryChanged("agu")
+        settle()
+        assertEquals(listOf(""), repository.requests)
+
+        advance(300)
+
+        assertEquals(listOf("", "agu"), repository.requests)
+    }
+
+    @Test
+    fun `both paths end in the same state for the same typing`() {
+        val rowsFor = { query: String ->
+            Single.just(Samples.billers.filter { it.name.contains(query, ignoreCase = true) })
+        }
+        repository.respond = rowsFor
+        val onSchedulers = TestSchedulerProvider()
+        val onRepository = FakeBillerRepository().apply { respond = rowsFor }
+        val onPresenter = BillersPresenter(
+            onRepository,
+            PaymentFlow(),
+            RecordingMarker(),
+            FakeLegacyFeatureFlags(billersFullRebind = true),
+            onSchedulers
+        )
+        val onView = RecordingBillersView()
+        presenter.attach(view)
+        onPresenter.attach(onView)
+        settle()
+        onSchedulers.scheduler.triggerActions()
+
+        listOf("a", "ag", "agua", "zzz", "").forEach { text ->
+            presenter.onQueryChanged(text)
+            advance(300)
+            onPresenter.onQueryChanged(text)
+            onSchedulers.scheduler.triggerActions()
+        }
+
+        assertEquals(view.last, onView.last.copy(fullRebind = false))
+        assertEquals(repository.requests, onRepository.requests)
+    }
+
+    @Test
+    fun `the state says which path the list uses, read at every key and every result`() {
+        presenter.attach(view)
+        settle()
+        assertFalse(view.last.fullRebind)
+
+        flags.billersFullRebind = true
+        presenter.onQueryChanged("a")
+        assertTrue(view.last.fullRebind)
+
+        flags.billersFullRebind = false
+        presenter.onQueryChanged("ag")
+        assertFalse(view.last.fullRebind)
+        advance(300)
+        assertFalse(view.last.fullRebind)
+    }
+
+    @Test
+    fun `with the flag on the content mark and the empty state are the same`() {
+        flags.billersFullRebind = true
+        repository.respond = { query -> Single.just(if (query == "zzz") emptyList() else Samples.billers) }
+        presenter.attach(view)
+        settle()
+        presenter.onQueryChanged("zzz")
+        settle()
+
+        assertEquals(LoadPhase.EMPTY, view.last.phase)
+        assertEquals(emptyList<BillerRow>(), view.last.rows)
+        assertEquals(listOf("legacy_empresas"), marker.marks)
     }
 }

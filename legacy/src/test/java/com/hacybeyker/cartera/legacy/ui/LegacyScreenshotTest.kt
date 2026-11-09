@@ -59,6 +59,16 @@ class LegacyScreenshotTest(private val dark: Boolean) {
         billersScreen { billers.respond = { Single.just(fixtureBillers()) } }
     ) { BillersFragment() }
 
+    // El mismo golden que billersWithList: con billers_full_rebind, la lista se ve igual.
+    @Test
+    fun billersWithListFullRebind() = captureLightAndDark(
+        "legacy_empresas_lista",
+        billersScreen {
+            flags.billersFullRebind = true
+            billers.respond = { Single.just(fixtureBillers()) }
+        }
+    ) { BillersFragment() }
+
     @Test
     fun billersLoading() = captureLightAndDark(
         "legacy_empresas_cargando",

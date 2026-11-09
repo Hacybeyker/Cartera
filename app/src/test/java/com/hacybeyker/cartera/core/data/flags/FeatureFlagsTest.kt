@@ -24,6 +24,8 @@ class FeatureFlagsTest {
         assertFalse(BuildConfig.BREAKDOWN_RICH_TRANSITION)
         assertFalse(BuildConfig.QUOTES_FULL_REFRESH)
         assertFalse(BuildConfig.CHART_LIVE_PATH)
+        assertFalse(BuildConfig.BILLERS_FULL_REBIND)
+        assertFalse(BuildConfig.DEBTS_MAIN_DECODE)
     }
 
     @Test
@@ -45,7 +47,9 @@ class FeatureFlagsTest {
                 "accounts_eager_refresh",
                 "breakdown_rich_transition",
                 "quotes_full_refresh",
-                "chart_live_path"
+                "chart_live_path",
+                "billers_full_rebind",
+                "debts_main_decode"
             ),
             FeatureFlag.entries.map { it.key }
         )

@@ -581,6 +581,8 @@ devuelve a los valores por defecto. Release no tiene nada de esto.
 | Transición enriquecida del desglose | `--ez breakdown_rich_transition true` | el desglose entra con una transición enriquecida y su ilustración a tamaño completo | `false` |
 | Camino de actualización de Mercado | `--ez quotes_full_refresh true` | elige el camino de actualización de los precios de Mercado; se ve igual | `false` |
 | Camino de dibujo del gráfico | `--ez chart_live_path true` | elige el camino de dibujo del gráfico del Detalle de acción; se ve igual | `false` |
+| Camino del buscador de Empresas | `--ez billers_full_rebind true` | elige el camino del buscador de Empresas de `:legacy`; se ve igual | `false` |
+| Camino de carga de Recibos pendientes | `--ez debts_main_decode true` | elige el camino de carga de los Recibos pendientes de `:legacy`; se ve igual | `false` |
 | Valores por defecto | `--ez defaults true` | restablece el escenario antes de aplicar el resto | — |
 
 Ids de endpoint: `app_config`, `login`, `me`, `accounts`, `account`, `movements`, `movement`,
@@ -597,11 +599,12 @@ handshake del canal en vivo), `portfolio`, `orders`, `fx_rates`, `fx_exchanges`,
   `SET_SCENARIO --ei pin_pad_seed 7` por adb o con `pin_pad_seed: 7` en los argumentos de `launchApp`, antes de
   entrar a la pantalla.
 
-- Página completa de movimientos y las cuatro filas que la siguen son interruptores del cliente: no
+- Página completa de movimientos y las seis filas que la siguen son interruptores del cliente: no
   viajan al backend y tienen el mismo nombre en BuildConfig (`MOVEMENTS_FULL_PAGE`, `ACCOUNTS_EAGER_REFRESH`,
-  `BREAKDOWN_RICH_TRANSITION`, `QUOTES_FULL_REFRESH`, `CHART_LIVE_PATH`), donde valen `false`. Rigen
-  desde la próxima vez que se usan, sin reiniciar la app: Mercado lo lee cada vez que se vuelve a ver
-  el tab y el Detalle de acción, al abrirlo. Release no los puede encender.
+  `BREAKDOWN_RICH_TRANSITION`, `QUOTES_FULL_REFRESH`, `CHART_LIVE_PATH`, `BILLERS_FULL_REBIND`,
+  `DEBTS_MAIN_DECODE`), donde valen `false`. Rigen desde la próxima vez que se usan, sin reiniciar la app:
+  Mercado lo lee cada vez que se vuelve a ver el tab, el Detalle de acción, al abrirlo, y `:legacy` los
+  consulta (`LegacyFeatureFlags`) en cada tecla o carga. Release no los puede encender.
 - Lo que no se envía no cambia. Un valor por endpoint sin `default=` usa el valor de fábrica como global.
 - Un valor inválido no se aplica: el escenario efectivo y lo rechazado se imprimen en logcat con la
   etiqueta `CarteraDemo`.
@@ -657,6 +660,8 @@ Los interruptores van igual, como texto o booleano:
       tick_ms: 250
       quotes_full_refresh: true
       chart_live_path: true
+      billers_full_rebind: true
+      debts_main_decode: true
 ```
 
 Si un flow no usa argumentos, el orden es `pm clear` → broadcast → `launchApp` sin `clearState`.
@@ -674,8 +679,8 @@ MVP, RxJava 3, AppCompat y Material Components, con Hilt para la DI. `app` depen
 Más ► Servicios clásicos con `LegacyContract`, que lanza `LegacyActivity` y devuelve un `LegacyResult`.
 
 `:legacy` no ve nada de `app`: define sus propias interfaces (`LegacySession`, `LegacyApiConfig`,
-`LegacySessionExpiry` y `LegacyContentMarker`, con los nombres de las marcas en `LegacyMarks`) y `app` las
-conecta con Hilt en `feature/legacy/`. Sus ids son `android:id` en snake_case con el prefijo
+`LegacySessionExpiry`, `LegacyContentMarker` y `LegacyFeatureFlags`, con los nombres de las marcas en
+`LegacyMarks`) y `app` las conecta con Hilt en `feature/legacy/`. Sus ids son `android:id` en snake_case con el prefijo
 `legacy_<pantalla>_<elemento>`. Pasa por los mismos gates que `app`: ktlint, detekt, Lint, Kover y goldens
 de Roborazzi en claro y oscuro.
 

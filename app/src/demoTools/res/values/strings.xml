@@ -17,6 +17,8 @@
     <string name="scenario_breakdown_rich_transition">Transición enriquecida del desglose (breakdown_rich_transition)</string>
     <string name="scenario_quotes_full_refresh">Camino de actualización de Mercado (quotes_full_refresh)</string>
     <string name="scenario_chart_live_path">Camino de dibujo del gráfico (chart_live_path)</string>
+    <string name="scenario_billers_full_rebind">Camino del buscador de Empresas (billers_full_rebind)</string>
+    <string name="scenario_debts_main_decode">Camino de carga de Recibos pendientes (debts_main_decode)</string>
     <string name="scenario_endpoints">Endpoints: app_config, login, me, accounts, account, movements, movement, breakdown, transfers, market_stocks, market_stock, market_history, market_stream, portfolio, orders, fx_rates, fx_exchanges, billers, biller_debts, bill_payments, bill_voucher, biometric_enroll, biometric_login, biometric_delete.</string>
     <string name="scenario_save">Guardar</string>
     <string name="scenario_defaults">Valores por defecto</string>

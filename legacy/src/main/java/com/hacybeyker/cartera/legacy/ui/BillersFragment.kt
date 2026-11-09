@@ -6,6 +6,7 @@ import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.RecyclerView
 import com.hacybeyker.cartera.legacy.R
+import com.hacybeyker.cartera.legacy.billers.BillerRow
 import com.hacybeyker.cartera.legacy.billers.BillersView
 import com.hacybeyker.cartera.legacy.billers.BillersViewState
 import com.hacybeyker.cartera.legacy.core.mvp.LoadPhase
@@ -57,11 +58,25 @@ internal class BillersFragment :
         val resultsFor = state.resultsFor
         val newQuery = resultsFor != null && shownResultsFor != null && resultsFor != shownResultsFor
         shownResultsFor = resultsFor ?: shownResultsFor
+        if (state.fullRebind) {
+            rebindRows(list, state.rows, newQuery)
+            return
+        }
+        if (list.adapter !== adapter) list.adapter = adapter
         if (newQuery) {
             adapter.submitList(state.rows) { list.scrollToPosition(0) }
         } else {
             adapter.submitList(state.rows)
         }
+    }
+
+    private fun rebindRows(list: RecyclerView, rows: List<BillerRow>, newQuery: Boolean) {
+        val layout = list.layoutManager
+        val position = layout?.onSaveInstanceState()
+        val rebuilt = FullBillersAdapter(rows) { presenter.onBillerSelected(it) }
+        list.adapter = rebuilt
+        rebuilt.notifyDataSetChanged()
+        if (newQuery) list.scrollToPosition(0) else layout?.onRestoreInstanceState(position)
     }
 
     override fun showCustomerCode() = legacyHost.navigator.navigateTo(LegacyScreen.CUSTOMER_CODE)

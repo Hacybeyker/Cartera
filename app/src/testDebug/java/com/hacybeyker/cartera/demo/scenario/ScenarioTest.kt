@@ -22,7 +22,8 @@ class ScenarioTest {
             "latency=default=400 failure_rate=default=0 failure_mode=http_500 session_ttl=900 backend_down=false " +
                 "tick_ms=2000 stream_drop_s=0 quote_ttl_s=30 pin_pad_seed=0 movements_full_page=false " +
                 "accounts_eager_refresh=false " +
-                "breakdown_rich_transition=false quotes_full_refresh=false chart_live_path=false",
+                "breakdown_rich_transition=false quotes_full_refresh=false chart_live_path=false " +
+                "billers_full_rebind=false debts_main_decode=false",
             Scenario().describe()
         )
     }
@@ -279,6 +280,22 @@ class ScenarioTest {
     }
 
     @Test
+    fun `legacy flags are parsed from adb booleans and launch arguments text`() {
+        val adb = ScenarioParser.apply(Scenario(), mapOf("billers_full_rebind" to true, "debts_main_decode" to true))
+        val launchArguments = ScenarioParser.apply(
+            Scenario(),
+            mapOf("billers_full_rebind" to "true", "debts_main_decode" to "1")
+        )
+
+        assertEquals(setOf(FeatureFlag.BILLERS_FULL_REBIND, FeatureFlag.DEBTS_MAIN_DECODE), adb.scenario.flags)
+        assertTrue(adb.rejected.isEmpty())
+        assertTrue(adb.ignoredKeys.isEmpty())
+        assertEquals(setOf(FeatureFlag.BILLERS_FULL_REBIND), launchArguments.scenario.flags)
+        assertEquals(listOf("debts_main_decode=1"), launchArguments.rejected)
+        assertTrue(adb.describe().contains("billers_full_rebind=true debts_main_decode=true"))
+    }
+
+    @Test
     fun `flags not sent keep their value and defaults turn them off`() {
         val current = Scenario(flags = setOf(FeatureFlag.BREAKDOWN_RICH_TRANSITION))
 
@@ -324,5 +341,26 @@ class ScenarioTest {
 
         assertEquals(setOf(FeatureFlag.QUOTES_FULL_REFRESH), ScenarioStore(storage).load().flags)
         assertEquals(false, source.valueOf(FeatureFlag.CHART_LIVE_PATH))
+    }
+
+    @Test
+    fun `stored legacy flags survive and feed the client at once`() {
+        val storage = FakeScenarioStorage()
+        val store = ScenarioStore(storage)
+        val source = ScenarioFeatureFlagSource(store)
+        assertEquals(false, source.valueOf(FeatureFlag.BILLERS_FULL_REBIND))
+        assertEquals(false, source.valueOf(FeatureFlag.DEBTS_MAIN_DECODE))
+
+        store.update(mapOf("billers_full_rebind" to true, "debts_main_decode" to "true"))
+
+        assertEquals("true", storage.values["billers_full_rebind"])
+        assertEquals("true", storage.values["debts_main_decode"])
+        assertEquals(true, source.valueOf(FeatureFlag.BILLERS_FULL_REBIND))
+        assertEquals(true, source.valueOf(FeatureFlag.DEBTS_MAIN_DECODE))
+
+        store.update(mapOf("billers_full_rebind" to false))
+
+        assertEquals(setOf(FeatureFlag.DEBTS_MAIN_DECODE), ScenarioStore(storage).load().flags)
+        assertEquals(false, source.valueOf(FeatureFlag.BILLERS_FULL_REBIND))
     }
 }

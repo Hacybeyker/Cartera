@@ -21,5 +21,7 @@ class BuildConfigFeatureFlags @Inject constructor(private val sources: Set<@JvmS
         FeatureFlag.BREAKDOWN_RICH_TRANSITION -> BuildConfig.BREAKDOWN_RICH_TRANSITION
         FeatureFlag.QUOTES_FULL_REFRESH -> BuildConfig.QUOTES_FULL_REFRESH
         FeatureFlag.CHART_LIVE_PATH -> BuildConfig.CHART_LIVE_PATH
+        FeatureFlag.BILLERS_FULL_REBIND -> BuildConfig.BILLERS_FULL_REBIND
+        FeatureFlag.DEBTS_MAIN_DECODE -> BuildConfig.DEBTS_MAIN_DECODE
     }
 }

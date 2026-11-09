@@ -12,7 +12,22 @@ import kotlinx.serialization.Serializable
 data class DebtDto(val id: String, val period: String, val dueDate: String, val amount: MoneyDto)
 
 @Serializable
-data class CustomerDebtsDto(val customerName: String, val debts: List<DebtDto>)
+data class BillHistoryLineDto(val concept: String, val amount: MoneyDto, val detail: String)
+
+@Serializable
+data class BillHistoryMonthDto(
+    val period: String,
+    val amount: MoneyDto,
+    val paidAt: String,
+    val lines: List<BillHistoryLineDto>
+)
+
+@Serializable
+data class CustomerDebtsDto(
+    val customerName: String,
+    val debts: List<DebtDto>,
+    val history: List<BillHistoryMonthDto> = emptyList()
+)
 
 fun DebtDto.toDebt(): Debt = Debt(id, YearMonth.parse(period), LocalDate.parse(dueDate), amount.toMoney())
 

@@ -59,7 +59,7 @@ class ScenarioContentScreenshotTest {
 
     // Más alto que el Pixel 5 para que entren todos los interruptores sin desplazar.
     @Test
-    @Config(qualifiers = "+h1400dp")
+    @Config(qualifiers = "+h1700dp")
     fun clientFlags() = compose.captureLightAndDark("escenario_interruptores") {
         ScenarioContent(
             uiState = ScenarioUiState(
@@ -70,7 +70,11 @@ class ScenarioContentScreenshotTest {
                 streamDrop = "0",
                 quoteTtl = "30",
                 pinPadSeed = "7",
-                flags = setOf(FeatureFlag.QUOTES_FULL_REFRESH, FeatureFlag.CHART_LIVE_PATH)
+                flags = setOf(
+                    FeatureFlag.QUOTES_FULL_REFRESH,
+                    FeatureFlag.CHART_LIVE_PATH,
+                    FeatureFlag.BILLERS_FULL_REBIND
+                )
             ),
             onAction = {},
             onBack = {}
