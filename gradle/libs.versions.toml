@@ -30,7 +30,7 @@ espressoCore = "3.7.0"
 turbine = "1.2.1"
 robolectric = "4.17"
 openapiRequestValidator = "3.0.0"
-roborazzi = "1.77.0"
+roborazzi = "1.78.0"
 kover = "0.9.11"
 sonarqube = "7.5.0.8588"
 
